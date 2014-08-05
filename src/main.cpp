@@ -17,6 +17,7 @@
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
+#include "parameter_manager.h"
 #include "emp_piece.h"
 #include "emp_pieces_parser.h"
 #include "emp_gui.h"
@@ -37,17 +38,26 @@
 #include <map>
 
 using namespace edge_matching_puzzle;
+using namespace parameter_manager;
 
 //------------------------------------------------------------------------------
 int main(int argc,char ** argv)
 {
   try
     {
+      // Defining application command line parameters
+      parameter_manager::parameter_manager l_param_manager("edge_matching_puzzle.exe","--",2);
+      parameter_if l_definition_file("definition",false);
+      l_param_manager.add(l_definition_file);
+      parameter_if l_ressources_path("ressources",false);
+      l_param_manager.add(l_ressources_path);
+
+      // Treating parameters
+      l_param_manager.treat_parameters(argc,argv);
+
       // Get puzzle description
       std::vector<emp_piece> l_pieces;
-      //emp_pieces_parser l_piece_parser("hint1_pieces.txt");
-      //emp_pieces_parser l_piece_parser("4_4.txt");
-      emp_pieces_parser l_piece_parser("3_3.txt");
+      emp_pieces_parser l_piece_parser(l_definition_file.get_value<std::string>().c_str());
       unsigned int l_width = 0;
       unsigned int l_height = 0;
       l_piece_parser.parse(l_width,l_height,l_pieces);
@@ -65,7 +75,7 @@ int main(int argc,char ** argv)
         }
 
 
-      emp_gui l_gui(l_width,l_height,"ressources",l_pieces);
+      emp_gui l_gui(l_width,l_height,l_ressources_path.get_value<std::string>().c_str(),l_pieces);
 
       emp_piece_db l_piece_db(l_pieces,l_width,l_height);
       emp_FSM_info l_info(l_width,l_height);
