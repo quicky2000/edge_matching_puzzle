@@ -54,9 +54,11 @@ namespace edge_matching_puzzle
     static inline void add_piece(t_color2pieces& p_color2pieces, 
 				 const emp_types::t_color_id & p_color_id,
 				 const emp_types::t_oriented_piece & p_piece);
+    inline void record_identical_pieces(const emp_types::t_piece_id & p_id1,
+					const emp_types::t_piece_id & p_id2);
 
    typedef std::pair<std::pair<emp_types::t_color_id,emp_types::t_color_id>,std::pair<emp_types::t_color_id,emp_types::t_color_id> > t_constraint;
-
+   typedef std::map<emp_types::t_piece_id,std::set<emp_types::t_piece_id> > t_identical_pieces_db;
    const std::vector<emp_piece> & m_pieces;
     emp_piece_corner* m_corners[4];
     t_color2pieces m_corner2pieces;
@@ -69,6 +71,7 @@ namespace edge_matching_puzzle
     typedef std::map<emp_types::t_oriented_piece,std::set<emp_piece_constraint> > t_piece2constraint_db;
     t_piece2constraint_db m_piece2constraint_db;
     std::set<emp_constraint> l_single_constraints;
+    t_identical_pieces_db m_identical_pieces_db;
   };
 
   //----------------------------------------------------------------------------
@@ -136,6 +139,16 @@ namespace edge_matching_puzzle
 	  ++(l_nb[((unsigned int)l_iter.get_kind())]);
           ++(l_nb_auto_similarity[((unsigned int)l_iter.get_auto_similarity())]);
           l_auto_similarities.insert(std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id>::value_type(l_iter.get_auto_similarity(),l_iter.get_id()));
+
+          for(auto l_iter_bis : p_pieces)
+            {
+              if(l_iter_bis.get_id() == l_iter.get_id()) break;
+	      if(l_iter == l_iter_bis)
+		{
+		  record_identical_pieces(l_iter.get_id(),l_iter_bis.get_id());
+		  record_identical_pieces(l_iter_bis.get_id(),l_iter.get_id());
+		}
+            }
 
           switch(l_iter.get_kind())
             {
@@ -211,6 +224,29 @@ namespace edge_matching_puzzle
       // Display auto similar pieces
       print_auto_similarities(emp_piece::t_auto_similarity::HALF_SIMILAR,l_auto_similarities);
       print_auto_similarities(emp_piece::t_auto_similarity::SIMILAR,l_auto_similarities);
+
+      if(m_identical_pieces_db.size())
+	{
+	  std::cout << "Identical pieces:" << std::endl ;
+	  for(auto l_iter: m_identical_pieces_db)
+	    {
+	      std::cout << l_iter.first << " <==> { " ;
+	      bool l_first = true;
+	      for(auto l_iter_second : l_iter.second)
+		{
+		  if(!l_first) 
+		    {
+		      std::cout << ", " ;
+		    }
+		  else
+		    {
+		      l_first = false;
+		    }
+		  std::cout << l_iter_second;
+		}
+	      std::cout << "}" << std::endl ;
+	    }
+	}
 
       print_list("Colors",l_colors);
       print_list("Center colors",l_center_colors);
@@ -479,6 +515,18 @@ namespace edge_matching_puzzle
 	l_iter_color = p_color2pieces.insert(t_color2pieces::value_type(p_color_id,std::set<emp_types::t_oriented_piece>())).first;
       }
     l_iter_color->second.insert(p_piece);
+  }
+
+  //------------------------------------------------------------------------------
+  void emp_piece_db::record_identical_pieces(const emp_types::t_piece_id & p_id1,
+			       const emp_types::t_piece_id & p_id2)
+  {
+    t_identical_pieces_db::iterator l_iter = m_identical_pieces_db.find(p_id1);
+    if(m_identical_pieces_db.end() == l_iter)
+      {
+	l_iter = m_identical_pieces_db.insert(t_identical_pieces_db::value_type(p_id1,std::set<emp_types::t_piece_id>())).first;
+      }
+    l_iter->second.insert(p_id2);
   }
 
 

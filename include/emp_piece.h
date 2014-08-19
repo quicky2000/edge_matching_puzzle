@@ -24,6 +24,7 @@
 #include <array>
 #include <cassert>
 #include <iostream>
+#include <cmath>
 
 namespace edge_matching_puzzle
 {
@@ -41,6 +42,7 @@ namespace edge_matching_puzzle
     inline const emp_types::t_piece_id & get_id(void)const;  
     inline const t_auto_similarity & get_auto_similarity(void)const;
     inline static const std::string & auto_similarity2string(const t_auto_similarity & p_similarity);
+    inline bool operator==(const emp_piece & p_piece)const;
 #if GCC_VERSION > 40702
   protected:
 #endif // GCC_VERSION > 40702
@@ -126,6 +128,27 @@ namespace edge_matching_puzzle
       {
         return m_colours[((unsigned int)p_border + (unsigned int) p_orientation) % 4];
       }
+
+    //--------------------------------------------------------------------------
+    bool emp_piece::operator==(const emp_piece & p_piece)const
+    {
+      if(m_id == p_piece.m_id) return true;
+      unsigned int l_increment = pow(2,(unsigned int) m_auto_similarity);
+      unsigned int l_other_increment = pow(2,(unsigned int) p_piece.get_auto_similarity());
+      // Compare color array for different orientations
+      for(unsigned int l_piece_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
+          l_piece_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
+          l_piece_orient_index += l_other_increment)
+        {
+          unsigned int l_color_orient_index = (unsigned int)emp_types::t_orientation::NORTH; 
+          while(m_colours[l_color_orient_index] == p_piece.get_color((emp_types::t_orientation)l_color_orient_index,(emp_types::t_orientation)l_piece_orient_index) && l_color_orient_index <= (unsigned int)emp_types::t_orientation::WEST)
+            { 
+              l_color_orient_index += l_increment;
+            }
+          if(l_color_orient_index > (unsigned int)emp_types::t_orientation::WEST) return true;
+        }
+      return false;
+    }
 
     //--------------------------------------------------------------------------
     const emp_types::t_piece_id & emp_piece::get_id(void)const
