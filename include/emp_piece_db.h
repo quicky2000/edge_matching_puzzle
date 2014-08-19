@@ -26,6 +26,7 @@
 #include "emp_link.h"
 #include <map>
 #include <set>
+#include <cmath>
 
 namespace edge_matching_puzzle
 {
@@ -45,6 +46,8 @@ namespace edge_matching_puzzle
     inline void compute_constraints(const emp_piece & p_piece);
     static inline void print_list(const std::string & p_name,
 				  const std::set<unsigned int> & p_list);
+    static inline void print_auto_similarities(const emp_piece::t_auto_similarity & p_similarity,
+                                               const std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> & p_auto_similarities);
 
    typedef std::map<emp_types::t_color_id,std::set<emp_types::t_oriented_piece> > t_color2pieces;
 
@@ -107,6 +110,8 @@ namespace edge_matching_puzzle
 
       // Pieces counters
       unsigned int l_nb[((uint32_t)emp_types::t_kind::CORNER) + 1] = {0,0,0};
+      // Auto similarity counters
+      unsigned int l_nb_auto_similarity[((uint32_t)emp_piece::t_auto_similarity::SIMILAR) + 1] = {0,0,0};
 
       typedef std::set<emp_types::t_color_id> t_color_list;
       // List of colors composing center of puzzle
@@ -122,11 +127,16 @@ namespace edge_matching_puzzle
 
       // Store which piece contains color
       t_color2pieces l_color2pieces;
+
+      std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> l_auto_similarities;
  
       // Examining pieces
       for(auto l_iter : p_pieces)
 	{
 	  ++(l_nb[((unsigned int)l_iter.get_kind())]);
+          ++(l_nb_auto_similarity[((unsigned int)l_iter.get_auto_similarity())]);
+          l_auto_similarities.insert(std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id>::value_type(l_iter.get_auto_similarity(),l_iter.get_id()));
+
           switch(l_iter.get_kind())
             {
             case emp_types::t_kind::CENTER:
@@ -189,6 +199,19 @@ namespace edge_matching_puzzle
 	  std::cout << "\t" << emp_types::kind2string((emp_types::t_kind)l_index) << "\t: " << l_nb[l_index] << std::endl ;
 	}
 
+      // Display number of auto similar pieces
+      std::cout << "Number of pieces depending on auto_similarity :" << std::endl ;
+      for(unsigned int l_index = ((uint32_t)emp_piece::t_auto_similarity::NONE) ;
+	  l_index <= ((uint32_t)emp_piece::t_auto_similarity::SIMILAR);
+	  ++l_index)
+	{
+	  std::cout << "\t" << emp_piece::auto_similarity2string((emp_piece::t_auto_similarity)l_index) << "\t: " << l_nb_auto_similarity[l_index] << std::endl ;
+	}
+
+      // Display auto similar pieces
+      print_auto_similarities(emp_piece::t_auto_similarity::HALF_SIMILAR,l_auto_similarities);
+      print_auto_similarities(emp_piece::t_auto_similarity::SIMILAR,l_auto_similarities);
+
       print_list("Colors",l_colors);
       print_list("Center colors",l_center_colors);
       print_list("Border colors",l_border_colors);
@@ -201,6 +224,7 @@ namespace edge_matching_puzzle
         {
           unsigned int l_nb = l_color2pieces.find(l_iter)->second.size();
           std::cout << "Color = " << l_iter << " appears on " << l_nb << " pieces edge" << std::endl ;
+          if(l_nb % 2) throw quicky_exception::quicky_logic_exception("Number of pieces edge with color should be multiple of 2 or the puzzle cannot be solved",__LINE__,__FILE__);
           l_total += l_nb;
         }
 
@@ -346,10 +370,11 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   void emp_piece_db::compute_constraints(const emp_piece & p_piece)
   {
+    unsigned int l_increment = pow(2,(unsigned int) p_piece.get_auto_similarity());
     // Compute for different orientations of piece
     for(unsigned int l_piece_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
 	l_piece_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
-	++l_piece_orient_index)
+	l_piece_orient_index += l_increment)
       {
 	emp_types::t_oriented_piece l_oriented_piece(p_piece.get_id(),(emp_types::t_orientation)l_piece_orient_index);
 	std::array<const emp_constraint*,4> l_oriented_piece_constraints;
@@ -422,6 +447,25 @@ namespace edge_matching_puzzle
 	std::cout << "}" ;
       }
     std::cout << std::endl ;
+  }
+
+  //------------------------------------------------------------------------------
+  void emp_piece_db::print_auto_similarities(const emp_piece::t_auto_similarity & p_similarity,
+                                             const std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> & p_auto_similarities)
+  {
+    std::pair<std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id>::const_iterator,std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id>::const_iterator> l_values = p_auto_similarities.equal_range(p_similarity);
+    if(l_values.first != l_values.second)
+      {
+        std::cout << "List of pieces which are " << emp_piece::auto_similarity2string(p_similarity) << ":" << std::endl ;
+        std::cout  << "{ " << l_values.first->second ;
+        for(std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id>::const_iterator l_iter = ++(l_values.first) ;
+            l_values.first != l_values.second;
+            ++l_values.first)
+          {
+	    std::cout << ", " << l_iter->second ;
+          }
+	std::cout << "}"  << std::endl;
+      }
   }
 
   //------------------------------------------------------------------------------

@@ -53,7 +53,7 @@ namespace edge_matching_puzzle
       if(!p_situation.is_final()) return;
       m_gui->display(p_situation);
       m_gui->refresh();
-      sleep(3);
+      //      sleep(3);
     }
 
   //----------------------------------------------------------------------------

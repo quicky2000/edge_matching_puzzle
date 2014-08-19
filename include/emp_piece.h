@@ -31,22 +31,35 @@ namespace edge_matching_puzzle
   {
     friend std::ostream & operator<<(std::ostream & p_stream,const emp_piece & p_piece);
   public:
+    typedef enum class {NONE=0,HALF_SIMILAR,SIMILAR} t_auto_similarity;
     inline emp_types::t_kind get_kind(void)const;
     inline emp_piece(const emp_types::t_piece_id & p_id,
                      const std::array<emp_types::t_color_id,((unsigned int)(emp_types::t_orientation::WEST))+1> & p_colours);
     inline const emp_types::t_color_id & get_color(const emp_types::t_orientation & p_border)const;
     inline const emp_types::t_color_id & get_color(const emp_types::t_orientation & p_border,
                                                    const emp_types::t_orientation & p_orientation)const;
-    inline const emp_types::t_piece_id & get_id(void)const;    
+    inline const emp_types::t_piece_id & get_id(void)const;  
+    inline const t_auto_similarity & get_auto_similarity(void)const;
+    inline static const std::string & auto_similarity2string(const t_auto_similarity & p_similarity);
 #if GCC_VERSION > 40702
   protected:
 #endif // GCC_VERSION > 40702
     inline const std::array<emp_types::t_color_id,4> & get_colors(void)const;
   private:
+    inline static const t_auto_similarity compute_auto_similarity(const std::array<emp_types::t_color_id,((unsigned int)(emp_types::t_orientation::WEST))+1> & p_colours);
+
     const emp_types::t_piece_id m_id;
     const emp_types::t_kind m_kind;
     const std::array<emp_types::t_color_id,4> m_colours;
+    const t_auto_similarity m_auto_similarity;
+    static const std::string m_auto_similarity_strings[((uint32_t)t_auto_similarity::SIMILAR)+1];
   };
+
+  //----------------------------------------------------------------------------
+  const std::string & emp_piece::auto_similarity2string(const t_auto_similarity & p_similarity)
+    {
+      return m_auto_similarity_strings[(uint32_t)p_similarity];
+    }
 
   //----------------------------------------------------------------------------
   inline std::ostream & operator<<(std::ostream & p_stream,const edge_matching_puzzle::emp_piece & p_piece)
@@ -60,19 +73,40 @@ namespace edge_matching_puzzle
       return p_stream;
     }
 
-    //----------------------------------------------------------------------------
-    emp_piece::emp_piece(const emp_types::t_piece_id & p_id,
-                         const std::array<emp_types::t_color_id,((unsigned int)(emp_types::t_orientation::WEST))+1> & p_colours):
-      m_id(p_id),
-      m_kind((emp_types::t_kind)((0 == p_colours[(unsigned int)emp_types::t_orientation::NORTH] ) + 
-                                 (0 == p_colours[(unsigned int)emp_types::t_orientation::EAST] ) + 
-                                 (0 == p_colours[(unsigned int)emp_types::t_orientation::SOUTH] ) + 
-                                 (0 == p_colours[(unsigned int)emp_types::t_orientation::WEST] )
-                                 )
-             ),
-      m_colours(p_colours)
+  //----------------------------------------------------------------------------
+  emp_piece::emp_piece(const emp_types::t_piece_id & p_id,
+                       const std::array<emp_types::t_color_id,((unsigned int)(emp_types::t_orientation::WEST))+1> & p_colours):
+    m_id(p_id),
+    m_kind((emp_types::t_kind)((0 == p_colours[(unsigned int)emp_types::t_orientation::NORTH] ) + 
+                               (0 == p_colours[(unsigned int)emp_types::t_orientation::EAST] ) + 
+                               (0 == p_colours[(unsigned int)emp_types::t_orientation::SOUTH] ) + 
+                               (0 == p_colours[(unsigned int)emp_types::t_orientation::WEST] )
+                               )
+           ),
+    m_colours(p_colours),
+    m_auto_similarity(compute_auto_similarity(p_colours))
       {
       }
+    //------------------------------------------------------------------------
+    const emp_piece::t_auto_similarity & emp_piece::get_auto_similarity(void)const
+      {
+        return m_auto_similarity;
+      }
+
+    //----------------------------------------------------------------------------
+    const emp_piece::t_auto_similarity emp_piece::compute_auto_similarity(const std::array<emp_types::t_color_id,((unsigned int)(emp_types::t_orientation::WEST))+1> & p_colors)
+    {
+      if(p_colors[(unsigned int)(emp_types::t_orientation::NORTH)] == p_colors[(unsigned int)(emp_types::t_orientation::SOUTH)] &&
+         p_colors[(unsigned int)(emp_types::t_orientation::EAST)] == p_colors[(unsigned int)(emp_types::t_orientation::WEST)])
+        {
+          if(p_colors[(unsigned int)(emp_types::t_orientation::NORTH)] == p_colors[(unsigned int)(emp_types::t_orientation::EAST)])
+            {
+              return t_auto_similarity::SIMILAR;
+            }
+          return t_auto_similarity::HALF_SIMILAR;
+        }
+      return t_auto_similarity::NONE;
+    }
 
     //----------------------------------------------------------------------------
     emp_types::t_kind emp_piece::get_kind(void)const
