@@ -123,32 +123,43 @@ namespace edge_matching_puzzle
 		    l_constraints.insert(emp_constraint(0,emp_types::t_orientation::SOUTH));
               }
             std::vector<emp_types::t_oriented_piece> l_pieces;
+            std::set<emp_types::t_piece_id> l_transition_used_pieces;
             m_piece_db.get_pieces((emp_types::t_kind)(4 - l_max_neighbours_nb),l_constraints,l_pieces);
+            bool l_found = false;
             if(l_pieces.size())
               {
-                bool l_found = false;
                 for(auto l_piece : l_pieces)
                   {
                     if(!p_situation.get_context()->is_used(l_piece.first))
                       {
-                        l_result.push_back(new emp_FSM_transition(l_x,l_y,l_piece));
-                        l_found = true;
+                        bool l_usable = true;
+                        const std::set<emp_types::t_piece_id> * const l_identical_pieces = m_piece_db.get_identical_pieces(l_piece.first);
+                        if(l_identical_pieces)
+                          {
+                            for(auto l_identic_iter : *l_identical_pieces)
+                              {
+                                if(l_transition_used_pieces.end() != l_transition_used_pieces.find(l_identic_iter))
+                                  {
+                                    l_usable = false;
+                                    break;
+                                  }
+                              }
+                          }
+                        if(l_usable)
+                          {
+                            l_result.push_back(new emp_FSM_transition(l_x,l_y,l_piece));
+                            l_transition_used_pieces.insert(l_piece.first);
+                            l_found = true;
+                          }
                       }
                   }
-                if(!l_found)
-                  {
-                    p_situation.set_invalid();
-                    l_result.clear();
-                    return l_result;
-                  }
               }
-            else
+            if(!l_found)
               {
                 p_situation.set_invalid();
                 l_result.clear();
                 return l_result;
               }
-	    
 	  }
 	return l_result;
       }

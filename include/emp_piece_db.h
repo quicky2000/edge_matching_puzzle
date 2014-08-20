@@ -42,6 +42,7 @@ namespace edge_matching_puzzle
                            std::vector<emp_types::t_oriented_piece> & p_pieces)const;
     inline ~emp_piece_db(void);
     inline const emp_piece_corner & get_corner(const unsigned int & p_index)const;
+    inline const std::set<emp_types::t_piece_id> * const get_identical_pieces(const emp_types::t_piece_id & p_id)const;
   private:
     inline void compute_constraints(const emp_piece & p_piece);
     static inline void print_list(const std::string & p_name,
@@ -73,6 +74,12 @@ namespace edge_matching_puzzle
     std::set<emp_constraint> l_single_constraints;
     t_identical_pieces_db m_identical_pieces_db;
   };
+  //----------------------------------------------------------------------------
+  const std::set<emp_types::t_piece_id> * const emp_piece_db::get_identical_pieces(const emp_types::t_piece_id & p_id)const
+    {
+      t_identical_pieces_db::const_iterator l_iter = m_identical_pieces_db.find(p_id);
+      return (m_identical_pieces_db.end() == l_iter ? NULL : &(l_iter->second));
+    }
 
   //----------------------------------------------------------------------------
   const emp_piece_corner & emp_piece_db::get_corner(const unsigned int & p_index)const
