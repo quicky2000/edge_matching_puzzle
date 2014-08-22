@@ -102,6 +102,7 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   bool emp_FSM_situation::is_final(void)const
   {
+    //return m_content.size() == 2 * m_info->get_width() + 2 * ( m_info->get_height() - 2);
     return m_content.size() == m_info->get_width() * m_info->get_height();
   }
   //----------------------------------------------------------------------------
@@ -159,10 +160,41 @@ namespace edge_matching_puzzle
     // Updating context
     this->get_context()->use_piece(p_piece.first);
     this->get_context()->remove_position(p_x,p_y);
-    if(p_x  && !this->contains_piece(p_x - 1, p_y)) this->get_context()->add_position(p_x - 1,p_y);
-    if(p_y  && !this->contains_piece(p_x, p_y - 1)) this->get_context()->add_position(p_x,p_y - 1);
-    if(p_x + 1 < m_info->get_width() && !this->contains_piece(p_x + 1, p_y)) this->get_context()->add_position(p_x + 1,p_y);
-    if(p_y + 1 < m_info->get_height()  && !this->contains_piece(p_x, p_y + 1)) this->get_context()->add_position(p_x,p_y + 1);
+    if(m_info->get_width() * m_info->get_height() > m_content.size())
+      {
+        if(p_x >= p_y)
+          {
+            if(p_x + 1 < m_info->get_width() && !this->contains_piece(p_x + 1, p_y))
+              {
+                this->get_context()->add_position(p_x + 1,p_y);
+              }
+            else if(p_y + 1 < m_info->get_height()  && !this->contains_piece(p_x, p_y + 1))
+              {
+                this->get_context()->add_position(p_x,p_y + 1);
+              }
+            else 
+              {
+                assert(p_x  && !this->contains_piece(p_x - 1, p_y));
+                this->get_context()->add_position(p_x - 1,p_y);
+              }
+          }
+        else
+          {
+            if(p_x  && !this->contains_piece(p_x - 1, p_y))
+              {
+                this->get_context()->add_position(p_x - 1,p_y);
+              }
+            else if(p_y  && !this->contains_piece(p_x, p_y - 1)) 
+              {
+                this->get_context()->add_position(p_x,p_y - 1);
+              }
+            else
+              {
+                assert(p_x + 1 < m_info->get_width() && !this->contains_piece(p_x + 1, p_y));
+                this->get_context()->add_position(p_x + 1,p_y);
+              }
+          }
+      }
   }
   
 }
