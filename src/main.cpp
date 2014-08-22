@@ -25,7 +25,7 @@
 #include "emp_FSM.h"
 #include "emp_FSM_UI.h"
 
-#include "algorithm_deep_first.h"
+#include "algorithm_deep_raw.h"
 
 #include "quicky_exception.h"
 #include <unistd.h>
@@ -84,26 +84,10 @@ int main(int argc,char ** argv)
       emp_FSM l_FSM(l_info,l_piece_db);
       emp_FSM_UI l_emp_FSM_UI(l_gui);
 
-      FSM_framework::algorithm_deep_first l_algo;
+      FSM_framework::algorithm_deep_raw l_algo;
       l_algo.set_fsm(&l_FSM);
       l_algo.set_fsm_ui(&l_emp_FSM_UI);
       l_algo.run();
-      sleep(20);
-      for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
-          l_orient_index <= 4*(unsigned int)emp_types::t_orientation::WEST; 
-          ++l_orient_index)
-        {
-          emp_types::t_orientation l_orientation = (emp_types::t_orientation)(l_orient_index % 4);
-          for(unsigned int l_index_width = 0 ; l_index_width < l_width ; ++l_index_width)
-            {
-              for(unsigned int l_index_height = 0 ; l_index_height < l_height ; ++l_index_height)
-                {
-                  l_gui.set_piece(l_index_width,l_index_height,1 +l_index_width + l_width * l_index_height,l_orientation);
-                }
-            }
-          l_gui.refresh();
-          sleep(1);
-        }
 
     }
   catch(quicky_exception::quicky_runtime_exception & e)
