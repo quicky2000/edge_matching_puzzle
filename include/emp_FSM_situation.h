@@ -118,6 +118,7 @@ namespace edge_matching_puzzle
   {
     const emp_FSM_situation * l_situation = dynamic_cast<const emp_FSM_situation *>(p_situation);
     assert(l_situation);
+    if(m_content.size() != l_situation->m_content.size()) return m_content.size() < l_situation->m_content.size();
     return m_content < l_situation->m_content;
   }
   //----------------------------------------------------------------------------
