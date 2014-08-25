@@ -37,15 +37,9 @@ namespace edge_matching_puzzle
     inline void to_string(std::string &)const;
     
     // Specific methods
-    inline const std::set<std::pair<unsigned int, unsigned int> > & get_available_positions(void)const;
-    inline void add_position(const unsigned int & p_x,
-                             const unsigned int & p_y);
-    inline void remove_position(const unsigned int & p_x,
-                                const unsigned int & p_y);
     inline void use_piece(const emp_types::t_piece_id & p_id);
     inline bool is_used(const emp_types::t_piece_id & p_id)const;
   private:
-    std::set<std::pair<unsigned int, unsigned int> > m_available_positions;
     std::set<emp_types::t_piece_id> m_used_pieces;
   };
   //----------------------------------------------------------------------------
@@ -57,7 +51,6 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   emp_FSM_context::emp_FSM_context(const emp_FSM_context & p_context):
     FSM_base::FSM_context<emp_FSM_transition>(),
-    m_available_positions(p_context.m_available_positions),
     m_used_pieces(p_context.m_used_pieces)
     {
     }
@@ -83,26 +76,6 @@ namespace edge_matching_puzzle
   bool emp_FSM_context::is_used(const emp_types::t_piece_id & p_id)const
   {
     return m_used_pieces.end() != m_used_pieces.find(p_id);
-  }
-
-  //----------------------------------------------------------------------------
-  const std::set<std::pair<unsigned int, unsigned int> > & emp_FSM_context::get_available_positions(void)const
-    {
-      return m_available_positions;
-    }
-
-  //----------------------------------------------------------------------------
-  void emp_FSM_context::add_position(const unsigned int & p_x,
-                                     const unsigned int & p_y)
-  {
-    m_available_positions.insert(std::pair<unsigned int, unsigned int>(p_x,p_y));
-  }
-
-  //----------------------------------------------------------------------------
-  void emp_FSM_context::remove_position(const unsigned int & p_x,
-                                        const unsigned int & p_y)
-  {
-    m_available_positions.erase(std::pair<unsigned int, unsigned int>(p_x,p_y));
   }
 
 }
