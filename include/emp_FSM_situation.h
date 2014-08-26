@@ -55,9 +55,9 @@ namespace edge_matching_puzzle
                                const unsigned int & p_y)const;
 
     inline const unsigned int get_level(void)const;
+    inline void compute_string_id(std::string & p_id)const;
  private:
  
-    std::string m_unique_id;
     typedef std::map<std::pair<unsigned int,unsigned int>, emp_types::t_oriented_piece> t_content;
     t_content m_content;
 
@@ -75,7 +75,6 @@ namespace edge_matching_puzzle
   emp_FSM_situation::emp_FSM_situation(void)
     {
       assert(m_info);
-      m_unique_id = std::string(m_info->get_width() * m_info->get_height() * m_piece_representation_width,'-');
     }
 
   //----------------------------------------------------------------------------
@@ -90,22 +89,26 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   const std::string emp_FSM_situation::to_string(void)const
     {
-      return m_unique_id;
+      std::string l_unique_id;
+      compute_string_id(l_unique_id);
+      return l_unique_id;
     }
   //----------------------------------------------------------------------------
   const std::string emp_FSM_situation::get_string_id(void)const
     {
-      return m_unique_id;
+      std::string l_unique_id;
+      compute_string_id(l_unique_id);
+      return l_unique_id;
     }
   //----------------------------------------------------------------------------
   void emp_FSM_situation::to_string(std::string & p_string)const
   {
-    p_string = m_unique_id;
+    compute_string_id(p_string);
   }
   //----------------------------------------------------------------------------
   void emp_FSM_situation::get_string_id(std::string & p_string_id)const
   {
-    p_string_id = m_unique_id;
+    compute_string_id(p_string_id);
   }
   //----------------------------------------------------------------------------
   bool emp_FSM_situation::is_final(void)const
@@ -144,6 +147,20 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
+  void emp_FSM_situation::compute_string_id(std::string & p_id)const
+  {
+    p_id = std::string(m_info->get_width() * m_info->get_height() * m_piece_representation_width,'-');
+    for(auto l_iter : m_content)
+      {
+        // Updating the unique identifier
+        std::stringstream l_stream;
+        l_stream << std::setw(m_piece_representation_width - 1) << l_iter.second.first;
+        std::string l_piece_str(l_stream.str()+emp_types::orientation2short_string(l_iter.second.second));
+        p_id.replace((l_iter.first.second * m_info->get_width() + l_iter.first.first) * m_piece_representation_width,m_piece_representation_width,l_piece_str);
+      }
+  }
+
+  //----------------------------------------------------------------------------
   void emp_FSM_situation::set_piece(const unsigned int & p_x,
                                     const unsigned int & p_y,
                                     const emp_types::t_oriented_piece & p_piece)
@@ -159,12 +176,6 @@ namespace edge_matching_puzzle
       }
     // Inserting value
     m_content.insert(t_content::value_type(l_position,p_piece));
-    
-    // Updating the unique identifier
-    std::stringstream l_stream;
-    l_stream << std::setw(m_piece_representation_width - 1) << p_piece.first;
-    std::string l_piece_str(l_stream.str()+emp_types::orientation2short_string(p_piece.second));
-    m_unique_id.replace((p_y * m_info->get_width() + p_x) * m_piece_representation_width,m_piece_representation_width,l_piece_str);
 
     // Updating context
     this->get_context()->use_piece(p_piece.first);
