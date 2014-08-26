@@ -28,7 +28,7 @@ namespace edge_matching_puzzle
     FSM<emp_FSM_situation,emp_FSM_transition>("emp_FSM",*(new emp_FSM_motor()), *(new emp_FSM_situation_analyzer(p_info,p_piece_db)))
   {
     emp_FSM_situation * l_initial_situation = new emp_FSM_situation();
-    l_initial_situation->set_context(*(new emp_FSM_context()));
+    l_initial_situation->set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
 
     const emp_piece_corner & l_corner = p_piece_db.get_corner(0);
     for(unsigned int l_index = (unsigned int)emp_types::t_orientation::NORTH;

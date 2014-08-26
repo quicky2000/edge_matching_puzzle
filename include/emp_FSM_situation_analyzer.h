@@ -56,7 +56,7 @@ namespace edge_matching_puzzle
       unsigned int l_x = 0;
       unsigned int l_y = 0;
       emp_FSM_situation l_situation;
-      l_situation.set_context(*(new emp_FSM_context()));
+      l_situation.set_context(*(new emp_FSM_context(m_info.get_width()*m_info.get_height())));
       for(unsigned int l_index = 0 ;
 	  l_index < m_info.get_width()*m_info.get_height();
 	  ++l_index)

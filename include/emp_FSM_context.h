@@ -21,6 +21,7 @@
 
 #include "FSM_context.h"
 #include "emp_FSM_transition.h"
+#include "quicky_bitfield.h"
 #include <set>
 
 namespace edge_matching_puzzle
@@ -28,7 +29,7 @@ namespace edge_matching_puzzle
   class emp_FSM_context: public FSM_base::FSM_context<emp_FSM_transition>
   {
   public:
-    inline emp_FSM_context(void);
+    inline emp_FSM_context(const unsigned int & p_size);
     inline emp_FSM_context(const emp_FSM_context & p_context);
     inline ~emp_FSM_context(void){};
     
@@ -40,11 +41,12 @@ namespace edge_matching_puzzle
     inline void use_piece(const emp_types::t_piece_id & p_id);
     inline bool is_used(const emp_types::t_piece_id & p_id)const;
   private:
-    std::set<emp_types::t_piece_id> m_used_pieces;
+    quicky_utils::quicky_bitfield m_used_pieces;
   };
   //----------------------------------------------------------------------------
-  emp_FSM_context::emp_FSM_context(void):
-    FSM_base::FSM_context<emp_FSM_transition>()
+  emp_FSM_context::emp_FSM_context(const unsigned int & p_size):
+    FSM_base::FSM_context<emp_FSM_transition>(),
+    m_used_pieces(p_size)
     {
     }
 
@@ -69,13 +71,15 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   void emp_FSM_context::use_piece(const emp_types::t_piece_id & p_id)
   {
-    m_used_pieces.insert(p_id);
+    m_used_pieces.set(1,1,p_id - 1);
   }
 
   //----------------------------------------------------------------------------
   bool emp_FSM_context::is_used(const emp_types::t_piece_id & p_id)const
   {
-    return m_used_pieces.end() != m_used_pieces.find(p_id);
+    unsigned int l_result;
+    m_used_pieces.get(l_result,1,p_id - 1);
+    return l_result;
   }
 
 }
