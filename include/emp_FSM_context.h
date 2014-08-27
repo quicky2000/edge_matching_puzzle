@@ -40,6 +40,7 @@ namespace edge_matching_puzzle
     // Specific methods
     inline void use_piece(const emp_types::t_piece_id & p_id);
     inline bool is_used(const emp_types::t_piece_id & p_id)const;
+    inline void clear(void);
   private:
     quicky_utils::quicky_bitfield m_used_pieces;
   };
@@ -47,40 +48,46 @@ namespace edge_matching_puzzle
   emp_FSM_context::emp_FSM_context(const unsigned int & p_size):
     FSM_base::FSM_context<emp_FSM_transition>(),
     m_used_pieces(p_size)
-    {
-    }
+      {
+      }
 
-  //----------------------------------------------------------------------------
-  emp_FSM_context::emp_FSM_context(const emp_FSM_context & p_context):
-    FSM_base::FSM_context<emp_FSM_transition>(),
-    m_used_pieces(p_context.m_used_pieces)
-    {
-    }
+    //----------------------------------------------------------------------------
+    emp_FSM_context::emp_FSM_context(const emp_FSM_context & p_context):
+      FSM_base::FSM_context<emp_FSM_transition>(),
+      m_used_pieces(p_context.m_used_pieces)
+        {
+        }
 
-  //----------------------------------------------------------------------------
-  const std::string emp_FSM_context::to_string(void)const
-    {
-      return "";
-    }
-  //----------------------------------------------------------------------------
-  void emp_FSM_context::to_string(std::string & p_string)const
-  {
-    p_string = "";
-  }
+      //----------------------------------------------------------------------------
+      void emp_FSM_context::clear(void)
+      {
+        m_used_pieces.reset();
+      }
 
-  //----------------------------------------------------------------------------
-  void emp_FSM_context::use_piece(const emp_types::t_piece_id & p_id)
-  {
-    m_used_pieces.set(1,1,p_id - 1);
-  }
+      //----------------------------------------------------------------------------
+      const std::string emp_FSM_context::to_string(void)const
+        {
+          return "";
+        }
+      //----------------------------------------------------------------------------
+      void emp_FSM_context::to_string(std::string & p_string)const
+      {
+        p_string = "";
+      }
 
-  //----------------------------------------------------------------------------
-  bool emp_FSM_context::is_used(const emp_types::t_piece_id & p_id)const
-  {
-    unsigned int l_result;
-    m_used_pieces.get(l_result,1,p_id - 1);
-    return l_result;
-  }
+      //----------------------------------------------------------------------------
+      void emp_FSM_context::use_piece(const emp_types::t_piece_id & p_id)
+      {
+        m_used_pieces.set(1,1,p_id - 1);
+      }
+
+      //----------------------------------------------------------------------------
+      bool emp_FSM_context::is_used(const emp_types::t_piece_id & p_id)const
+      {
+        unsigned int l_result;
+        m_used_pieces.get(l_result,1,p_id - 1);
+        return l_result;
+      }
 
 }
 #endif // EMP_FSM_CONTEXT_H
