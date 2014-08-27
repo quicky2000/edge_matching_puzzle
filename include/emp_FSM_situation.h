@@ -24,6 +24,7 @@
 #include "emp_FSM_info.h"
 #include "emp_types.h"
 #include "quicky_exception.h"
+#include "quicky_bitfield.h"
 #include <map>
 #include <sstream>
 #include <iomanip>
@@ -54,8 +55,12 @@ namespace edge_matching_puzzle
     inline bool contains_piece(const unsigned int & p_x,
                                const unsigned int & p_y)const;
 
+    inline void set(const quicky_utils::quicky_bitfield & p_bitfield);
+
     inline const unsigned int get_level(void)const;
     inline void compute_string_id(std::string & p_id)const;
+    inline void compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const;
+    static inline const unsigned int & get_nb_bits(void);
  private:
  
     typedef std::map<std::pair<unsigned int,unsigned int>, emp_types::t_oriented_piece> t_content;
@@ -63,6 +68,8 @@ namespace edge_matching_puzzle
 
     static unsigned int m_piece_representation_width;
     static emp_FSM_info const * m_info;
+    static unsigned int m_piece_nb_bits;
+    static unsigned int m_situation_nb_bits;
   };
 
   //----------------------------------------------------------------------------
@@ -70,6 +77,12 @@ namespace edge_matching_puzzle
   {
     return m_content.size();
   }
+
+  //----------------------------------------------------------------------------
+  const unsigned int & emp_FSM_situation::get_nb_bits(void)
+    {
+      return m_situation_nb_bits;
+    }
 
   //----------------------------------------------------------------------------
   emp_FSM_situation::emp_FSM_situation(void)
@@ -84,6 +97,17 @@ namespace edge_matching_puzzle
     std::stringstream l_stream;
     l_stream << p_info.get_width() * p_info.get_height();
     m_piece_representation_width = l_stream.str().size() + 1;
+
+    unsigned int l_piece_code_number = p_info.get_width() * p_info.get_height();
+    m_piece_nb_bits = 0;
+    while(l_piece_code_number)
+      {
+	++m_piece_nb_bits;
+	l_piece_code_number = l_piece_code_number >> 1;
+      }
+    std::cout << "Pieces id coded on " << m_piece_nb_bits << " bits" << std::endl ;
+    m_situation_nb_bits = p_info.get_width() * p_info.get_height() * ( m_piece_nb_bits + 2);
+    std::cout << "Situation coded on " << m_situation_nb_bits << " bits" << std::endl ;
   }
 
   //----------------------------------------------------------------------------
@@ -157,6 +181,37 @@ namespace edge_matching_puzzle
         l_stream << std::setw(m_piece_representation_width - 1) << l_iter.second.first;
         std::string l_piece_str(l_stream.str()+emp_types::orientation2short_string(l_iter.second.second));
         p_id.replace((l_iter.first.second * m_info->get_width() + l_iter.first.first) * m_piece_representation_width,m_piece_representation_width,l_piece_str);
+      }
+  }
+
+  //----------------------------------------------------------------------------
+  void emp_FSM_situation::set(const quicky_utils::quicky_bitfield & p_bitfield)
+  {
+    m_content.clear();
+    this->get_context()->clear();
+    for(unsigned int l_y = 0 ; l_y < m_info->get_height() ; ++l_y)
+      {
+        for(unsigned int l_x = 0 ; l_x < m_info->get_width() ; ++l_x)
+          {
+            unsigned int l_offset = (l_x + l_y * m_info->get_width()) * (m_piece_nb_bits + 2);
+            unsigned int l_data;
+            p_bitfield.get(l_data,m_piece_nb_bits + 2,l_offset);
+            set_piece(l_x,l_y,std::pair<emp_types::t_piece_id,emp_types::t_orientation>(l_data >> 2,((emp_types::t_orientation)(l_data & 0x3))));
+          }
+      }
+  }
+
+
+  //----------------------------------------------------------------------------
+  void emp_FSM_situation::compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const
+  {
+    p_bitfield.reset();
+    for(auto l_iter : m_content)
+      {
+	unsigned int l_index = l_iter.first.second * m_info->get_width() + l_iter.first.first;
+	unsigned int l_offset = l_index * ( m_piece_nb_bits + 2);
+        unsigned int l_data = (l_iter.second.first << 2) + (unsigned int)l_iter.second.second;
+	p_bitfield.set(l_data,m_piece_nb_bits+2,l_offset);
       }
   }
 

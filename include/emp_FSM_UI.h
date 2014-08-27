@@ -20,6 +20,8 @@
 #define EMP_FSM_UI_H
 
 #include "FSM_UI.h"
+#include "emp_situation_binary_dumper.h"
+#include "algorithm_deep_raw.h"
 #include "emp_gui.h"
 #include <string>
 #include <unistd.h>
@@ -29,8 +31,10 @@ namespace edge_matching_puzzle
   class emp_FSM_UI: public FSM_base::FSM_UI<emp_FSM_situation>
     {
     public:
-      inline emp_FSM_UI(emp_gui & p_gui);
-      
+      inline emp_FSM_UI(emp_gui & p_gui,
+                        emp_situation_binary_dumper & p_dumper);
+      inline ~emp_FSM_UI(void);
+      inline void set_algo(const FSM_framework::algorithm_deep_raw & p_algo);
       // Methods to implement
       inline const std::string & get_class_name()const;
     private:
@@ -39,18 +43,41 @@ namespace edge_matching_puzzle
     // End of method to implement
       emp_gui * m_gui;
       static const std::string m_class_name;
+      emp_situation_binary_dumper & m_dumper;
+      const FSM_framework::algorithm_deep_raw * m_algo;
     };
 
   //----------------------------------------------------------------------------
-  emp_FSM_UI::emp_FSM_UI(emp_gui & p_gui):
-    m_gui(&p_gui)
+  emp_FSM_UI::emp_FSM_UI(emp_gui & p_gui,
+                         emp_situation_binary_dumper & p_dumper):
+    m_gui(&p_gui),
+    m_dumper(p_dumper),
+    m_algo(NULL)
     {
     }
+
+  //----------------------------------------------------------------------------
+    void emp_FSM_UI::set_algo(const FSM_framework::algorithm_deep_raw & p_algo)
+    {
+      m_algo = &p_algo;
+    }
+    //----------------------------------------------------------------------------
+    emp_FSM_UI::~emp_FSM_UI(void)
+      {
+        m_dumper.dump(m_algo->get_total_situations());
+      }
 
   //----------------------------------------------------------------------------
   void emp_FSM_UI::display_specific_situation(const emp_FSM_situation & p_situation)
     {
       if(!p_situation.is_final()) return;
+#if 0
+      std::cout << "Final situation : \"" << p_situation.get_string_id() << "\"" << std::endl ; 
+      std::cout << "Situations explored : " << m_algo->get_total_situations() << std::endl ;
+#endif
+      m_dumper.dump(p_situation);
+      m_dumper.dump(m_algo->get_total_situations());
+      return;
       m_gui->display(p_situation);
       m_gui->refresh();
       //      sleep(3);

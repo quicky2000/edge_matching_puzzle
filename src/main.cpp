@@ -24,6 +24,7 @@
 #include "emp_piece_db.h"
 #include "emp_FSM.h"
 #include "emp_FSM_UI.h"
+#include "emp_situation_binary_reader.h"
 
 #include "algorithm_deep_raw.h"
 
@@ -51,6 +52,8 @@ int main(int argc,char ** argv)
       l_param_manager.add(l_definition_file);
       parameter_if l_ressources_path("ressources",false);
       l_param_manager.add(l_ressources_path);
+      parameter_if l_dump_file("dump_file",true);
+      l_param_manager.add(l_dump_file);
 
       // Treating parameters
       l_param_manager.treat_parameters(argc,argv);
@@ -81,13 +84,27 @@ int main(int argc,char ** argv)
       emp_FSM_info l_info(l_width,l_height);
 
       emp_FSM_situation::init(l_info);
+      std::string l_file_name = l_dump_file.value_set() ? l_dump_file.get_value<std::string>() : "results.bin";
       emp_FSM l_FSM(l_info,l_piece_db);
-      emp_FSM_UI l_emp_FSM_UI(l_gui);
+      {
+        emp_situation_binary_dumper l_dumper(l_file_name,l_width,l_height);
+        emp_FSM_UI l_emp_FSM_UI(l_gui,l_dumper);
 
-      FSM_framework::algorithm_deep_raw l_algo;
-      l_algo.set_fsm(&l_FSM);
-      l_algo.set_fsm_ui(&l_emp_FSM_UI);
-      l_algo.run();
+        FSM_framework::algorithm_deep_raw l_algo;
+        l_emp_FSM_UI.set_algo(l_algo);
+        l_algo.set_fsm(&l_FSM);
+        l_algo.set_fsm_ui(&l_emp_FSM_UI);
+        l_algo.run();
+      }
+#if 0
+      emp_situation_binary_reader l_reader(l_file_name,l_width,l_height);
+      emp_FSM_situation l_situation;
+      l_situation.set_context(*(new emp_FSM_context(l_width * l_height)));
+      uint64_t l_situation_id;
+      l_reader.read(0,l_situation,l_situation_id);
+      std::cout << "\"" << l_situation.get_string_id() << "\"" << std::endl ;
+      std::cout << "Situation position : " << l_situation_id << std::endl ;
+#endif
 
     }
   catch(quicky_exception::quicky_runtime_exception & e)
