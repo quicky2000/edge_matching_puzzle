@@ -196,7 +196,8 @@ namespace edge_matching_puzzle
             unsigned int l_offset = (l_x + l_y * m_info->get_width()) * (m_piece_nb_bits + 2);
             unsigned int l_data;
             p_bitfield.get(l_data,m_piece_nb_bits + 2,l_offset);
-            set_piece(l_x,l_y,std::pair<emp_types::t_piece_id,emp_types::t_orientation>(l_data >> 2,((emp_types::t_orientation)(l_data & 0x3))));
+            emp_types::t_piece_id l_id = l_data >> 2;
+            if(l_id) set_piece(l_x,l_y,std::pair<emp_types::t_piece_id,emp_types::t_orientation>(l_id,((emp_types::t_orientation)(l_data & 0x3))));
           }
       }
   }
