@@ -36,6 +36,8 @@ namespace edge_matching_puzzle
     inline void read(const uint64_t & p_index,
                      emp_FSM_situation & p_situation,
                      uint64_t & p_number);
+    inline const uint64_t & get_total_situations(void)const;
+    inline const uint64_t & get_nb_recorded(void)const;
   private:
     const unsigned int m_version;
     std::ifstream m_file;
@@ -43,6 +45,7 @@ namespace edge_matching_puzzle
     const unsigned int m_record_size;
     std::streampos m_start;
     uint64_t m_situation_number;
+    uint64_t m_total_situation;
   };
 
   //----------------------------------------------------------------------------
@@ -54,7 +57,8 @@ namespace edge_matching_puzzle
     m_bitfield(emp_FSM_situation::get_nb_bits()),
     m_record_size(sizeof(uint64_t)+m_bitfield.size()),
     m_start(0),
-    m_situation_number(0)
+    m_situation_number(0),
+    m_total_situation(0)
     {
       m_file.open(p_name.c_str(),std::ifstream::binary);
       if(!m_file) throw quicky_exception::quicky_runtime_exception("Unable to read file \""+p_name+"\"",__LINE__,__FILE__);
@@ -85,14 +89,31 @@ namespace edge_matching_puzzle
       m_file.seekg(-sizeof(uint64_t),m_file.end);
       std::streampos l_length = m_file.tellg() - m_start;
 
-      if(l_length % m_record_size) throw quicky_exception::quicky_logic_exception("Number of recorded situation is incorrect",__LINE__,__FILE__);
       m_situation_number = l_length / m_record_size;
-
-      uint64_t l_total_situation;
-      m_file.read((char*)&l_total_situation,sizeof(l_total_situation));
       std::cout << "Number of recorded situations = " << m_situation_number << std::endl ;
-      std::cout << "Total situations explored : " << l_total_situation << std::endl ;
+
+      if(l_length % m_record_size)
+        {
+          std::cout << "File is truncated" << std::endl ;
+        }
+      else
+        {
+          m_file.read((char*)&m_total_situation,sizeof(m_total_situation));
+          std::cout << "Total situations explored : " << m_total_situation << std::endl ;
+        }
     }
+
+    //----------------------------------------------------------------------------
+    const uint64_t & emp_situation_binary_reader::get_total_situations(void)const
+      {
+        return m_total_situation;
+      }
+
+    //----------------------------------------------------------------------------
+    const uint64_t & emp_situation_binary_reader::get_nb_recorded(void)const
+      {
+        return m_situation_number;
+      }
 
     //----------------------------------------------------------------------------
     void emp_situation_binary_reader::read(const uint64_t & p_index,
