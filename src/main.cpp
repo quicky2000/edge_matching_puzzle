@@ -16,7 +16,7 @@
       You should have received a copy of the GNU General Public License
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
-
+#include "signal_handler.h"
 #include "parameter_manager.h"
 #include "emp_piece.h"
 #include "emp_pieces_parser.h"
@@ -31,6 +31,7 @@
 #include "quicky_exception.h"
 #include <unistd.h>
 
+
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -40,6 +41,7 @@
 
 using namespace edge_matching_puzzle;
 using namespace parameter_manager;
+
 
 //------------------------------------------------------------------------------
 int main(int argc,char ** argv)
@@ -85,25 +87,40 @@ int main(int argc,char ** argv)
 
       emp_FSM_situation::init(l_info);
       std::string l_file_name = l_dump_file.value_set() ? l_dump_file.get_value<std::string>() : "results.bin";
+#if 1
       emp_FSM l_FSM(l_info,l_piece_db);
       {
         emp_situation_binary_dumper l_dumper(l_file_name,l_width,l_height);
-        emp_FSM_UI l_emp_FSM_UI(l_gui,l_dumper);
+        emp_FSM_UI l_emp_FSM_UI(l_gui,l_dumper,l_info);
 
         FSM_framework::algorithm_deep_raw l_algo;
+        signal_handler l_sig_handler(l_algo);
         l_emp_FSM_UI.set_algo(l_algo);
         l_algo.set_fsm(&l_FSM);
         l_algo.set_fsm_ui(&l_emp_FSM_UI);
         l_algo.run();
       }
+#endif
 #if 0
       emp_situation_binary_reader l_reader(l_file_name,l_width,l_height);
       emp_FSM_situation l_situation;
       l_situation.set_context(*(new emp_FSM_context(l_width * l_height)));
       uint64_t l_situation_id;
-      l_reader.read(0,l_situation,l_situation_id);
-      std::cout << "\"" << l_situation.get_string_id() << "\"" << std::endl ;
-      std::cout << "Situation position : " << l_situation_id << std::endl ;
+      std::ofstream l_stat_file;
+      l_stat_file.open("stats.log");
+      l_stat_file << "Position" << std::endl ;
+      for(unsigned int l_index = 0 ; l_index < l_reader.get_nb_recorded() ; ++l_index)
+	{
+	  l_reader.read(l_index,l_situation,l_situation_id);
+	  l_stat_file << l_situation_id << std::endl ;
+	}
+      l_stat_file.close();
+      //      l_reader.read(0,l_situation,l_situation_id);
+      //      std::cout << "\"" << l_situation.get_string_id() << "\"" << std::endl ;
+      //      std::cout << "Situation position : " << l_situation_id << std::endl ;
+      //      l_reader.read(l_reader.get_nb_recorded() - 1,l_situation,l_situation_id);
+      //      std::cout << "\"" << l_situation.get_string_id() << "\"" << std::endl ;
+      //      std::cout << "Situation position : " << l_situation_id << std::endl ;
 #endif
 
     }
