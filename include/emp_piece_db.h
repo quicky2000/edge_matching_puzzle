@@ -263,14 +263,22 @@ namespace edge_matching_puzzle
 
       std::cout << "Color repartition on pieces :" <<std::endl ;
       unsigned int l_total = 0;
+      bool l_error = false;
       for(auto l_iter: l_colors)
         {
           unsigned int l_nb = l_color2pieces.find(l_iter)->second.size();
+          if(l_nb % 2) 
+	    {
+	      l_error = true;
+	      std::cout << "ERROR : " ;
+	    }
           std::cout << "Color = " << l_iter << " appears on " << l_nb << " pieces edge" << std::endl ;
-          if(l_nb % 2) throw quicky_exception::quicky_logic_exception("Number of pieces edge with color should be multiple of 2 or the puzzle cannot be solved",__LINE__,__FILE__);
           l_total += l_nb;
         }
-
+      if(l_error)
+	{
+	  throw quicky_exception::quicky_logic_exception("Number of pieces edge with color should be multiple of 2 or the puzzle cannot be solved",__LINE__,__FILE__);
+	}
       if(2 * l_nb_edge != l_total)
         {
           std::stringstream l_stream1 ;
