@@ -16,12 +16,17 @@
       You should have received a copy of the GNU General Public License
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
-
-#include "signal_handler.h"
+#ifndef SIGNAL_HANDLER_LISTENER_IF_H
+#define SIGNAL_HANDLER_LISTENER_IF_H
 
 namespace edge_matching_puzzle
 {
-  //TO DELETE  FSM_framework::algorithm_random * signal_handler::m_algo = NULL;
-  signal_handler_listener_if * signal_handler::m_listener = NULL;
+  class signal_handler_listener_if
+  {
+  public:
+    virtual void handle(int p_signal)=0;
+    inline virtual ~signal_handler_listener_if(void){}
+  };
 }
+#endif // SIGNAL_HANDLER_LISTENER_IF_H
 //EOF

@@ -20,7 +20,8 @@
 #define SIGNAL_HANDLER_H
 
 #include <signal.h>
-#include "algorithm_deep_raw.h"
+//TO DELETE#include "algorithm_random.h"
+#include "signal_handler_listener_if.h"
 #include <iostream>
 
 namespace edge_matching_puzzle
@@ -29,16 +30,20 @@ namespace edge_matching_puzzle
   class signal_handler
   {
   public:
-    inline signal_handler(FSM_framework::algorithm_deep_raw & p_algo);
+    //TO DELETE   inline signal_handler(FSM_framework::algorithm_random & p_algo);
+    inline signal_handler(signal_handler_listener_if & p_listener);
     inline static void handler(int p_signal);
   private:
-    static FSM_framework::algorithm_deep_raw * m_algo;
+    //TO DELETE    static FSM_framework::algorithm_random * m_algo;
+    static signal_handler_listener_if * m_listener;
   };
 
   //----------------------------------------------------------------------------
-  signal_handler::signal_handler(FSM_framework::algorithm_deep_raw & p_algo)
+  //TO DELETE  signal_handler::signal_handler(FSM_framework::algorithm_random & p_algo)
+  signal_handler::signal_handler(signal_handler_listener_if & p_listener)
     {
-      m_algo = &p_algo;
+      //TO DELETE      m_algo = &p_algo;
+      m_listener = &p_listener;
 #ifndef _WIN32
       //Preparing signal handling to manage stop
       /* Déclaration d'une structure pour la mise en place des gestionnaires */
@@ -66,23 +71,24 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   void signal_handler::handler(int p_signal)
   {
-    switch(p_signal)
-      {
-      case SIGTERM:
-      case SIGINT:
-        std::cout << "=> Received SIGTERM or SIGINT : request algorithm stop" << std::endl ;
-        m_algo->print_status();
-        m_algo->stop();
-        break;
-      case SIGUSR1:
-        std::cout << "=> Received SIGUSR1 : request algorithm status" << std::endl ;
-        m_algo->print_status();
-        break;
-      default:
-        std::cout << "=> Received unhandled signal " << p_signal << std::endl ;
-        break;
-       
-      }
+    m_listener->handle(p_signal);
+    //TO DELETE    switch(p_signal)
+    //TO DELETE      {
+    //TO DELETE      case SIGTERM:
+    //TO DELETE      case SIGINT:
+    //TO DELETE        std::cout << "=> Received SIGTERM or SIGINT : request algorithm stop" << std::endl ;
+    //TO DELETE        m_algo->print_status();
+    //TO DELETE        m_algo->stop();
+    //TO DELETE        break;
+    //TO DELETE      case SIGUSR1:
+    //TO DELETE        std::cout << "=> Received SIGUSR1 : request algorithm status" << std::endl ;
+    //TO DELETE        m_algo->print_status();
+    //TO DELETE        break;
+    //TO DELETE      default:
+    //TO DELETE        std::cout << "=> Received unhandled signal " << p_signal << std::endl ;
+    //TO DELETE        break;
+    //TO DELETE       
+    //TO DELETE      }
   }
 }
 #endif // SIGNAL_HANDLER_H

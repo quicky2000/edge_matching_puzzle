@@ -1,6 +1,6 @@
-/*    This file is part of edge matching puzzle
+/*    This file is part of edge_matching_puzzle
       The aim of this software is to find some solutions
-      of edge matching puzzle
+      to edge matching  puzzles
       Copyright (C) 2014  Julien Thevenon ( julien_thevenon at yahoo.fr )
 
       This program is free software: you can redistribute it and/or modify
@@ -16,12 +16,10 @@
       You should have received a copy of the GNU General Public License
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
-
-#include "emp_FSM_UI.h"
+#include "feature_compute_stats.h"
 
 namespace edge_matching_puzzle
 {
-  const std::string emp_FSM_UI::m_class_name = "emp_FSM_UI";
+  const std::string feature_compute_stats::m_class_name = "feature_compute_stats";
 }
-
 //EOF

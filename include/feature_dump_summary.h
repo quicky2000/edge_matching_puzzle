@@ -16,12 +16,37 @@
       You should have received a copy of the GNU General Public License
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
+#ifndef FEATURE_DUMP_SUMMARY_H
+#define FEATURE_DUMP_SUMMARY_H
 
-#include "signal_handler.h"
+#include "feature_if.h"
+#include "emp_situation_binary_reader.h"
 
 namespace edge_matching_puzzle
 {
-  //TO DELETE  FSM_framework::algorithm_random * signal_handler::m_algo = NULL;
-  signal_handler_listener_if * signal_handler::m_listener = NULL;
-}
+  class feature_dump_summary:public feature_if
+  {
+  public:
+    inline feature_dump_summary(const std::string & p_file_name,
+				const emp_FSM_info & p_info);
+      // Virtual methods inherited from feature_if
+    inline void run(void);
+    // End of virtual methods inherited from feature_if    
+  private:
+    emp_situation_binary_reader m_reader;
+  };
+ 
+  //----------------------------------------------------------------------------
+  feature_dump_summary::feature_dump_summary(const std::string & p_file_name,
+					     const emp_FSM_info & p_info):
+    m_reader(p_file_name,p_info.get_width(),p_info.get_height())
+  {
+  }
+
+  //----------------------------------------------------------------------------
+  void feature_dump_summary::run(void)
+  {
+  }
+ }
+#endif // FEATURE_DUMP_SUMMARY_H
 //EOF

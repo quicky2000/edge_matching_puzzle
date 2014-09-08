@@ -23,10 +23,14 @@
 #include "emp_gui.h"
 #include "emp_piece_db.h"
 #include "emp_FSM.h"
-#include "emp_FSM_UI.h"
-#include "emp_situation_binary_reader.h"
 
-#include "algorithm_deep_raw.h"
+#include "feature_display_all.h"
+#include "feature_display_max.h"
+#include "feature_display_solutions.h"
+#include "feature_dump_solutions.h"
+#include "feature_compute_stats.h"
+#include "feature_dump_summary.h"
+
 
 #include "quicky_exception.h"
 #include <unistd.h>
@@ -54,11 +58,15 @@ int main(int argc,char ** argv)
       l_param_manager.add(l_definition_file);
       parameter_if l_ressources_path("ressources",false);
       l_param_manager.add(l_ressources_path);
+      parameter_if l_feature_name_parameter("feature_name",false);
+      l_param_manager.add(l_feature_name_parameter);
       parameter_if l_dump_file("dump_file",true);
       l_param_manager.add(l_dump_file);
 
       // Treating parameters
       l_param_manager.treat_parameters(argc,argv);
+
+      std::string l_dump_file_name = l_dump_file.value_set() ? l_dump_file.get_value<std::string>() : "results.bin";
 
       // Get puzzle description
       std::vector<emp_piece> l_pieces;
@@ -86,43 +94,40 @@ int main(int argc,char ** argv)
       emp_FSM_info l_info(l_width,l_height);
 
       emp_FSM_situation::init(l_info);
-      std::string l_file_name = l_dump_file.value_set() ? l_dump_file.get_value<std::string>() : "results.bin";
-#if 1
-      emp_FSM l_FSM(l_info,l_piece_db);
-      {
-        emp_situation_binary_dumper l_dumper(l_file_name,l_width,l_height);
-        emp_FSM_UI l_emp_FSM_UI(l_gui,l_dumper,l_info);
 
-        FSM_framework::algorithm_deep_raw l_algo;
-        signal_handler l_sig_handler(l_algo);
-        l_emp_FSM_UI.set_algo(l_algo);
-        l_algo.set_fsm(&l_FSM);
-        l_algo.set_fsm_ui(&l_emp_FSM_UI);
-        l_algo.run();
-      }
-#endif
-#if 0
-      emp_situation_binary_reader l_reader(l_file_name,l_width,l_height);
-      emp_FSM_situation l_situation;
-      l_situation.set_context(*(new emp_FSM_context(l_width * l_height)));
-      uint64_t l_situation_id;
-      std::ofstream l_stat_file;
-      l_stat_file.open("stats.log");
-      l_stat_file << "Position" << std::endl ;
-      for(unsigned int l_index = 0 ; l_index < l_reader.get_nb_recorded() ; ++l_index)
-	{
-	  l_reader.read(l_index,l_situation,l_situation_id);
-	  l_stat_file << l_situation_id << std::endl ;
-	}
-      l_stat_file.close();
-      //      l_reader.read(0,l_situation,l_situation_id);
-      //      std::cout << "\"" << l_situation.get_string_id() << "\"" << std::endl ;
-      //      std::cout << "Situation position : " << l_situation_id << std::endl ;
-      //      l_reader.read(l_reader.get_nb_recorded() - 1,l_situation,l_situation_id);
-      //      std::cout << "\"" << l_situation.get_string_id() << "\"" << std::endl ;
-      //      std::cout << "Situation position : " << l_situation_id << std::endl ;
-#endif
 
+      feature_if * l_feature = NULL;
+      std::string l_feature_name = l_feature_name_parameter.get_value<std::string>();
+      if("display_all" == l_feature_name)
+        {
+          l_feature = new feature_display_all(l_piece_db,l_info,l_gui);
+        }
+      else if("display_max" == l_feature_name)
+        {
+          l_feature = new feature_display_max(l_piece_db,l_info,l_gui);
+        }
+      else if("display_solutions" == l_feature_name)
+        {
+          l_feature = new feature_display_solutions(l_piece_db,l_info,l_gui);
+        }
+      else if("dump_solutions" == l_feature_name)
+        {
+          l_feature = new feature_dump_solutions(l_piece_db,l_info,l_gui,l_dump_file_name);
+        }
+      else if("dump_summary" == l_feature_name)
+        {
+          l_feature = new feature_dump_summary(l_dump_file_name,l_info);
+        }
+      else if("compute_stats" == l_feature_name)
+        {
+          l_feature = new feature_compute_stats(l_piece_db,l_info,l_gui);
+        }
+      else
+        {
+          throw quicky_exception::quicky_logic_exception("Unsupported feature \""+l_feature_name+"\"",__LINE__,__FILE__);
+        }
+      l_feature->run();
+      delete l_feature;
     }
   catch(quicky_exception::quicky_runtime_exception & e)
     {
