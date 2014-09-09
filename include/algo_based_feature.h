@@ -51,6 +51,7 @@ namespace edge_matching_puzzle
     protected:
       inline emp_gui & get_gui(void);
       inline const ALGO & get_algo(void)const;
+      inline ALGO & get_algo(void);
     private:
       signal_handler m_signal_handler;
       ALGO m_algo;
@@ -86,6 +87,13 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     template<typename ALGO>
     const ALGO & algo_based_feature<ALGO>::get_algo(void)const
+      {
+        return m_algo;
+      }
+
+    //----------------------------------------------------------------------------
+    template<typename ALGO>
+    ALGO & algo_based_feature<ALGO>::get_algo(void)
       {
         return m_algo;
       }
