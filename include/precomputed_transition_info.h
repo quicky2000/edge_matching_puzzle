@@ -36,12 +36,18 @@ namespace edge_matching_puzzle
     inline const std::pair<unsigned int,unsigned int> & get_position(void)const;
     inline const std::vector<precomputed_constraint> & get_precomputed_constraints(void)const;
     inline const std::set<emp_constraint> & get_constraints(void)const;
-
+#ifdef ADDITIONAL_CHECK
+    inline  void set_check_info(const precomputed_transition_info & p_check_info);
+    inline  const precomputed_transition_info * const get_check_info(void)const;
+#endif // ADDITIONAL_CHECK
   private:
     const emp_types::t_kind m_kind;
     const std::pair<unsigned int,unsigned int> m_position;
     const std::set<emp_constraint> m_constraints;
     const std::vector<precomputed_constraint> m_precomputed_constraints;
+#ifdef ADDITIONAL_CHECK
+    const precomputed_transition_info * m_check_info;
+#endif // ADDITIONAL_CHECK
   };
 
   //----------------------------------------------------------------------------
@@ -53,8 +59,25 @@ namespace edge_matching_puzzle
     m_position(p_position),
     m_constraints(p_constraints),
     m_precomputed_constraints(p_precomputed_constraints)
+#ifdef ADDITIONAL_CHECK
+    ,m_check_info(NULL)
+#endif // ADDITIONAL_CHECK
       {
       }
+#ifdef ADDITIONAL_CHECK
+    ,m_check_info(NULL)
+    //----------------------------------------------------------------------------
+    void precomputed_transition_info::set_check_info(const precomputed_transition_info & p_check_info)
+    {
+      m_check_info = & p_check_info;
+    }
+    //----------------------------------------------------------------------------
+    const precomputed_transition_info * const precomputed_transition_info::get_check_info(void)const
+      {
+        return m_check_info;
+      }
+#endif // ADDITIONAL_CHECK
+
     //----------------------------------------------------------------------------
     const emp_types::t_kind & precomputed_transition_info::get_kind(void)const
       {

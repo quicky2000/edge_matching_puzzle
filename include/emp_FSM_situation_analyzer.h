@@ -19,6 +19,8 @@
 #ifndef EMP_FSM_SITUATION_ANALYZER_H
 #define EMP_FSM_SITUATION_ANALYZER_H
 
+//#define ADDITIONAL_CHECK
+
 #include "FSM_situation_analyzer.h"
 #include "emp_FSM_situation.h"
 #include "emp_FSM_transition.h"
@@ -40,6 +42,16 @@ namespace edge_matching_puzzle
       
       // Specific methods
     private:
+
+      inline static void precompute_constraints(const unsigned int & p_x,
+                                                const unsigned int & p_y,
+                                                const emp_FSM_situation & p_situation,
+                                                unsigned int & p_max_neighbours_nb,
+                                                std::set<emp_constraint> & p_constraints,
+                                                std::vector<precomputed_constraint> & p_precomputed_constraints,
+                                                const emp_FSM_info & p_info);
+
+
       const emp_piece_db & m_piece_db;
       const emp_FSM_info & m_info;
       precomputed_transition_info ** m_precomputed_transition_infos;
@@ -55,6 +67,10 @@ namespace edge_matching_puzzle
     {
       unsigned int l_x = 0;
       unsigned int l_y = 0;
+#ifdef ADDITIONAL_CHECK
+      unsigned int l_additional_x = 0;
+      unsigned int l_additional_y = 0;
+#endif // ADDITIONAL_CHECK
       emp_FSM_situation l_situation;
       l_situation.set_context(*(new emp_FSM_context(m_info.get_width()*m_info.get_height())));
       for(unsigned int l_index = 0 ;
@@ -65,83 +81,129 @@ namespace edge_matching_puzzle
 	  unsigned int l_max_neighbours_nb = 0;
 	  std::set<emp_constraint> l_constraints;
 	  std::vector<precomputed_constraint> l_precomputed_constraints;
-	  std::pair<unsigned int,unsigned int> l_next_position;
-	  if(0 < l_x)
-	    {
-	      ++l_max_neighbours_nb;
-	      if(l_situation.contains_piece(l_x - 1,l_y)) l_precomputed_constraints.push_back(precomputed_constraint(l_x - 1,l_y,emp_types::t_orientation::EAST,emp_types::t_orientation::WEST));
-	    }
-	  else
-	    {
-	      l_constraints.insert(emp_constraint(0,emp_types::t_orientation::WEST));
-	    }
-	  if(0 < l_y)
-	      {
-		++l_max_neighbours_nb;
-		if(l_situation.contains_piece(l_x,l_y - 1)) l_precomputed_constraints.push_back(precomputed_constraint(l_x,l_y - 1,emp_types::t_orientation::SOUTH,emp_types::t_orientation::NORTH));
-	      }
-	  else
-	    {
-	      l_constraints.insert(emp_constraint(0,emp_types::t_orientation::NORTH));
-	    }
-	  if(l_x < m_info.get_width() - 1)
-	    {
-	      ++l_max_neighbours_nb;
-	      if(l_situation.contains_piece(l_x + 1,l_y)) l_precomputed_constraints.push_back(precomputed_constraint(l_x + 1,l_y,emp_types::t_orientation::WEST,emp_types::t_orientation::EAST));
-	    }
-	  else
-	    {
-	      l_constraints.insert(emp_constraint(0,emp_types::t_orientation::EAST));
-	    }
-	  if(l_y < m_info.get_height() - 1)
-	    {
-	      ++l_max_neighbours_nb;
-	      if(l_situation.contains_piece(l_x,l_y + 1)) l_precomputed_constraints.push_back(precomputed_constraint(l_x,l_y + 1,emp_types::t_orientation::NORTH,emp_types::t_orientation::SOUTH));
-	    }
-	  else
-	    {
-	      l_constraints.insert(emp_constraint(0,emp_types::t_orientation::SOUTH));
-	    }
+
+          precompute_constraints(l_x,l_y,l_situation,l_max_neighbours_nb,l_constraints,l_precomputed_constraints,m_info);
           m_precomputed_transition_infos[l_index] = new precomputed_transition_info((emp_types::t_kind)(4 - l_max_neighbours_nb),std::pair<unsigned int,unsigned int>(l_x,l_y),l_constraints,l_precomputed_constraints);
+#ifdef ADDITIONAL_CHECK
+          if(l_index >= (2 * m_info.get_width() + 2 * ( m_info.get_height() - 2)) && !l_situation.contains_piece(l_additional_x,l_additional_y))
+            {
+              unsigned int l_max_neighbours_nb = 0;
+              std::set<emp_constraint> l_constraints;
+              std::vector<precomputed_constraint> l_precomputed_constraints;
+              precompute_constraints(l_additional_x,l_additional_y,l_situation,l_max_neighbours_nb,l_constraints,l_precomputed_constraints,m_info); 
+              m_precomputed_transition_infos[l_index - 1]->set_check_info(*(new precomputed_transition_info((emp_types::t_kind)(4 - l_max_neighbours_nb),std::pair<unsigned int,unsigned int>(l_additional_x,l_additional_y),l_constraints,l_precomputed_constraints)));
+            }
+#endif // ADDITIONAL_CHECK
 
 	  // Compute next position
 	  if(m_info.get_width() * m_info.get_height() > l_index + 1)
 	    {
-	      if(l_x >= l_y)
-		{
-		  if(l_x + 1 < m_info.get_width() && !l_situation.contains_piece(l_x + 1, l_y))
-		    {
-		      l_x = l_x + 1;
-		    }
-		  else if(l_y + 1 < m_info.get_height()  && !l_situation.contains_piece(l_x, l_y + 1))
-		    {
-		      l_y = l_y + 1;
-		    }
-		  else 
-		    {
-		      assert(l_x  && !l_situation.contains_piece(l_x - 1, l_y));
-		      l_x = l_x - 1;
-		    }
-		}
-	      else
-		{
-		  if(l_x  && !l_situation.contains_piece(l_x - 1, l_y))
-		    {
-		      l_x = l_x - 1;
-		    }
-		  else if(l_y  && !l_situation.contains_piece(l_x, l_y - 1)) 
-		    {
-		      l_y = l_y - 1;
-		    }
-		  else
-		    {
-		      assert(l_x + 1 < m_info.get_width() && !l_situation.contains_piece(l_x + 1, l_y));
-		      l_x = l_x + 1;
-		    }
-		}
+              if(l_x >= l_y)
+                {
+                  if(l_x + 1 < m_info.get_width() && !l_situation.contains_piece(l_x + 1, l_y))
+                    {
+#ifdef ADDITIONAL_CHECK
+                      l_additional_x = l_x;
+                      l_additional_y = l_y + 1;
+#endif // ADDITIONAL_CHECK
+                      l_x = l_x + 1;
+                    }
+                  else if(l_y + 1 < m_info.get_height()  && !l_situation.contains_piece(l_x, l_y + 1))
+                    {
+#ifdef ADDITIONAL_CHECK
+                      l_additional_x = l_x - 1;
+                      l_additional_y = l_y;
+#endif // ADDITIONAL_CHECK
+                      l_y = l_y + 1;
+                    }
+                  else 
+                    {
+                      assert(l_x  && !l_situation.contains_piece(l_x - 1, l_y));
+#ifdef ADDITIONAL_CHECK
+                      l_additional_x = l_x;
+                      l_additional_y = l_y - 1;
+#endif // ADDITIONAL_CHECK
+                      l_x = l_x - 1;
+                    }
+                }
+              else
+                {
+                  if(l_x  && !l_situation.contains_piece(l_x - 1, l_y))
+                    {
+#ifdef ADDITIONAL_CHECK
+                      l_additional_x = l_x;
+                      l_additional_y = l_y - 1;
+#endif // ADDITIONAL_CHECK
+                      l_x = l_x - 1;
+                    }
+                  else if(l_y  && !l_situation.contains_piece(l_x, l_y - 1)) 
+                    {
+#ifdef ADDITIONAL_CHECK
+                      l_additional_x = l_x + 1;
+                      l_additional_y = l_y;
+#endif // ADDITIONAL_CHECK
+                      l_y = l_y - 1;
+                    }
+                  else
+                    {
+                      assert(l_x + 1 < m_info.get_width() && !l_situation.contains_piece(l_x + 1, l_y));
+#ifdef ADDITIONAL_CHECK
+                      l_additional_x = l_x;
+                      l_additional_y = l_y + 1;
+#endif // ADDITIONAL_CHECK
+                      l_x = l_x + 1;
+                    }
+                }
 	    }
 
 	}
+    }
+
+    //----------------------------------------------------------------------------
+    void emp_FSM_situation_analyzer::precompute_constraints(const unsigned int & p_x,
+                                                            const unsigned int & p_y,
+                                                            const emp_FSM_situation & p_situation,
+                                                            unsigned int & p_max_neighbours_nb,
+                                                            std::set<emp_constraint> & p_constraints,
+                                                            std::vector<precomputed_constraint> & p_precomputed_constraints,
+                                                            const emp_FSM_info & p_info)
+    {
+      if(0 < p_x)
+        {
+          ++p_max_neighbours_nb;
+          if(p_situation.contains_piece(p_x - 1,p_y)) p_precomputed_constraints.push_back(precomputed_constraint(p_x - 1,p_y,emp_types::t_orientation::EAST,emp_types::t_orientation::WEST));
+        }
+      else
+        {
+          p_constraints.insert(emp_constraint(0,emp_types::t_orientation::WEST));
+        }
+      if(0 < p_y)
+        {
+          ++p_max_neighbours_nb;
+          if(p_situation.contains_piece(p_x,p_y - 1)) p_precomputed_constraints.push_back(precomputed_constraint(p_x,p_y - 1,emp_types::t_orientation::SOUTH,emp_types::t_orientation::NORTH));
+        }
+      else
+        {
+          p_constraints.insert(emp_constraint(0,emp_types::t_orientation::NORTH));
+        }
+      if(p_x < p_info.get_width() - 1)
+        {
+          ++p_max_neighbours_nb;
+          if(p_situation.contains_piece(p_x + 1,p_y)) p_precomputed_constraints.push_back(precomputed_constraint(p_x + 1,p_y,emp_types::t_orientation::WEST,emp_types::t_orientation::EAST));
+        }
+      else
+        {
+          p_constraints.insert(emp_constraint(0,emp_types::t_orientation::EAST));
+        }
+      if(p_y < p_info.get_height() - 1)
+        {
+          ++p_max_neighbours_nb;
+          if(p_situation.contains_piece(p_x,p_y + 1)) p_precomputed_constraints.push_back(precomputed_constraint(p_x,p_y + 1,emp_types::t_orientation::NORTH,emp_types::t_orientation::SOUTH));
+        }
+      else
+        {
+          p_constraints.insert(emp_constraint(0,emp_types::t_orientation::SOUTH));
+        }
     }
 
     //----------------------------------------------------------------------------
@@ -201,6 +263,27 @@ namespace edge_matching_puzzle
                               }
                           }
                       }
+#ifdef ADDITIONAL_CHECK
+                     if(l_usable && l_precomputed_transition_info.get_check_info())
+                      {
+                        std::set<emp_constraint> l_constraints = l_precomputed_transition_info.get_check_info()->get_constraints();
+                        for(auto l_iter : l_precomputed_transition_info.get_check_info()->get_precomputed_constraints())
+                          {
+                            if(p_situation.contains_piece(l_iter.get_x(),l_iter.get_y()))
+                              {
+                                const emp_types::t_oriented_piece & l_piece = p_situation.get_piece(l_iter.get_x(),l_iter.get_y());
+                                l_constraints.insert(emp_constraint(m_piece_db.get_piece(l_piece.first).get_color(l_iter.get_color_orient(),l_piece.second),l_iter.get_side_orient()));
+                              }
+                            else
+                              {
+                                l_constraints.insert(emp_constraint(m_piece_db.get_piece(l_piece.first).get_color(l_iter.get_color_orient(),l_piece.second),l_iter.get_side_orient()));                                
+                              }
+                          }
+                        std::vector<emp_types::t_oriented_piece> l_checked_pieces;
+                        m_piece_db.get_pieces(l_precomputed_transition_info.get_check_info()->get_kind(),l_constraints,l_checked_pieces);
+                        l_usable = l_checked_pieces.size();
+                      }
+#endif // ADDITIONAL_CHECK
                     if(l_usable)
                       {
                         l_result.push_back(new emp_FSM_transition(l_precomputed_transition_info.get_position().first,l_precomputed_transition_info.get_position().second,l_piece));
