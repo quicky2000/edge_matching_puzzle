@@ -29,6 +29,8 @@
 #include <sstream>
 #include <iomanip>
 
+#define SITUATION_CONTENT_ARRAY
+
 namespace edge_matching_puzzle
 {
   class emp_FSM_situation: public FSM_base::FSM_situation<emp_FSM_context>
@@ -61,11 +63,20 @@ namespace edge_matching_puzzle
     inline void compute_string_id(std::string & p_id)const;
     inline void compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const;
     static inline const unsigned int & get_nb_bits(void);
+#ifdef SITUATION_CONTENT_ARRAY
+    inline ~emp_FSM_situation(void);
+    inline emp_FSM_situation(const emp_FSM_situation & p_situation);
+#endif
  private:
  
+#ifdef SITUATION_CONTENT_ARRAY
+    emp_types::t_oriented_piece * m_content;
+    unsigned int m_content_size;
+    quicky_utils::quicky_bitfield m_used_positions;
+#else
     typedef std::map<std::pair<unsigned int,unsigned int>, emp_types::t_oriented_piece> t_content;
     t_content m_content;
-
+#endif
     static unsigned int m_piece_representation_width;
     static emp_FSM_info const * m_info;
     static unsigned int m_piece_nb_bits;
@@ -75,7 +86,11 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   const unsigned int emp_FSM_situation::get_level(void)const
   {
+#ifdef SITUATION_CONTENT_ARRAY
+    return m_content_size;
+#else
     return m_content.size();
+#endif
   }
 
   //----------------------------------------------------------------------------
@@ -86,9 +101,35 @@ namespace edge_matching_puzzle
 
   //----------------------------------------------------------------------------
   emp_FSM_situation::emp_FSM_situation(void)
+#ifdef SITUATION_CONTENT_ARRAY
+    :m_content(new emp_types::t_oriented_piece[m_info->get_width() * m_info->get_height()]),
+    m_content_size(0),
+    m_used_positions(m_info->get_width() * m_info->get_height())
+#endif
     {
+#ifdef SITUATION_CONTENT_ARRAY
+      memset(m_content,0,m_info->get_width() * m_info->get_height() * sizeof(emp_types::t_oriented_piece));
+#endif
       assert(m_info);
     }
+
+  //----------------------------------------------------------------------------
+#ifdef SITUATION_CONTENT_ARRAY
+    emp_FSM_situation::emp_FSM_situation(const emp_FSM_situation & p_situation):
+      FSM_base::FSM_situation<emp_FSM_context>(p_situation),
+      m_content(new emp_types::t_oriented_piece[m_info->get_width() * m_info->get_height()]),
+      m_content_size(p_situation.m_content_size),
+      m_used_positions(p_situation.m_used_positions)
+      {
+	memcpy(m_content,p_situation.m_content,m_info->get_width() * m_info->get_height() * sizeof(emp_types::t_oriented_piece));
+      }
+
+  //----------------------------------------------------------------------------
+    emp_FSM_situation::~emp_FSM_situation(void)
+      {
+	delete[] m_content;
+      }
+#endif
 
   //----------------------------------------------------------------------------
   void emp_FSM_situation::init(const emp_FSM_info & p_info)
@@ -137,21 +178,34 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   bool emp_FSM_situation::is_final(void)const
   {
+#ifdef SITUATION_CONTENT_ARRAY
+    return m_content_size == m_info->get_width() * m_info->get_height();
+#else
     //return m_content.size() == 2 * m_info->get_width() + 2 * ( m_info->get_height() - 2);
     return m_content.size() == m_info->get_width() * m_info->get_height();
+#endif
   }
   //----------------------------------------------------------------------------
   bool emp_FSM_situation::less(const FSM_interfaces::FSM_situation_if *p_situation)const
   {
     const emp_FSM_situation * l_situation = dynamic_cast<const emp_FSM_situation *>(p_situation);
     assert(l_situation);
+#ifdef SITUATION_CONTENT_ARRAY
+    if(m_content_size != l_situation->m_content_size) return m_content_size < l_situation->m_content_size;
+    return memcmp( m_content,l_situation->m_content,m_info->get_width() * m_info->get_height() * sizeof(emp_types::t_oriented_piece)) < 0;
+#else
     if(m_content.size() != l_situation->m_content.size()) return m_content.size() < l_situation->m_content.size();
     return m_content < l_situation->m_content;
+#endif
   }
   //----------------------------------------------------------------------------
   const emp_types::t_oriented_piece & emp_FSM_situation::get_piece(const unsigned int & p_x,
                                                                    const unsigned int & p_y)const
     {
+#ifdef SITUATION_CONTENT_ARRAY
+      assert(m_info->get_width() * m_info->get_height() > m_info->get_width() * p_y + p_x);
+      return m_content[m_info->get_width() * p_y + p_x];
+#else
       t_content::const_iterator l_iter = m_content.find(std::pair<unsigned int,unsigned int>(p_x,p_y));
       if(m_content.end() == l_iter)
         {
@@ -162,18 +216,38 @@ namespace edge_matching_puzzle
           throw quicky_exception::quicky_logic_exception("No piece at position("+l_stream_x.str()+","+l_stream_y.str()+")",__LINE__,__FILE__);
         }
       return l_iter->second;
+#endif
     }
   //----------------------------------------------------------------------------
   bool emp_FSM_situation::contains_piece(const unsigned int & p_x,
                                          const unsigned int & p_y)const
   {
-    return m_content.end() != m_content.find(std::pair<unsigned int,unsigned int>(p_x,p_y));
+#ifdef SITUATION_CONTENT_ARRAY
+    unsigned int l_result;
+    m_used_positions.get(l_result,1,m_info->get_width() * p_y + p_x);
+    return l_result;
+#else
+    return m_content.end() != m_content.find(std::pair<unsigned int,unsigned int>(p_x,p_y));    
+#endif
   }
 
   //----------------------------------------------------------------------------
   void emp_FSM_situation::compute_string_id(std::string & p_id)const
   {
     p_id = std::string(m_info->get_width() * m_info->get_height() * m_piece_representation_width,'-');
+#ifdef SITUATION_CONTENT_ARRAY
+    for(unsigned int l_index = 0 ; l_index < m_info->get_width() * m_info->get_height() ; ++l_index)
+      {
+	if(contains_piece(l_index % m_info->get_width(), l_index / m_info->get_height()))
+	  {
+	    // Updating the unique identifier
+	    std::stringstream l_stream;
+	    l_stream << std::setw(m_piece_representation_width - 1) << m_content[l_index].first;
+	    std::string l_piece_str(l_stream.str()+emp_types::orientation2short_string(m_content[l_index].second));
+	    p_id.replace(l_index * m_piece_representation_width,m_piece_representation_width,l_piece_str);
+	  }
+      }
+#else
     for(auto l_iter : m_content)
       {
         // Updating the unique identifier
@@ -182,12 +256,18 @@ namespace edge_matching_puzzle
         std::string l_piece_str(l_stream.str()+emp_types::orientation2short_string(l_iter.second.second));
         p_id.replace((l_iter.first.second * m_info->get_width() + l_iter.first.first) * m_piece_representation_width,m_piece_representation_width,l_piece_str);
       }
+#endif
   }
 
   //----------------------------------------------------------------------------
   void emp_FSM_situation::set(const quicky_utils::quicky_bitfield & p_bitfield)
   {
+#ifdef SITUATION_CONTENT_ARRAY
+    m_used_positions.reset();
+    memset(m_content,0,m_info->get_width() * m_info->get_height() * sizeof(emp_types::t_oriented_piece));
+#else
     m_content.clear();
+#endif
     this->get_context()->clear();
     for(unsigned int l_y = 0 ; l_y < m_info->get_height() ; ++l_y)
       {
@@ -207,6 +287,17 @@ namespace edge_matching_puzzle
   void emp_FSM_situation::compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const
   {
     p_bitfield.reset();
+#ifdef SITUATION_CONTENT_ARRAY
+    for(unsigned int l_index = 0 ; l_index < m_info->get_width() * m_info->get_height() ; ++l_index)
+      {
+	if(contains_piece(l_index % m_info->get_width(), l_index / m_info->get_height()))
+	  {
+	    unsigned int l_offset = l_index * ( m_piece_nb_bits + 2);
+	    unsigned int l_data = (m_content[l_index].first << 2) + (unsigned int)m_content[l_index].second;
+	    p_bitfield.set(l_data,m_piece_nb_bits+2,l_offset);
+	  }
+      }
+#else
     for(auto l_iter : m_content)
       {
 	unsigned int l_index = l_iter.first.second * m_info->get_width() + l_iter.first.first;
@@ -214,6 +305,7 @@ namespace edge_matching_puzzle
         unsigned int l_data = (l_iter.second.first << 2) + (unsigned int)l_iter.second.second;
 	p_bitfield.set(l_data,m_piece_nb_bits+2,l_offset);
       }
+#endif
   }
 
   //----------------------------------------------------------------------------
@@ -221,6 +313,23 @@ namespace edge_matching_puzzle
                                     const unsigned int & p_y,
                                     const emp_types::t_oriented_piece & p_piece)
   {
+#ifdef SITUATION_CONTENT_ARRAY
+    if(contains_piece(p_x,p_y))
+      {
+	std::stringstream l_stream_x;
+	l_stream_x << p_x;
+	std::stringstream l_stream_y;
+	l_stream_y << p_y;
+	throw quicky_exception::quicky_logic_exception("Already a piece at position("+l_stream_x.str()+","+l_stream_y.str()+")",__LINE__,__FILE__);
+      }
+    // Inserting value
+    m_content[m_info->get_width() * p_y + p_x] = p_piece;
+    m_used_positions.set(1,1,p_y * m_info->get_width() + p_x);
+    ++m_content_size;
+
+    // Updating context
+    this->get_context()->use_piece(p_piece.first);
+#else
     std::pair<unsigned int,unsigned int> l_position(p_x,p_y);
     if(m_content.end() != m_content.find(l_position))
       {
@@ -235,6 +344,7 @@ namespace edge_matching_puzzle
 
     // Updating context
     this->get_context()->use_piece(p_piece.first);
+#endif
   }
   
 }
