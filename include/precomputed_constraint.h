@@ -33,15 +33,17 @@ namespace edge_matching_puzzle
                                   const unsigned int & p_y,
                                   const emp_types::t_orientation & p_color_orient,
                                   const emp_types::t_orientation & p_side_orient);
+    inline precomputed_constraint(void);
     inline const unsigned int & get_x(void)const;
     inline const unsigned int & get_y(void)const;
     inline const emp_types::t_orientation & get_color_orient(void)const;
     inline const emp_types::t_orientation & get_side_orient(void)const;
+    inline precomputed_constraint & operator=(const edge_matching_puzzle::precomputed_constraint & p_constraint);
   private:
-    const unsigned int m_x;
-    const unsigned int m_y;
-    const emp_types::t_orientation m_color_orient;
-    const emp_types::t_orientation m_side_orient;
+    unsigned int m_x;
+    unsigned int m_y;
+    emp_types::t_orientation m_color_orient;
+    emp_types::t_orientation m_side_orient;
   };
 
   //----------------------------------------------------------------------------
@@ -55,6 +57,26 @@ namespace edge_matching_puzzle
     m_side_orient(p_side_orient)
       {
       }
+#ifdef PRECOMPUTED_CONSTRAINT_ARRAY
+  //----------------------------------------------------------------------------
+    precomputed_constraint::precomputed_constraint(void):
+      m_x(0),
+      m_y(0),
+      m_color_orient(emp_types::t_orientation::NORTH),
+      m_side_orient(emp_types::t_orientation::NORTH)
+	{
+	}
+#endif
+
+      //----------------------------------------------------------------------------
+      precomputed_constraint & precomputed_constraint::operator=(const edge_matching_puzzle::precomputed_constraint & p_constraint)
+	{
+	  m_x = p_constraint.m_x;
+	  m_y = p_constraint.m_y;
+	  m_color_orient = p_constraint.m_color_orient;
+	  m_side_orient = p_constraint.m_side_orient;
+	  return *this;
+	}
   //----------------------------------------------------------------------------
   const unsigned int & precomputed_constraint::get_x(void)const
     {

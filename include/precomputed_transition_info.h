@@ -19,6 +19,8 @@
 #ifndef PRECOMPUTED_TRANSITION_INFO_H
 #define PRECOMPUTED_TRANSITION_INFO_H
 
+#define PRECOMPUTED_CONSTRAINT_ARRAY
+
 #include "precomputed_constraint.h"
 #include "emp_constraint.h"
 #include <vector>
@@ -34,7 +36,12 @@ namespace edge_matching_puzzle
                                        const std::vector<precomputed_constraint> & p_precomputed_constraints);
     inline const emp_types::t_kind & get_kind(void)const;
     inline const std::pair<unsigned int,unsigned int> & get_position(void)const;
+#ifndef PRECOMPUTED_CONSTRAINT_ARRAY
     inline const std::vector<precomputed_constraint> & get_precomputed_constraints(void)const;
+#else
+    inline const unsigned int & get_precomputed_constraint_nb(void)const;
+    inline const precomputed_constraint & get_precomputed_constraint(const unsigned int & p_index)const;
+#endif
     inline const std::set<emp_constraint> & get_constraints(void)const;
 #ifdef ADDITIONAL_CHECK
     inline  void set_check_info(const precomputed_transition_info & p_check_info);
@@ -44,7 +51,12 @@ namespace edge_matching_puzzle
     const emp_types::t_kind m_kind;
     const std::pair<unsigned int,unsigned int> m_position;
     const std::set<emp_constraint> m_constraints;
+#ifndef PRECOMPUTED_CONSTRAINT_ARRAY
     const std::vector<precomputed_constraint> m_precomputed_constraints;
+#else
+    unsigned int m_nb_precomputed_constraints;
+    precomputed_constraint m_precomputed_constraints[4];
+#endif
 #ifdef ADDITIONAL_CHECK
     const precomputed_transition_info * m_check_info;
 #endif // ADDITIONAL_CHECK
@@ -58,11 +70,23 @@ namespace edge_matching_puzzle
     m_kind(p_kind),
     m_position(p_position),
     m_constraints(p_constraints),
+#ifndef PRECOMPUTED_CONSTRAINT_ARRAY
     m_precomputed_constraints(p_precomputed_constraints)
+#else
+    m_nb_precomputed_constraints(p_precomputed_constraints.size())
+#endif
 #ifdef ADDITIONAL_CHECK
     ,m_check_info(NULL)
 #endif // ADDITIONAL_CHECK
       {
+#ifdef PRECOMPUTED_CONSTRAINT_ARRAY
+	unsigned int l_index = 0 ;
+	for(auto l_iter : p_precomputed_constraints)
+	  {
+	    m_precomputed_constraints[l_index] = l_iter;
+	    ++l_index;
+	  }
+#endif
       }
 #ifdef ADDITIONAL_CHECK
     ,m_check_info(NULL)
@@ -90,11 +114,25 @@ namespace edge_matching_puzzle
         return m_position;
       }
 
+#ifndef PRECOMPUTED_CONSTRAINT_ARRAY
     //----------------------------------------------------------------------------
     const std::vector<precomputed_constraint> & precomputed_transition_info::get_precomputed_constraints(void)const
       {
         return m_precomputed_constraints;
       }
+#else
+    //----------------------------------------------------------------------------
+    const unsigned int & precomputed_transition_info::get_precomputed_constraint_nb(void)const
+      {
+	return m_nb_precomputed_constraints;
+      }
+
+    //----------------------------------------------------------------------------
+    const precomputed_constraint & precomputed_transition_info::get_precomputed_constraint(const unsigned int & p_index)const
+      {
+	return m_precomputed_constraints[p_index];
+      }
+#endif
 
     //----------------------------------------------------------------------------
     const std::set<emp_constraint> & precomputed_transition_info::get_constraints(void)const
