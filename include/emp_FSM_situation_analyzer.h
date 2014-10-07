@@ -236,20 +236,11 @@ namespace edge_matching_puzzle
 
         std::set<emp_constraint> l_constraints = l_precomputed_transition_info.get_constraints();
 
-#ifndef PRECOMPUTED_CONSTRAINT_ARRAY
         for(auto l_iter : l_precomputed_transition_info.get_precomputed_constraints())
           {
             const emp_types::t_oriented_piece & l_piece = p_situation.get_piece(l_iter.get_x(),l_iter.get_y());
             l_constraints.insert(emp_constraint(m_piece_db.get_piece(l_piece.first).get_color(l_iter.get_color_orient(),l_piece.second),l_iter.get_side_orient()));
           }
-#else
-	for(unsigned int l_index = 0 ; l_index < l_precomputed_transition_info.get_precomputed_constraint_nb() ; ++l_index)
-	  {
-	    const precomputed_constraint & l_precomputed_constraint = l_precomputed_transition_info.get_precomputed_constraint(l_index);
-            const emp_types::t_oriented_piece & l_piece = p_situation.get_piece(l_precomputed_constraint.get_x(),l_precomputed_constraint.get_y());
-            l_constraints.insert(emp_constraint(m_piece_db.get_piece(l_piece.first).get_color(l_precomputed_constraint.get_color_orient(),l_piece.second),l_precomputed_constraint.get_side_orient()));
-	  }
-#endif
         m_piece_db.get_pieces(l_precomputed_transition_info.get_kind(),l_constraints,l_pieces);
 
         bool l_found = false;

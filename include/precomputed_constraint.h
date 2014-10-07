@@ -25,7 +25,7 @@ namespace edge_matching_puzzle
 {
   /**
      All information need to compute to perform a constraint request
-   **/
+  **/
   class precomputed_constraint
   {
   public:
@@ -57,46 +57,36 @@ namespace edge_matching_puzzle
     m_side_orient(p_side_orient)
       {
       }
-#ifdef PRECOMPUTED_CONSTRAINT_ARRAY
-  //----------------------------------------------------------------------------
-    precomputed_constraint::precomputed_constraint(void):
-      m_x(0),
-      m_y(0),
-      m_color_orient(emp_types::t_orientation::NORTH),
-      m_side_orient(emp_types::t_orientation::NORTH)
-	{
-	}
-#endif
 
-      //----------------------------------------------------------------------------
-      precomputed_constraint & precomputed_constraint::operator=(const edge_matching_puzzle::precomputed_constraint & p_constraint)
-	{
-	  m_x = p_constraint.m_x;
-	  m_y = p_constraint.m_y;
-	  m_color_orient = p_constraint.m_color_orient;
-	  m_side_orient = p_constraint.m_side_orient;
-	  return *this;
-	}
-  //----------------------------------------------------------------------------
-  const unsigned int & precomputed_constraint::get_x(void)const
-    {
-      return m_x;
-    }
-  //----------------------------------------------------------------------------
-  const unsigned int & precomputed_constraint::get_y(void)const
-    {
-      return m_y;
-    }
-  //----------------------------------------------------------------------------
-  const emp_types::t_orientation & precomputed_constraint::get_color_orient(void)const
-    {
-      return m_color_orient;
-    }
-  //----------------------------------------------------------------------------
-  const emp_types::t_orientation & precomputed_constraint::get_side_orient(void)const
-    {
-      return m_side_orient;
-    }
+    //----------------------------------------------------------------------------
+    precomputed_constraint & precomputed_constraint::operator=(const edge_matching_puzzle::precomputed_constraint & p_constraint)
+      {
+	m_x = p_constraint.m_x;
+	m_y = p_constraint.m_y;
+	m_color_orient = p_constraint.m_color_orient;
+	m_side_orient = p_constraint.m_side_orient;
+	return *this;
+      }
+    //----------------------------------------------------------------------------
+    const unsigned int & precomputed_constraint::get_x(void)const
+      {
+	return m_x;
+      }
+    //----------------------------------------------------------------------------
+    const unsigned int & precomputed_constraint::get_y(void)const
+      {
+	return m_y;
+      }
+    //----------------------------------------------------------------------------
+    const emp_types::t_orientation & precomputed_constraint::get_color_orient(void)const
+      {
+	return m_color_orient;
+      }
+    //----------------------------------------------------------------------------
+    const emp_types::t_orientation & precomputed_constraint::get_side_orient(void)const
+      {
+	return m_side_orient;
+      }
 }
 #endif // PRECOMPUTED_CONSTRAINT_H
 //EOF
