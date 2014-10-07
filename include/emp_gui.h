@@ -259,7 +259,7 @@ namespace edge_matching_puzzle
       lock();
       for(unsigned int l_x = 0 ; l_x < m_puzzle_width ; ++l_x)
         {
-          for(unsigned int l_y = 0 ; l_y < m_puzzle_width ; ++l_y)
+          for(unsigned int l_y = 0 ; l_y < m_puzzle_height ; ++l_y)
             {
               if(p_situation.contains_piece(l_x,l_y))
                 {
