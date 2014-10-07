@@ -194,7 +194,7 @@ namespace edge_matching_puzzle
     p_id = std::string(m_info->get_width() * m_info->get_height() * m_piece_representation_width,'-');
     for(unsigned int l_index = 0 ; l_index < m_info->get_width() * m_info->get_height() ; ++l_index)
       {
-	if(contains_piece(l_index % m_info->get_width(), l_index / m_info->get_height()))
+	if(contains_piece(l_index % m_info->get_width(), l_index / m_info->get_width()))
 	  {
 	    // Updating the unique identifier
 	    std::stringstream l_stream;
@@ -231,7 +231,7 @@ namespace edge_matching_puzzle
     p_bitfield.reset();
     for(unsigned int l_index = 0 ; l_index < m_info->get_width() * m_info->get_height() ; ++l_index)
       {
-	if(contains_piece(l_index % m_info->get_width(), l_index / m_info->get_height()))
+	if(contains_piece(l_index % m_info->get_width(), l_index / m_info->get_width()))
 	  {
 	    unsigned int l_offset = l_index * ( m_piece_nb_bits + 2);
 	    unsigned int l_data = (m_content[l_index].first << 2) + (unsigned int)m_content[l_index].second;
