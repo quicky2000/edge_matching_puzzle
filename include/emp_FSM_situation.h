@@ -57,7 +57,7 @@ namespace edge_matching_puzzle
                                const unsigned int & p_y)const;
 
     inline void set(const quicky_utils::quicky_bitfield & p_bitfield);
-
+    inline void set(const std::string & p_string);
     inline const unsigned int get_level(void)const;
     inline void compute_string_id(std::string & p_id)const;
     inline void compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const;
@@ -65,6 +65,7 @@ namespace edge_matching_puzzle
     inline ~emp_FSM_situation(void);
     inline emp_FSM_situation(const emp_FSM_situation & p_situation);
  private:
+    inline void reset(void);
  
     emp_types::t_oriented_piece * m_content;
     unsigned int m_content_size;
@@ -208,9 +209,7 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   void emp_FSM_situation::set(const quicky_utils::quicky_bitfield & p_bitfield)
   {
-    m_used_positions.reset();
-    memset(m_content,0,m_info->get_width() * m_info->get_height() * sizeof(emp_types::t_oriented_piece));
-    this->get_context()->clear();
+    this->reset();
     for(unsigned int l_y = 0 ; l_y < m_info->get_height() ; ++l_y)
       {
         for(unsigned int l_x = 0 ; l_x < m_info->get_width() ; ++l_x)
@@ -224,6 +223,64 @@ namespace edge_matching_puzzle
       }
   }
 
+  //----------------------------------------------------------------------------
+  void emp_FSM_situation::set(const std::string & p_string)
+  {
+    this->reset();
+    if(p_string.size() == m_info->get_width() * m_info->get_height() * m_piece_representation_width)
+      {
+        for(unsigned int l_y = 0 ; l_y < m_info->get_height() ; ++l_y)
+          {
+            for(unsigned int l_x = 0 ; l_x < m_info->get_width() ; ++l_x)
+              {
+                unsigned int l_index = (l_x + l_y * m_info->get_width()) * m_piece_representation_width;
+                std::string l_piece_id_str = p_string.substr(l_index,m_piece_representation_width - 1);
+                if(l_piece_id_str != std::string(m_piece_representation_width -1 ,'-'))
+                  {
+                    std::string l_piece_orientation_str = p_string.substr(l_index + m_piece_representation_width - 1,1);
+                    emp_types::t_piece_id l_piece_id = strtol(l_piece_id_str.c_str(),NULL,10);
+                    emp_types::t_orientation l_piece_orientation;
+                    bool l_found = false;
+                    for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
+                        !l_found && l_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
+                        ++l_orient_index)
+                      {
+                        if(l_piece_orientation_str[0] == emp_types::orientation2short_string((emp_types::t_orientation)l_orient_index))
+                          {
+                            l_piece_orientation = (emp_types::t_orientation)l_orient_index;
+                            l_found = true;;
+                          }
+                      }
+                    if(l_found)
+                      {
+                        set_piece(l_x,l_y,std::pair<emp_types::t_piece_id,emp_types::t_orientation>(l_piece_id,l_piece_orientation));
+                      }
+                    else
+                      {
+                        throw quicky_exception::quicky_logic_exception("Unkown short string orientation : \""+l_piece_orientation_str+"\"",__LINE__,__FILE__);
+                      }
+                  }
+              }
+          }        
+      }
+    else
+      {
+        std::stringstream l_real_size;
+        l_real_size << p_string.size();
+        std::stringstream l_theoric_size;
+        l_theoric_size << m_info->get_width() * m_info->get_height() * m_piece_representation_width;
+        throw quicky_exception::quicky_logic_exception("Real size ("+l_real_size.str()+") doesn`t match theoric size("+l_theoric_size.str()+")",__LINE__,__FILE__);
+      }
+  }
+
+  //----------------------------------------------------------------------------
+  void emp_FSM_situation::reset(void)
+  {
+    m_used_positions.reset();
+    m_content_size = 0;
+    memset(m_content,0,m_info->get_width() * m_info->get_height() * sizeof(emp_types::t_oriented_piece));
+    this->get_context()->clear();
+  }
 
   //----------------------------------------------------------------------------
   void emp_FSM_situation::compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const
