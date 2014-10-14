@@ -51,6 +51,12 @@ namespace edge_matching_puzzle
                                                 std::vector<precomputed_constraint> & p_precomputed_constraints,
                                                 const emp_FSM_info & p_info);
 
+      inline void compute_constraints(const unsigned int & p_x,
+                                      const unsigned int & p_y,
+                                      const emp_FSM_situation & p_situation,
+                                      unsigned int & p_max_neighbours_nb,
+                                      std::set<emp_constraint> & p_constraints)const;
+
 
       const emp_piece_db & m_piece_db;
       const emp_FSM_info & m_info;
@@ -199,6 +205,52 @@ namespace edge_matching_puzzle
         {
           ++p_max_neighbours_nb;
           if(p_situation.contains_piece(p_x,p_y + 1)) p_precomputed_constraints.push_back(precomputed_constraint(p_x,p_y + 1,emp_types::t_orientation::NORTH,emp_types::t_orientation::SOUTH));
+        }
+      else
+        {
+          p_constraints.insert(emp_constraint(0,emp_types::t_orientation::SOUTH));
+        }
+    }
+
+    //----------------------------------------------------------------------------
+    void emp_FSM_situation_analyzer::compute_constraints(const unsigned int & p_x,
+                                                         const unsigned int & p_y,
+                                                         const emp_FSM_situation & p_situation,
+                                                         unsigned int & p_max_neighbours_nb,
+                                                         std::set<emp_constraint> & p_constraints)const
+    {
+ 
+      if(0 < p_x)
+        {
+          ++p_max_neighbours_nb;
+          if(p_situation.contains_piece(p_x - 1,p_y)) p_constraints.insert(emp_constraint(m_piece_db.get_piece(p_situation.get_piece(p_x - 1,p_y).first).get_color(emp_types::t_orientation::EAST,p_situation.get_piece(p_x - 1,p_y).second),emp_types::t_orientation::WEST));
+        }
+      else
+        {
+          p_constraints.insert(emp_constraint(0,emp_types::t_orientation::WEST));
+        }
+      if(0 < p_y)
+        {
+          ++p_max_neighbours_nb;
+          if(p_situation.contains_piece(p_x,p_y - 1)) p_constraints.insert(emp_constraint(m_piece_db.get_piece(p_situation.get_piece(p_x,p_y - 1).first).get_color(emp_types::t_orientation::SOUTH,p_situation.get_piece(p_x,p_y - 1).second),emp_types::t_orientation::NORTH));
+        }
+      else
+        {
+          p_constraints.insert(emp_constraint(0,emp_types::t_orientation::NORTH));
+        }
+      if(p_x < m_info.get_width() - 1)
+        {
+          ++p_max_neighbours_nb;
+          if(p_situation.contains_piece(p_x + 1,p_y)) p_constraints.insert(emp_constraint(m_piece_db.get_piece(p_situation.get_piece(p_x + 1,p_y).first).get_color(emp_types::t_orientation::WEST,p_situation.get_piece(p_x + 1,p_y).second),emp_types::t_orientation::EAST));
+        }
+      else
+        {
+          p_constraints.insert(emp_constraint(0,emp_types::t_orientation::EAST));
+        }
+      if(p_y < m_info.get_height() - 1)
+        {
+          ++p_max_neighbours_nb;
+          if(p_situation.contains_piece(p_x,p_y + 1)) p_constraints.insert(emp_constraint(m_piece_db.get_piece(p_situation.get_piece(p_x,p_y + 1).first).get_color(emp_types::t_orientation::NORTH,p_situation.get_piece(p_x,p_y + 1).second),emp_types::t_orientation::SOUTH));
         }
       else
         {
