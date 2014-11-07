@@ -68,7 +68,7 @@ namespace edge_matching_puzzle
     t_constraint_db ** m_constraint_db;
     typedef std::map<emp_types::t_oriented_piece,std::set<emp_piece_constraint> > t_piece2constraint_db;
     t_piece2constraint_db m_piece2constraint_db;
-    std::set<emp_constraint> l_single_constraints;
+    std::set<emp_constraint> m_single_constraints;
     t_identical_pieces_db m_identical_pieces_db;
   };
   //----------------------------------------------------------------------------
@@ -432,10 +432,10 @@ namespace edge_matching_puzzle
 	    ++l_border_orient_index)
 	  {
             emp_constraint l_constraint(p_piece.get_color((emp_types::t_orientation)l_border_orient_index,(emp_types::t_orientation)l_piece_orient_index),(emp_types::t_orientation)l_border_orient_index);
-            std::set<emp_constraint>::const_iterator l_iter_constraint = l_single_constraints.find(l_constraint);
-            if(l_single_constraints.end() == l_iter_constraint)
+            std::set<emp_constraint>::const_iterator l_iter_constraint = m_single_constraints.find(l_constraint);
+            if(m_single_constraints.end() == l_iter_constraint)
               {
-                l_iter_constraint = l_single_constraints.insert(l_constraint).first;
+                l_iter_constraint = m_single_constraints.insert(l_constraint).first;
               }
 	    l_oriented_piece_constraints[l_border_orient_index] = &(*l_iter_constraint);
 	  }
