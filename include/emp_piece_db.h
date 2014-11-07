@@ -50,9 +50,9 @@ namespace edge_matching_puzzle
     static inline void print_auto_similarities(const emp_piece::t_auto_similarity & p_similarity,
                                                const std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> & p_auto_similarities);
 
-   typedef std::map<emp_types::t_color_id,std::set<emp_types::t_oriented_piece> > t_color2pieces;
+   typedef std::map<emp_types::t_color_id,std::set<emp_types::t_oriented_piece> > t_color2oriented_pieces;
 
-    static inline void add_piece(t_color2pieces& p_color2pieces, 
+    static inline void add_piece(t_color2oriented_pieces& p_color2pieces, 
 				 const emp_types::t_color_id & p_color_id,
 				 const emp_types::t_oriented_piece & p_piece);
     inline void record_identical_pieces(const emp_types::t_piece_id & p_id1,
@@ -62,9 +62,6 @@ namespace edge_matching_puzzle
    typedef std::map<emp_types::t_piece_id,std::set<emp_types::t_piece_id> > t_identical_pieces_db;
    const std::vector<emp_piece> & m_pieces;
     emp_piece_corner* m_corners[4];
-    t_color2pieces m_corner2pieces;
-    t_color2pieces m_border2pieces;
-    t_color2pieces m_center2pieces;   
 
 
     typedef std::map<emp_piece_constraint,std::set<emp_types::t_oriented_piece> > t_constraint_db;
@@ -136,7 +133,7 @@ namespace edge_matching_puzzle
       t_color_list l_corner_colors;
 
       // Store which piece contains color
-      t_color2pieces l_color2pieces;
+      t_color2oriented_pieces l_color2pieces;
 
       std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> l_auto_similarities;
  
@@ -304,7 +301,7 @@ namespace edge_matching_puzzle
               emp_types::t_color_id l_color = p_pieces[l_index1].get_color(l_orientation);
               if(l_color)
                 {
-                  t_color2pieces::const_iterator l_iter_color = l_color2pieces.find(l_color);
+                  t_color2oriented_pieces::const_iterator l_iter_color = l_color2pieces.find(l_color);
                   for (auto l_iter : l_iter_color->second)
                     {
                       if(l_iter.first < l_id)
@@ -371,7 +368,7 @@ namespace edge_matching_puzzle
             {
               for(auto l_iter : m_constraint_db[l_index][l_index2])
                 {
-                  std::cout << emp_types::kind2string((emp_types::t_kind)l_index) << " pieces matching size " << l_index2 + l_index + 1 << " constraint : " << l_iter.first << ":" << std::endl ;         
+                  std::cout << emp_types::kind2string((emp_types::t_kind)l_index) << " pieces matching size " << l_index2 + l_index + 1 << " constraint : " << l_iter.first << ": " << l_iter.second.size() << std::endl ;         
                   for(auto l_iter2 : l_iter.second)
                     {
                       std::cout << "\t" << emp_types::orientation2string(l_iter2.second) << " oriented piece " << get_piece(l_iter2.first) << std::endl ;
@@ -520,14 +517,14 @@ namespace edge_matching_puzzle
   }
 
   //------------------------------------------------------------------------------
-  void emp_piece_db::add_piece(t_color2pieces& p_color2pieces, 
+  void emp_piece_db::add_piece(t_color2oriented_pieces& p_color2pieces, 
 			       const emp_types::t_color_id & p_color_id,
 			       const emp_types::t_oriented_piece & p_piece)
   {
-    t_color2pieces::iterator l_iter_color = p_color2pieces.find(p_color_id);
+    t_color2oriented_pieces::iterator l_iter_color = p_color2pieces.find(p_color_id);
     if(p_color2pieces.end() == l_iter_color)
       {
-	l_iter_color = p_color2pieces.insert(t_color2pieces::value_type(p_color_id,std::set<emp_types::t_oriented_piece>())).first;
+	l_iter_color = p_color2pieces.insert(t_color2oriented_pieces::value_type(p_color_id,std::set<emp_types::t_oriented_piece>())).first;
       }
     l_iter_color->second.insert(p_piece);
   }
