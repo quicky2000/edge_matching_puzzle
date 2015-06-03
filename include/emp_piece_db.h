@@ -24,6 +24,7 @@
 #include "emp_piece_corner.h"
 #include "emp_piece_constraint.h"
 #include "emp_link.h"
+#include "emp_surrounding_pieces.h"
 #include <map>
 #include <set>
 #include <cmath>
@@ -44,6 +45,12 @@ namespace edge_matching_puzzle
     inline const emp_piece_corner & get_corner(const unsigned int & p_index)const;
     inline const std::set<emp_types::t_piece_id> * const get_identical_pieces(const emp_types::t_piece_id & p_id)const;
   private:
+    inline uint64_t fact(const uint64_t p_nb)
+      {
+	if(p_nb != 1) 
+	  return fact(p_nb - 1);
+	return 1;
+      }
     inline void compute_constraints(const emp_piece & p_piece);
     static inline void print_list(const std::string & p_name,
 				  const std::set<unsigned int> & p_list);
@@ -51,6 +58,7 @@ namespace edge_matching_puzzle
                                                const std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> & p_auto_similarities);
 
    typedef std::map<emp_types::t_color_id,std::set<emp_types::t_oriented_piece> > t_color2oriented_pieces;
+   typedef std::map<emp_types::t_color_id,std::set<emp_types::t_piece_id> > t_color2pieces;
 
     static inline void add_piece(t_color2oriented_pieces& p_color2pieces, 
 				 const emp_types::t_color_id & p_color_id,
@@ -61,7 +69,8 @@ namespace edge_matching_puzzle
    typedef std::pair<std::pair<emp_types::t_color_id,emp_types::t_color_id>,std::pair<emp_types::t_color_id,emp_types::t_color_id> > t_constraint;
    typedef std::map<emp_types::t_piece_id,std::set<emp_types::t_piece_id> > t_identical_pieces_db;
    const std::vector<emp_piece> & m_pieces;
-    emp_piece_corner* m_corners[4];
+   emp_piece_corner* m_corners[4];
+   t_color2pieces m_color2center_pieces;   
 
 
     typedef std::map<emp_piece_constraint,std::set<emp_types::t_oriented_piece> > t_constraint_db;
@@ -70,6 +79,8 @@ namespace edge_matching_puzzle
     t_piece2constraint_db m_piece2constraint_db;
     std::set<emp_constraint> m_single_constraints;
     t_identical_pieces_db m_identical_pieces_db;
+
+    std::set<emp_surrounding_pieces> * m_surrounding_db;
   };
   //----------------------------------------------------------------------------
   const std::set<emp_types::t_piece_id> * const emp_piece_db::get_identical_pieces(const emp_types::t_piece_id & p_id)const
@@ -91,7 +102,8 @@ namespace edge_matching_puzzle
 			     const unsigned int & p_width,
 			     const unsigned int & p_height):
     m_pieces(p_pieces),
-    m_constraint_db(new t_constraint_db*[3])
+    m_constraint_db(new t_constraint_db*[3]),
+    m_surrounding_db(new std::set<emp_surrounding_pieces>[p_pieces.size()])
     {
       std::cout << "----------------------------------------------" << std::endl;
       std::cout << "Building piece database" << std::endl;
@@ -165,7 +177,15 @@ namespace edge_matching_puzzle
                   l_center_colors.insert(l_color);
                   l_colors.insert(l_color);
                   add_piece(l_color2pieces,l_color,emp_types::t_oriented_piece(l_iter.get_id(),(emp_types::t_orientation )l_index));
-                }
+
+		  // Store the color 2 piece information for later computing of surrounding pieces
+                  t_color2pieces::iterator l_color2pieces_iter  = m_color2center_pieces.find(l_color);
+                  if(m_color2center_pieces.end() == l_color2pieces_iter)
+                    {
+                      l_color2pieces_iter = m_color2center_pieces.insert(t_color2pieces::value_type(l_color,std::set<emp_types::t_piece_id>())).first;
+                    }
+                  l_color2pieces_iter->second.insert(l_iter.get_id());
+               }
               break;
             case emp_types::t_kind::BORDER:
               {
@@ -360,6 +380,75 @@ namespace edge_matching_puzzle
           throw quicky_exception::quicky_logic_exception("Incoherency between number of links ("+l_stream1.str()+") and links per pieces edge ("+l_stream2.str()+")",__LINE__,__FILE__);
         }
 
+      // Compute surrounding pieces
+      uint64_t l_total_surround = 0;
+      std::set<emp_surrounding_pieces> l_db;
+      for(auto l_iter : p_pieces)
+	{
+          if(emp_types::t_kind::CENTER == l_iter.get_kind())
+            {
+	      uint64_t l_nb = 0 ;
+	      
+	      std::set<emp_types::t_piece_id> l_merged_list;
+
+	      for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
+		  l_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
+		  ++l_orient_index)
+		{
+		  for(auto l_display_iter : m_color2center_pieces.find(l_iter.get_color((emp_types::t_orientation)l_orient_index))->second)
+		    {
+		      std::cout << l_display_iter<< " " ;
+		      l_merged_list.insert(l_display_iter);
+		    }
+		  std::cout << std::endl ;
+		}
+	      std::cout << ((l_merged_list.size()* (l_merged_list.size() - 1) *  (l_merged_list.size() - 2) *  (l_merged_list.size() - 3))/ ( 4*3*2)) << " Theoric result : " << std::endl ;
+
+	      t_color2pieces::iterator l_color2pieces_north_iter = m_color2center_pieces.find(l_iter.get_color(emp_types::t_orientation::NORTH));
+	      t_color2pieces::const_iterator l_color2pieces_east_iter = m_color2center_pieces.find(l_iter.get_color(emp_types::t_orientation::EAST));
+	      t_color2pieces::const_iterator l_color2pieces_south_iter = m_color2center_pieces.find(l_iter.get_color(emp_types::t_orientation::SOUTH));
+	      t_color2pieces::const_iterator l_color2pieces_west_iter = m_color2center_pieces.find(l_iter.get_color(emp_types::t_orientation::WEST));
+              for(auto l_north_iter : l_color2pieces_north_iter->second)
+                {
+                  if(l_iter.get_id() != l_north_iter )
+		    {
+		      for(auto l_east_iter : l_color2pieces_east_iter->second)
+			{
+			  if(l_iter.get_id() != l_east_iter && l_east_iter != l_north_iter)
+			    {
+			      for(auto l_south_iter : l_color2pieces_south_iter->second)
+				{
+				  if(l_iter.get_id() != l_south_iter || l_east_iter != l_south_iter || l_north_iter != l_south_iter)
+				    {
+				      for(auto l_west_iter : l_color2pieces_west_iter->second)
+					{
+					  if(l_iter.get_id() != l_west_iter || l_east_iter != l_west_iter || l_north_iter != l_west_iter || l_south_iter != l_west_iter)
+					    {
+					      // record surrounding combination
+					      emp_surrounding_pieces l_surrounding_pieces;
+					      l_surrounding_pieces.add_piece_id(l_north_iter);
+					      l_surrounding_pieces.add_piece_id(l_east_iter);
+					      l_surrounding_pieces.add_piece_id(l_south_iter);
+					      l_surrounding_pieces.add_piece_id(l_west_iter);
+					      //m_surrounding_db[l_iter.get_id()-1].insert(l_surrounding_pieces);
+					      //l_db.insert(l_surrounding_pieces);
+					      ++l_nb;
+					    }
+					}
+				    }
+				}
+			    }
+			}
+		    }
+                }
+	      std::cout << l_nb << " result surrounding combinations for piece " << l_iter.get_id() << std::endl ;
+	      //	      std::cout << l_db.size() << " surrounding combinations for piece " << l_iter.get_id() << std::endl ;
+	      l_total_surround += l_nb;
+            }
+        }
+      std::cout << "Total = " << l_total_surround << std::endl ;
+
+      // Display constraints
       for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER;
 	  l_index <= (unsigned int)emp_types::t_kind::CORNER;
 	  ++l_index)
