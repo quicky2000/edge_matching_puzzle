@@ -193,6 +193,7 @@ namespace edge_matching_puzzle
                                          const emp_types::t_piece_id & p_id,
                                          const emp_types::t_orientation & p_orientation)
     {
+      assert(p_id <= m_nb_pieces);
       for(unsigned int l_index_x = 0 ;
           l_index_x < m_piece_size;
           ++l_index_x)
