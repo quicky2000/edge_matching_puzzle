@@ -30,6 +30,7 @@
 #include "feature_dump_solutions.h"
 #include "feature_compute_stats.h"
 #include "feature_dump_summary.h"
+#include "feature_display_dump.h"
 
 
 #include "quicky_exception.h"
@@ -117,6 +118,10 @@ int main(int argc,char ** argv)
       else if("dump_summary" == l_feature_name)
         {
           l_feature = new feature_dump_summary(l_dump_file_name,l_info);
+        }
+      else if("display_dump" == l_feature_name)
+        {
+          l_feature = new feature_display_dump(l_dump_file_name,l_info,l_gui);
         }
       else if("compute_stats" == l_feature_name)
         {
