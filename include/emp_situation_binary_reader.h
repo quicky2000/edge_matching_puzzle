@@ -53,7 +53,6 @@ namespace edge_matching_puzzle
                                                            const unsigned int & p_width,
                                                            const unsigned int & p_height):
     m_version(0),
-    m_file(NULL),
     m_bitfield(emp_FSM_situation::get_nb_bits()),
     m_record_size(sizeof(uint64_t)+m_bitfield.size()),
     m_start(0),
