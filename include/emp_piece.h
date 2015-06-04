@@ -32,7 +32,7 @@ namespace edge_matching_puzzle
   {
     friend std::ostream & operator<<(std::ostream & p_stream,const emp_piece & p_piece);
   public:
-    typedef enum class {NONE=0,HALF_SIMILAR,SIMILAR} t_auto_similarity;
+    typedef enum class auto_similarity {NONE=0,HALF_SIMILAR,SIMILAR} t_auto_similarity;
     inline emp_types::t_kind get_kind(void)const;
     inline emp_piece(const emp_types::t_piece_id & p_id,
                      const std::array<emp_types::t_color_id,((unsigned int)(emp_types::t_orientation::WEST))+1> & p_colours);

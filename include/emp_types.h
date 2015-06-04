@@ -27,8 +27,8 @@ namespace edge_matching_puzzle
   class emp_types
   {
   public:
-    typedef enum class {NORTH=0,EAST,SOUTH,WEST} t_orientation;
-    typedef enum class {CENTER=0,BORDER,CORNER} t_kind;
+    typedef enum class orientation {NORTH=0,EAST,SOUTH,WEST} t_orientation;
+    typedef enum class kind {CENTER=0,BORDER,CORNER} t_kind;
     typedef unsigned int t_piece_id;
     typedef unsigned int t_color_id;
     typedef std::pair<emp_types::t_piece_id,emp_types::t_orientation> t_oriented_piece;
