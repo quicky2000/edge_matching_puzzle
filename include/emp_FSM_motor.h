@@ -33,6 +33,10 @@ namespace edge_matching_puzzle
       inline const std::string & get_class_name(void)const;
       inline emp_FSM_situation & run(const emp_FSM_situation & p_situation,
                                      const emp_FSM_transition & p_transition);
+      inline void apply(emp_FSM_situation & p_situation,
+			const emp_FSM_transition & p_transition);
+
+      inline void revert_transition(emp_FSM_situation & p_situation);
     private:
       static const std::string m_class_name;
     };
@@ -54,6 +58,20 @@ namespace edge_matching_puzzle
       l_result->set_piece(p_transition.get_x(),p_transition.get_y(),p_transition.get_piece());
       return *l_result;
     }
+
+  //----------------------------------------------------------------------------
+  void emp_FSM_motor::apply(emp_FSM_situation & p_situation,
+	     const emp_FSM_transition & p_transition)
+  {
+    p_situation.set_piece(p_transition.get_x(),p_transition.get_y(),p_transition.get_piece());
+  }
+
+  //----------------------------------------------------------------------------
+  void emp_FSM_motor::revert_transition(emp_FSM_situation & p_situation)
+  {
+    throw quicky_exception::quicky_logic_exception(std::string(__func__) + " not implemented",__LINE__,__FILE__);
+  }
+
 }
 #endif // EMP_FSM_MOTOR_H
 //EOF
