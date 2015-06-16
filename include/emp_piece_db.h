@@ -360,18 +360,18 @@ namespace edge_matching_puzzle
           throw quicky_exception::quicky_logic_exception("Incoherency between number of links ("+l_stream1.str()+") and links per pieces edge ("+l_stream2.str()+")",__LINE__,__FILE__);
         }
 
-      for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER;
-	  l_index <= (unsigned int)emp_types::t_kind::CORNER;
-	  ++l_index)
+      for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER;
+	  l_kind_index <= (unsigned int)emp_types::t_kind::CORNER;
+	  ++l_kind_index)
 	{
-	  for(unsigned int l_index2 = 0 ; l_index2 < 4 - l_index ; ++l_index2)
+	  for(unsigned int l_constraint_size_index = 0 ; l_constraint_size_index < 4 - l_kind_index ; ++l_constraint_size_index)
             {
-              for(auto l_iter : m_constraint_db[l_index][l_index2])
+              for(auto l_constraint_iter : m_constraint_db[l_kind_index][l_constraint_size_index])
                 {
-                  std::cout << emp_types::kind2string((emp_types::t_kind)l_index) << " pieces matching size " << l_index2 + l_index + 1 << " constraint : " << l_iter.first << ": " << l_iter.second.size() << std::endl ;         
-                  for(auto l_iter2 : l_iter.second)
+                  std::cout << emp_types::kind2string((emp_types::t_kind)l_kind_index) << " pieces matching size " << l_constraint_size_index + l_kind_index + 1 << " constraint : " << l_constraint_iter.first << ": " << l_constraint_iter.second.size() << std::endl ;
+                  for(auto l_oriented_piece_iter : l_constraint_iter.second)
                     {
-                      std::cout << "\t" << emp_types::orientation2string(l_iter2.second) << " oriented piece " << get_piece(l_iter2.first) << std::endl ;
+                      std::cout << "\t" << emp_types::orientation2string(l_oriented_piece_iter.second) << " oriented piece " << get_piece(l_oriented_piece_iter.first) << std::endl ;
                     }
                 }
             }
@@ -379,7 +379,7 @@ namespace edge_matching_puzzle
 
       for(auto l_iter : m_piece2constraint_db)
         {
-          std::cout << "Computed constraints for " << emp_types::orientation2string(l_iter.first.second) << " oriented piece " << get_piece(l_iter.first.first) << std::endl ;         
+          std::cout << "Computed constraints for " << emp_types::orientation2string(l_iter.first.second) << " oriented piece " << get_piece(l_iter.first.first) << std::endl ;
           for(auto l_iter2 : l_iter.second)
             {
               std::cout << "\t" << l_iter2 << std::endl ;
