@@ -39,7 +39,7 @@ namespace edge_matching_puzzle
     inline emp_gui(const unsigned int & p_puzzle_width,
                    const unsigned int & p_puzzle_height,
                    const std::string & p_ressources,
-                   std::vector<emp_piece> p_pieces);
+                   const std::vector<emp_piece> & p_pieces);
 
     inline void set_piece(const unsigned int & p_x,
                           const unsigned int & p_y,
@@ -77,7 +77,7 @@ namespace edge_matching_puzzle
   emp_gui::emp_gui(const unsigned int & p_puzzle_width,
                    const unsigned int & p_puzzle_height,
                    const std::string & p_ressources,
-                   std::vector<emp_piece> p_pieces):
+                   const std::vector<emp_piece> & p_pieces):
     simple_gui(),
     m_puzzle_width(p_puzzle_width),
     m_puzzle_height(p_puzzle_height),
@@ -97,6 +97,11 @@ namespace edge_matching_puzzle
       // Get available ressources
       std::vector<std::string> l_file_list;
       quicky_utils::quicky_files::list_content(p_ressources,l_file_list);
+
+      if(!l_file_list.size())
+        {
+	  throw quicky_exception::quicky_logic_exception("Unable to find any files in \"" + p_ressources + "\"",__LINE__,__FILE__);
+        }
 
       for(std::vector<std::string>::const_iterator l_iter = l_file_list.begin();
           l_iter != l_file_list.end();

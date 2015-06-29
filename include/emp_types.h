@@ -31,6 +31,7 @@ namespace edge_matching_puzzle
     typedef enum class kind {CENTER=0,BORDER,CORNER} t_kind;
     typedef unsigned int t_piece_id;
     typedef unsigned int t_color_id;
+    typedef uint32_t t_binary_piece;
     typedef std::pair<emp_types::t_piece_id,emp_types::t_orientation> t_oriented_piece;
     inline static const std::string & kind2string(const t_kind & p_kind);
     inline static const std::string & orientation2string(const t_orientation & p_orientation);
