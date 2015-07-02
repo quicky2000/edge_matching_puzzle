@@ -38,9 +38,32 @@ namespace edge_matching_puzzle
 			const unsigned int & p_height);
 
     /**
+       Accessor to number of pieces of each kind
+    **/
+    inline const unsigned int & get_nb_pieces(const emp_types::t_kind & p_kind)const;
+
+    /**
+       Return the number of bits necessary to code color id including a special
+       code for border color
+    **/
+    inline const unsigned int & get_color_id_size(void)const;
+
+    /**
+       Return the number of bits necessary to code piece id with ids starting at 0
+    **/
+    inline const unsigned int & get_piece_id_size(void)const;
+
+    /**
        Search Piece by Id
     **/
     inline const emp_piece & get_piece(const unsigned int & p_id)const;
+
+    /**
+       Return binary representation of piece described by its kind and its
+       index in list of piece of same kind ( kind ID)
+    **/
+    inline const emp_types::t_binary_piece & get_piece(const emp_types::t_kind & p_kind,
+                                                       const unsigned int & p_id)const;
 
     /**
        Search pieces which specified kind ( corner, border, center ) and matching
@@ -49,6 +72,14 @@ namespace edge_matching_puzzle
     inline void get_pieces(const emp_types::t_kind & p_kind,
                            const std::set<emp_constraint> & p_constraints,
                            std::vector<emp_types::t_oriented_piece> & p_pieces)const;
+
+    /**
+       Search pieces which specified kind ( corner, border, center ) and matching
+       constraint. The result is a bitfield in which each bit represent a couple
+       ( Piece kind id, orientation)
+    **/
+    inline const quicky_utils::quicky_bitfield & get_pieces(const emp_types::t_kind & p_kind,
+                                                            const emp_types::t_binary_piece & p_constraint)const;
 
     /**
        Get Corner by index
@@ -67,6 +98,19 @@ namespace edge_matching_puzzle
     **/
     static inline unsigned int compute_nb_bits(unsigned int p_value);
 
+    /**
+       Fill binary constraint db
+       For constraint matched by this piece it it will be indicated that this
+       piece match by setting the corresponding bit to one
+    **/
+    inline void compute_binary_constraints(const emp_piece & p_piece);
+
+
+    /**
+       Fill constraint db
+       For constraint matched by this piece it it will be indicated that this
+       piece match by inserting its id in a list
+    **/
     inline void compute_constraints(const emp_piece & p_piece);
 
     static inline void print_list(const std::string & p_name,
@@ -91,13 +135,57 @@ namespace edge_matching_puzzle
     **/
     const std::vector<emp_piece> & m_pieces;
 
+    /**
+       Pieces counters for each kind of piece
+    **/
+    unsigned int m_nb_pieces[((uint32_t)emp_types::t_kind::CORNER) + 1];
+
+    /**
+       Necessary size in bits to represent piece ids
+     **/
     unsigned int m_coded_piece_id_size;
+
+    /**
+       Necessary size in bits to represent color ids
+     **/
     unsigned int m_color_id_size;
+
+    /**
+       Store the max constraint that can be done with available color ids
+    **/
+    emp_types::t_binary_piece m_max_constraint;
 
     /**
        List of corner pieces
     **/
     emp_piece_corner* m_corners[4];
+
+    /**
+       List of border pieces
+    **/
+    emp_piece_border ** m_border_pieces;
+
+    /**
+       List of center pieces
+    **/
+    emp_piece ** m_center_pieces;
+
+    /**
+       Array storing correspondance from piece id to its index in its kind array
+    **/
+    unsigned int * m_piece_id2kind_index;
+
+    /**
+       Bitfield representation for each kind of piece
+     **/
+    emp_types::t_binary_piece ** m_binary_pieces;
+
+
+    /**
+	Bitfield whose each bit represents an oriented piece matching the constraint
+	used as index
+     **/
+    quicky_utils::quicky_bitfield ** m_binary_constraint_db;
 
     typedef std::map<emp_piece_constraint,std::set<emp_types::t_oriented_piece> > t_constraint_db;
     t_constraint_db ** m_constraint_db;
@@ -108,12 +196,26 @@ namespace edge_matching_puzzle
   };
 
   //----------------------------------------------------------------------------
+  inline const unsigned int & emp_piece_db::get_nb_pieces(const emp_types::t_kind & p_kind)const
+    {
+      assert(p_kind <= emp_types::t_kind::CORNER);
+      return m_nb_pieces[(unsigned int)p_kind];
+    }
+
+  //----------------------------------------------------------------------------
   emp_piece_db::emp_piece_db(const std::vector<emp_piece> & p_pieces,
 			     const unsigned int & p_width,
 			     const unsigned int & p_height):
     m_pieces(p_pieces),
+    m_nb_pieces{(p_width - 2) * (p_height - 2),2 * (p_width - 2 + p_height - 2),4},
     m_coded_piece_id_size(0),
     m_color_id_size(0),
+    m_max_constraint(0),
+    m_border_pieces(nullptr),
+    m_center_pieces(nullptr),
+    m_piece_id2kind_index(new unsigned int[p_pieces.size()]),
+    m_binary_pieces(new emp_types::t_binary_piece*[3]),
+    m_binary_constraint_db(new quicky_utils::quicky_bitfield*[3]),
     m_constraint_db(new t_constraint_db*[3])
       {
         std::cout << "----------------------------------------------" << std::endl;
@@ -136,16 +238,15 @@ namespace edge_matching_puzzle
             m_corners[l_index] = NULL;
           }
 
-        // Pieces counters
-        unsigned int l_nb[((uint32_t)emp_types::t_kind::CORNER) + 1] = {0,0,0};
+	// Create arrays to store binary representation of each piece
+	for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER ; l_index <= (unsigned int) emp_types::t_kind::CORNER ; ++l_index)
+	  {
+	    m_binary_pieces[l_index] = new emp_types::t_binary_piece[4 * m_nb_pieces[l_index]];
+	  }
+	m_border_pieces = new emp_piece_border*[m_nb_pieces[(unsigned int)emp_types::t_kind::BORDER]];
+	m_center_pieces = new emp_piece*[m_nb_pieces[(unsigned int)emp_types::t_kind::CENTER]];
 
-        // Counting pieces by kind
-        for(auto l_iter : p_pieces)
-          {
-            ++(l_nb[((unsigned int)l_iter.get_kind())]);
-          }
-
-        // Auto similarity counters
+	// Auto similarity counters
         unsigned int l_nb_auto_similarity[((uint32_t)emp_piece::t_auto_similarity::SIMILAR) + 1] = {0,0,0};
         std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> l_auto_similarities;
 
@@ -198,11 +299,16 @@ namespace edge_matching_puzzle
         // _ Fill database which store correspondancie from color to pieces
         // _ Compute constraints related to each piece
         unsigned int l_corner_index = 0;
+        unsigned int l_border_index = 0;
+        unsigned int l_center_index = 0;
         for(auto l_iter : p_pieces)
           {
             switch(l_iter.get_kind())
               {
               case emp_types::t_kind::CENTER:
+		m_center_pieces[l_center_index] = new emp_piece(l_iter);
+		m_piece_id2kind_index[l_iter.get_id() - 1] = l_center_index;
+		++l_center_index;
                 for(unsigned int l_index = (unsigned int)emp_types::t_orientation::NORTH ;
                     l_index <= (unsigned int)emp_types::t_orientation::WEST; 
                     ++l_index)
@@ -218,28 +324,32 @@ namespace edge_matching_puzzle
                 break;
               case emp_types::t_kind::BORDER:
                 {
-                  emp_piece_border l_border(l_iter);
+                  emp_piece_border * l_border = new emp_piece_border(l_iter);
+                  m_border_pieces[l_border_index] = l_border;
+		  m_piece_id2kind_index[l_iter.get_id() - 1] = l_border_index;
+		  ++l_border_index;
 
                   // Fill color lists
-                  std::pair<emp_types::t_color_id,emp_types::t_color_id> l_piece_border_colors = l_border.get_border_colors();
+                  std::pair<emp_types::t_color_id,emp_types::t_color_id> l_piece_border_colors = l_border->get_border_colors();
                   l_colors.insert(l_piece_border_colors.first);
                   l_colors.insert(l_piece_border_colors.second);
                   l_border_colors.insert(l_piece_border_colors.first);
                   l_border_colors.insert(l_piece_border_colors.second);
-                  l_center_colors.insert(l_border.get_center_color());
-                  l_border2center_colors.insert(l_border.get_center_color());
+                  l_center_colors.insert(l_border->get_center_color());
+                  l_border2center_colors.insert(l_border->get_center_color());
                 
                   // Fill database which store correspondancie from color to pieces
-                  const std::pair<emp_types::t_orientation,emp_types::t_orientation> & l_colors_orientations = l_border.get_colors_orientations();
+                  const std::pair<emp_types::t_orientation,emp_types::t_orientation> & l_colors_orientations = l_border->get_colors_orientations();
                   store_color2piece(l_color2pieces,l_piece_border_colors.first,emp_types::t_oriented_piece(l_iter.get_id(),l_colors_orientations.first));
                   store_color2piece(l_color2pieces,l_piece_border_colors.second,emp_types::t_oriented_piece(l_iter.get_id(),l_colors_orientations.second));
-                  store_color2piece(l_color2pieces,l_border.get_center_color(),emp_types::t_oriented_piece(l_iter.get_id(),l_border.get_center_orientation()));                
+                  store_color2piece(l_color2pieces,l_border->get_center_color(),emp_types::t_oriented_piece(l_iter.get_id(),l_border->get_center_orientation()));
                 }
                 break;
               case emp_types::t_kind::CORNER:
                 {
                   emp_piece_corner* l_corner = new emp_piece_corner(l_iter);
                   m_corners[l_corner_index] = l_corner;
+		  m_piece_id2kind_index[l_iter.get_id() - 1] = l_corner_index;
                   ++l_corner_index;
 
                   // Fill color lists
@@ -262,12 +372,6 @@ namespace edge_matching_puzzle
               }
           }
 
-        // Compute constraints related to each piece
-        for(auto l_iter : p_pieces)
-          {
-            compute_constraints(l_iter);
-          }
-
         // Pieces ID are coded as ID - 1 so first piece Id = 1 is coded 0
         m_coded_piece_id_size = compute_nb_bits(l_nb_pieces - 1);
 
@@ -280,8 +384,53 @@ namespace edge_matching_puzzle
               }
           }
         // Color Id do not start a zero which is reserved for no color
-        m_color_id_size = compute_nb_bits(l_max_color_id);
+        m_color_id_size = compute_nb_bits(l_max_color_id + 1);
 
+	// Compute max constraint code that can be coded with available colors
+        m_max_constraint = 0;
+	for(unsigned int l_index = 0 ; l_index < 4 ; ++l_index)
+	  {
+	    m_max_constraint |= l_max_color_id;
+	    m_max_constraint = m_max_constraint << m_color_id_size;
+	  }
+
+	// Compute binary representations
+	unsigned int l_index_by_kind[((uint32_t)emp_types::t_kind::CORNER) + 1] = {0,0,0};
+	for(auto l_iter : p_pieces)
+	  {
+            unsigned int l_kind_index = (unsigned int)l_iter.get_kind();
+	    for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
+		l_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
+		++l_orient_index)
+	      {
+		unsigned int l_extended_index = (l_index_by_kind[l_kind_index] << 2 ) + l_orient_index;
+		m_binary_pieces[l_kind_index][l_extended_index] = l_iter.get_bitfield_representation((emp_types::t_orientation)l_orient_index,m_coded_piece_id_size,m_color_id_size);
+	      }
+            ++l_index_by_kind[l_kind_index];
+	  }
+
+	// Create empty binary constraints
+        for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER;
+            l_kind_index <= (unsigned int)emp_types::t_kind::CORNER;
+            ++l_kind_index)
+          {
+	    // Allocate memory for binary constraints array for each kind of piece
+	    // I do not want to call empty constructor
+	    m_binary_constraint_db[l_kind_index] = (quicky_utils::quicky_bitfield*)operator new[](sizeof(quicky_utils::quicky_bitfield) * (m_max_constraint + 1));
+
+	    // Call constructor with correct bitfield size
+	    for(unsigned int l_constraint_index = 0 ; l_constraint_index <= m_max_constraint ; ++l_constraint_index)
+	      {
+		new( &(m_binary_constraint_db[l_kind_index][l_constraint_index]))quicky_utils::quicky_bitfield(4 * m_nb_pieces[l_kind_index]);
+	      }
+	  }
+
+        // Compute constraints related to each piece
+        for(auto l_iter : p_pieces)
+          {
+            compute_constraints(l_iter);
+	    compute_binary_constraints(l_iter);
+          }
 
         // Check color repartition on pieces
         unsigned int l_total = 0;
@@ -395,13 +544,15 @@ namespace edge_matching_puzzle
         std::cout << "Nb edges : " << l_nb_edge << std::endl ;
         std::cout << "Piece id coded size = " << m_coded_piece_id_size << " bits" << std::endl ;
         std::cout << "Color id coded size = " << m_color_id_size << " bits" << std::endl ;
+        std::cout << "Max color id  = " << l_max_color_id << " (0x" << std::hex << l_max_color_id << std::dec << ")" <<  std::endl ;
+        std::cout << "Max code constraint  = " << m_max_constraint << " (0x" << std::hex << m_max_constraint << std::dec << ")" << std::endl ;
 
         // Display number of pieces ok each kind
         for(unsigned int l_index = ((uint32_t)emp_types::t_kind::CENTER) ;
             l_index <= ((uint32_t)emp_types::t_kind::CORNER);
             ++l_index)
           {
-            std::cout << "\t" << emp_types::kind2string((emp_types::t_kind)l_index) << "\t: " << l_nb[l_index] << std::endl ;
+            std::cout << "\t" << emp_types::kind2string((emp_types::t_kind)l_index) << "\t: " << m_nb_pieces[l_index] << std::endl ;
           }
 
         // Display number of auto similar pieces
@@ -519,6 +670,25 @@ namespace edge_matching_puzzle
       }
 
     //----------------------------------------------------------------------------
+    const unsigned int & emp_piece_db::get_color_id_size(void)const
+      {
+	return m_color_id_size;
+      }
+
+    //----------------------------------------------------------------------------
+    const unsigned int & emp_piece_db::get_piece_id_size(void)const
+      {
+        return m_coded_piece_id_size;
+      }
+
+    //----------------------------------------------------------------------------
+    const emp_types::t_binary_piece & emp_piece_db::get_piece(const emp_types::t_kind & p_kind,
+                                                                     const unsigned int & p_id)const
+      {
+	return m_binary_pieces[(unsigned int)p_kind][p_id];
+      }
+
+    //----------------------------------------------------------------------------
     void emp_piece_db::get_pieces(const emp_types::t_kind & p_kind,
                                   const std::set<emp_constraint> & p_constraints,
                                   std::vector<emp_types::t_oriented_piece> & p_pieces)const
@@ -534,6 +704,50 @@ namespace edge_matching_puzzle
         {
           p_pieces.push_back(l_piece_iter);
         }
+    }
+
+    //----------------------------------------------------------------------------
+    const quicky_utils::quicky_bitfield & emp_piece_db::get_pieces(const emp_types::t_kind & p_kind,
+                                                                   const emp_types::t_binary_piece & p_constraint)const
+      {
+        assert(p_constraint <= m_max_constraint);
+        return m_binary_constraint_db[(unsigned int)p_kind][p_constraint];
+      }
+
+    //----------------------------------------------------------------------------
+    void emp_piece_db::compute_binary_constraints(const emp_piece & p_piece)
+    {
+      unsigned int l_increment = pow(2,(unsigned int) p_piece.get_auto_similarity());
+      // Compute for different orientations of piece
+      for(unsigned int l_piece_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
+          l_piece_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
+          l_piece_orient_index += l_increment)
+        {
+	  unsigned int l_extended_kind_index = (m_piece_id2kind_index[p_piece.get_id() - 1] << 2) + l_piece_orient_index;
+
+          // Compute the various constraints
+          for(unsigned int l_constraint_squeleton = 0 ; l_constraint_squeleton <= 15 ; ++l_constraint_squeleton)
+            {
+	      uint32_t l_constraint = 0;
+              for(unsigned int l_border_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
+                  l_border_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
+                  ++l_border_orient_index)
+                {
+		  // Check if this side of piece is meaningfull for this constraint skeleton
+                  if((1 << l_border_orient_index) & l_constraint_squeleton)
+                    {
+		      emp_types::t_color_id l_color_id = p_piece.get_color((emp_types::t_orientation)l_border_orient_index,(emp_types::t_orientation)l_piece_orient_index);
+                      if(!l_color_id)
+                        {
+                          l_color_id = (1 << m_color_id_size) - 1;
+                        }
+                      // Orientation for constraint is inverted : North constraint will be given by South of upper piece
+                      l_constraint |= l_color_id << (m_color_id_size * ((l_border_orient_index + 2) % 4));
+                    }
+                }
+              m_binary_constraint_db[(unsigned int)p_piece.get_kind()][l_constraint].set(1,1,l_extended_kind_index);
+	    }
+	}
     }
 
     //----------------------------------------------------------------------------
@@ -670,6 +884,23 @@ namespace edge_matching_puzzle
           {
             delete m_corners[l_index];
           }
+
+	for(unsigned int l_index = 0 ; l_index < m_nb_pieces[(unsigned int)emp_types::t_kind::CENTER] ; ++l_index)
+	  {
+	    delete m_center_pieces[l_index];
+	  }
+	delete[] m_center_pieces;
+	for(unsigned int l_index = 0 ; l_index < m_nb_pieces[(unsigned int)emp_types::t_kind::BORDER] ; ++l_index)
+	  {
+	    delete m_border_pieces[l_index];
+	  }
+	delete[] m_border_pieces;
+
+	for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER ; l_index <= (unsigned int) emp_types::t_kind::CORNER ; ++l_index)
+	  {
+	    delete[] m_binary_pieces[l_index];
+	  }
+
         for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER;
             l_index <= (unsigned int)emp_types::t_kind::CORNER;
             ++l_index)
@@ -677,6 +908,17 @@ namespace edge_matching_puzzle
             delete[] m_constraint_db[l_index];
           }
         delete[] m_constraint_db;
+	for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER ; l_kind_index <= (unsigned int) emp_types::t_kind::CORNER ; ++l_kind_index)
+	  {
+	    for(unsigned int l_constraint_index = 0 ; l_constraint_index <= m_max_constraint ; ++l_constraint_index)
+	      {
+		m_binary_constraint_db[l_kind_index][l_constraint_index].~quicky_bitfield();
+	      }
+	    operator delete[] ((void*) (m_binary_constraint_db[l_kind_index]));
+	  }
+        delete[] m_binary_constraint_db;
+	delete[] m_binary_pieces;
+        delete[] m_piece_id2kind_index;
       }
 
     //----------------------------------------------------------------------------
