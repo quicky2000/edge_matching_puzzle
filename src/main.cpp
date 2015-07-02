@@ -33,6 +33,9 @@
 #include "feature_display_dump.h"
 
 
+#include "emp_spiral_strategy_generator.h"
+#include "emp_strategy.h"
+
 #include "quicky_exception.h"
 #include <unistd.h>
 
@@ -127,6 +130,13 @@ int main(int argc,char ** argv)
         {
           l_feature = new feature_compute_stats(l_piece_db,l_info,l_gui);
         }
+      else if("new_strategy" == l_feature_name)
+	{
+          // No need to delte this objetct, it will be done in emp_strategy destructor
+	  emp_spiral_strategy_generator * l_generator = new emp_spiral_strategy_generator(l_info.get_width(),l_info.get_height());
+	  l_generator->generate();
+	  l_feature = new emp_strategy(*l_generator,l_piece_db,l_gui);
+	}
       else
         {
           throw quicky_exception::quicky_logic_exception("Unsupported feature \""+l_feature_name+"\"",__LINE__,__FILE__);
