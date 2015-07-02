@@ -33,9 +33,9 @@ namespace edge_matching_puzzle
     friend std::ostream & operator<<(std::ostream & p_stream,const emp_piece & p_piece);
   public:
     typedef enum class auto_similarity {NONE=0,HALF_SIMILAR,SIMILAR} t_auto_similarity;
-    inline emp_types::t_kind get_kind(void)const;
     inline emp_piece(const emp_types::t_piece_id & p_id,
                      const std::array<emp_types::t_color_id,((unsigned int)(emp_types::t_orientation::WEST))+1> & p_colours);
+    inline emp_types::t_kind get_kind(void)const;
     inline const emp_types::t_color_id & get_color(const emp_types::t_orientation & p_border)const;
     inline const emp_types::t_color_id & get_color(const emp_types::t_orientation & p_border,
                                                    const emp_types::t_orientation & p_orientation)const;
@@ -43,6 +43,10 @@ namespace edge_matching_puzzle
     inline const t_auto_similarity & get_auto_similarity(void)const;
     inline static const std::string & auto_similarity2string(const t_auto_similarity & p_similarity);
     inline bool operator==(const emp_piece & p_piece)const;
+
+    inline const emp_types:: t_binary_piece get_bitfield_representation(const emp_types::t_orientation & p_orientation,
+									const unsigned & p_id_size,
+									const unsigned & p_color_code_size);
 #if GCC_VERSION > 40702
   protected:
 #endif // GCC_VERSION > 40702
@@ -161,6 +165,33 @@ namespace edge_matching_puzzle
       {
         return m_colours;
       }
+
+    //--------------------------------------------------------------------------
+    const emp_types::t_binary_piece emp_piece::get_bitfield_representation(const emp_types::t_orientation & p_orientation,
+                                                          const unsigned & p_id_size,
+                                                          const unsigned & p_color_code_size)
+    {
+      emp_types::t_binary_piece l_result = ((emp_types::t_binary_piece) p_orientation) << p_id_size;
+      l_result |= m_id - 1;
+#ifndef NDEBUG
+      emp_types::t_binary_piece l_max_color_code = (1 << p_color_code_size ) -1;
+#endif // NDEBUG
+      for(unsigned int l_index = 0 ; l_index < 4 ; ++l_index)
+        {
+          l_result = l_result << p_color_code_size;
+          emp_types::t_color_id l_color_id = get_color((emp_types::t_orientation)(3 - l_index),p_orientation);
+          assert(l_color_id <= l_max_color_code);
+          if(l_color_id)
+            {
+              l_result |= l_color_id;
+            }
+          else
+            {
+              l_result |= (1 << p_color_code_size ) - 1;
+            }
+        }
+      return l_result;
+    }
 
 }
 
