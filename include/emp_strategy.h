@@ -240,9 +240,11 @@ namespace edge_matching_puzzle
     unsigned int l_index = 0;
     compute_available_transitions(l_index);
     bool l_continu = true;
-    while(l_index < m_size && l_continu)
+    uint64_t l_nb_situation_explored = 0;
+    uint64_t l_nb_solutions = 0;
+    while(/*l_index < m_size && */ l_continu)
       {
-#define GUI_SOLUTIONS
+        //#define GUI_SOLUTIONS
         unsigned int l_next_transition = m_positions_strategy[l_index].get_next_transition();
         if(l_next_transition)
           {
@@ -250,12 +252,14 @@ namespace edge_matching_puzzle
             --l_next_transition;
             m_positions_strategy[l_index].set_piece_info(m_piece_db.get_piece(m_positions_strategy[l_index].get_kind(),l_next_transition));
 	    m_positions_strategy[l_index].select_piece(l_next_transition);
-#ifdef GUI_SOLUTIONS
+            ++l_nb_situation_explored;
             if(l_index == m_size - 1)
               {
+                ++l_nb_solutions;
+#ifdef GUI_SOLUTIONS
                 display_on_gui(l_index);
-              }
 #endif
+              }
 
 	    ++l_index;
 	    compute_available_transitions(l_index);
@@ -266,7 +270,7 @@ namespace edge_matching_puzzle
               {
                 m_positions_strategy[l_index].set_piece_info(0x0);
               }
-            l_continu = l_index;
+            l_continu = l_index > 1;
 	    --l_index;
 #ifdef GUI
             if(l_continu)
@@ -276,6 +280,9 @@ namespace edge_matching_puzzle
 #endif
 	  }
       }
+    std::cout << "End of algorithm" << std::endl ;
+    std::cout << "Total situations explored : "  << l_nb_situation_explored << std::endl ;
+    std::cout << "Nb solutions : "  << l_nb_solutions << std::endl ;
   }
 }
 #endif // EMP_STRATEGY_H
