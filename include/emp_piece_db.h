@@ -28,6 +28,8 @@
 #include <set>
 #include <cmath>
 
+#define HANDLE_IDENTICAL_PIECES
+
 namespace edge_matching_puzzle
 {
   class emp_piece_db
@@ -80,6 +82,10 @@ namespace edge_matching_puzzle
     **/
     inline const quicky_utils::quicky_bitfield & get_pieces(const emp_types::t_kind & p_kind,
                                                             const emp_types::t_binary_piece & p_constraint)const;
+
+
+    inline const quicky_utils::quicky_bitfield & get_get_binary_identical_pieces(const emp_types::t_kind & p_kind,
+                                                                                 const emp_types::t_piece_id & p_kind_id)const;
 
     /**
        Get Corner by index
@@ -187,6 +193,12 @@ namespace edge_matching_puzzle
      **/
     quicky_utils::quicky_bitfield ** m_binary_constraint_db;
 
+    /**
+	Bitfield whose each bit represents an oriented piece identical to the one specified as index
+     **/
+    quicky_utils::quicky_bitfield ** m_binary_identical_pieces;
+
+
     typedef std::map<emp_piece_constraint,std::set<emp_types::t_oriented_piece> > t_constraint_db;
     t_constraint_db ** m_constraint_db;
     typedef std::map<emp_types::t_oriented_piece,std::set<emp_piece_constraint> > t_piece2constraint_db;
@@ -216,6 +228,7 @@ namespace edge_matching_puzzle
     m_piece_id2kind_index(new unsigned int[p_pieces.size()]),
     m_binary_pieces(new emp_types::t_binary_piece*[3]),
     m_binary_constraint_db(new quicky_utils::quicky_bitfield*[3]),
+    m_binary_identical_pieces(new quicky_utils::quicky_bitfield*[3]),
     m_constraint_db(new t_constraint_db*[3])
       {
         std::cout << "----------------------------------------------" << std::endl;
@@ -432,6 +445,63 @@ namespace edge_matching_puzzle
 	    compute_binary_constraints(l_iter);
           }
 
+
+	// Create empty bitfield for each kind of piece
+        for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER;
+            l_kind_index <= (unsigned int)emp_types::t_kind::CORNER;
+            ++l_kind_index)
+          {
+            m_binary_identical_pieces[l_kind_index] = (quicky_utils::quicky_bitfield*)operator new[](sizeof(quicky_utils::quicky_bitfield) * m_nb_pieces[l_kind_index] * 4);
+
+	    // Call constructor with correct bitfield size
+	    for(unsigned int l_constraint_index = 0 ; l_constraint_index < 4 * m_nb_pieces[l_kind_index] ; ++l_constraint_index)
+	      {
+		new( &(m_binary_identical_pieces[l_kind_index][l_constraint_index]))quicky_utils::quicky_bitfield(4 * m_nb_pieces[l_kind_index],true);
+                m_binary_identical_pieces[l_kind_index][l_constraint_index].set(0,1,l_constraint_index);
+	      }
+          }
+
+        // Record identical pieces binary filters
+        if(m_identical_pieces_db.size())
+          {
+            for(auto l_iter: m_identical_pieces_db)
+              {
+		// Get pieces characteristics
+                emp_piece l_piece = get_piece(l_iter.first);
+                emp_types::t_kind l_kind = l_piece.get_kind();
+                unsigned int l_kind_index = m_piece_id2kind_index[l_iter.first - 1];
+
+		for(auto l_iter_second : l_iter.second)
+		  {
+		    // Get chacteristics of all identical pieces
+		    emp_piece l_piece_second = get_piece(l_iter_second);
+		    unsigned int l_kind_index_second = m_piece_id2kind_index[l_iter_second - 1];
+
+		    // Check for which orientation they are identic
+		    for(unsigned int l_color_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
+			l_color_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
+			++l_color_orient_index)
+		      {
+			if(l_piece.compare_to(l_piece_second,(emp_types::t_orientation) l_color_orient_index))
+			  {
+			    for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
+				l_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
+				++l_orient_index)
+			      {
+				unsigned int l_extended_index = (l_kind_index << 2) + l_orient_index;
+				unsigned int l_extended_index_second = (l_kind_index_second << 2) + ((l_color_orient_index + l_orient_index) % 4);
+				m_binary_identical_pieces[(unsigned int)l_kind][l_extended_index].set(0,1,l_extended_index_second);
+			      }
+			  }
+		      }
+		  }
+              }
+#ifndef HANDLE_IDENTICAL_PIECES
+            std::cout << "There are some identical pieces, please recompile with flag HANDLE_IDENTICAL_PIECES" << std::endl ;
+            exit(-1);
+#endif // HANDLE_IDENTICAL_PIECES
+          }
+
         // Check color repartition on pieces
         unsigned int l_total = 0;
         bool l_error = false;
@@ -536,7 +606,6 @@ namespace edge_matching_puzzle
             l_stream2 << l_links.size();
             throw quicky_exception::quicky_logic_exception("Incoherency between number of links ("+l_stream1.str()+") and links per pieces edge ("+l_stream2.str()+")",__LINE__,__FILE__);
           }
-
 
 
         std::cout << "Width = " << p_width << std::endl ;
@@ -712,6 +781,14 @@ namespace edge_matching_puzzle
       {
         assert(p_constraint <= m_max_constraint);
         return m_binary_constraint_db[(unsigned int)p_kind][p_constraint];
+      }
+
+    //----------------------------------------------------------------------------
+    const quicky_utils::quicky_bitfield & emp_piece_db::get_get_binary_identical_pieces(const emp_types::t_kind & p_kind,
+                                                                                        const emp_types::t_piece_id & p_kind_id)const
+      {
+        assert(p_kind_id < 4 * m_nb_pieces[(unsigned int)p_kind]);
+        return m_binary_identical_pieces[(unsigned int)p_kind][p_kind_id];
       }
 
     //----------------------------------------------------------------------------
@@ -917,6 +994,18 @@ namespace edge_matching_puzzle
 	    operator delete[] ((void*) (m_binary_constraint_db[l_kind_index]));
 	  }
         delete[] m_binary_constraint_db;
+
+
+	for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER ; l_kind_index <= (unsigned int) emp_types::t_kind::CORNER ; ++l_kind_index)
+	  {
+	    for(unsigned int l_constraint_index = 0 ; l_constraint_index < m_nb_pieces[(unsigned int)l_kind_index] * 4; ++l_constraint_index)
+	      {
+		m_binary_identical_pieces[l_kind_index][l_constraint_index].~quicky_bitfield();
+	      }
+	    operator delete[] ((void*) (m_binary_identical_pieces[l_kind_index]));
+	  }
+        delete[] m_binary_identical_pieces;
+
 	delete[] m_binary_pieces;
         delete[] m_piece_id2kind_index;
       }

@@ -78,7 +78,11 @@ namespace edge_matching_puzzle
     /**
        Select piece and update info to make it no more usable
     **/
-    inline void select_piece(const unsigned int & p_transition_id);
+    inline void select_piece(const unsigned int & p_transition_id
+#ifdef HANDLE_IDENTICAL_PIECES
+                             ,const quicky_utils::quicky_bitfield & p_identical_pieces
+#endif // HANDLE_IDENTICAL_PIECES
+                             );
 
     /**
        to get next available transition : Oriented piece kind id
@@ -156,11 +160,19 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  void emp_position_strategy::select_piece(const unsigned int & p_transition_id)
+  void emp_position_strategy::select_piece(const unsigned int & p_transition_id
+#ifdef HANDLE_IDENTICAL_PIECES
+                                           ,const quicky_utils::quicky_bitfield & p_identical_pieces
+#endif // HANDLE_IDENTICAL_PIECES
+)
   {
     m_available_pieces = m_previous_available_pieces;
     m_available_pieces.set(0,4,p_transition_id & ~((emp_types::t_piece_id)0x3));
+#ifndef HANDLE_IDENTICAL_PIECES
     m_available_transitions.set(0,1,p_transition_id);
+#else
+    m_available_transitions.apply_and(m_available_transitions,p_identical_pieces);
+#endif
   }
   //----------------------------------------------------------------------------
   const unsigned int emp_position_strategy::get_next_transition(void)const

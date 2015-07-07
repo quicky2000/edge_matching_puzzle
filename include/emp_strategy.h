@@ -244,15 +244,22 @@ namespace edge_matching_puzzle
     uint64_t l_nb_solutions = 0;
     while(/*l_index < m_size && */ l_continu)
       {
-        //#define GUI_SOLUTIONS
+//#define GUI_SOLUTIONS
         unsigned int l_next_transition = m_positions_strategy[l_index].get_next_transition();
         if(l_next_transition)
           {
             // Need to decrement the transition id because 0 indicate no transition and bit[0] correspond to l_next_transition = 1
             --l_next_transition;
             m_positions_strategy[l_index].set_piece_info(m_piece_db.get_piece(m_positions_strategy[l_index].get_kind(),l_next_transition));
-	    m_positions_strategy[l_index].select_piece(l_next_transition);
+	    m_positions_strategy[l_index].select_piece(l_next_transition
+#ifdef HANDLE_IDENTICAL_PIECES
+                                                       ,m_piece_db.get_get_binary_identical_pieces(m_positions_strategy[l_index].get_kind(),l_next_transition)
+#endif // HANDLE_IDENTICAL_PIECES
+);
             ++l_nb_situation_explored;
+#ifdef GUI
+	    display_on_gui(l_index);
+#endif //GUI
             if(l_index == m_size - 1)
               {
                 ++l_nb_solutions;

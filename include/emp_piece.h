@@ -42,7 +42,16 @@ namespace edge_matching_puzzle
     inline const emp_types::t_piece_id & get_id(void)const;  
     inline const t_auto_similarity & get_auto_similarity(void)const;
     inline static const std::string & auto_similarity2string(const t_auto_similarity & p_similarity);
+
+    /**
+       Return true if two pieces are identical ( even if rotation is needed
+    **/
     inline bool operator==(const emp_piece & p_piece)const;
+
+    /**
+       Return true if pieces are identical with second piece rotated as indicated in orientation parameter
+    **/
+    inline bool compare_to(const emp_piece & p_piece, const emp_types::t_orientation & p_orient)const;
 
     inline const emp_types:: t_binary_piece get_bitfield_representation(const emp_types::t_orientation & p_orientation,
 									const unsigned & p_id_size,
@@ -137,21 +146,31 @@ namespace edge_matching_puzzle
     bool emp_piece::operator==(const emp_piece & p_piece)const
     {
       if(m_id == p_piece.m_id) return true;
-      unsigned int l_increment = pow(2,(unsigned int) m_auto_similarity);
       unsigned int l_other_increment = pow(2,(unsigned int) p_piece.get_auto_similarity());
       // Compare color array for different orientations
       for(unsigned int l_piece_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
           l_piece_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
           l_piece_orient_index += l_other_increment)
         {
-          unsigned int l_color_orient_index = (unsigned int)emp_types::t_orientation::NORTH; 
-          while(m_colours[l_color_orient_index] == p_piece.get_color((emp_types::t_orientation)l_color_orient_index,(emp_types::t_orientation)l_piece_orient_index) && l_color_orient_index <= (unsigned int)emp_types::t_orientation::WEST)
-            { 
-              l_color_orient_index += l_increment;
-            }
-          if(l_color_orient_index > (unsigned int)emp_types::t_orientation::WEST) return true;
+	  if(compare_to(p_piece,(emp_types::t_orientation)l_piece_orient_index)) return true;
         }
       return false;
+    }
+
+
+    //--------------------------------------------------------------------------
+    bool emp_piece::compare_to(const emp_piece & p_piece, const emp_types::t_orientation & p_orient)const
+    {
+      if(m_id == p_piece.m_id) return true;
+      unsigned int l_color_orient_index = (unsigned int)emp_types::t_orientation::NORTH; 
+      unsigned int l_increment = pow(2,(unsigned int) m_auto_similarity);
+      while(m_colours[l_color_orient_index] == p_piece.get_color((emp_types::t_orientation)l_color_orient_index,p_orient) && l_color_orient_index <= (unsigned int)emp_types::t_orientation::WEST)
+	{
+	  l_color_orient_index += l_increment;
+	}
+      if(l_color_orient_index > (unsigned int)emp_types::t_orientation::WEST) return true;
+      return false;
+
     }
 
     //--------------------------------------------------------------------------
