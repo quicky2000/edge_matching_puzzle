@@ -190,8 +190,8 @@ namespace edge_matching_puzzle
                                                           const unsigned & p_id_size,
                                                           const unsigned & p_color_code_size)
     {
-      emp_types::t_binary_piece l_result = ((emp_types::t_binary_piece) p_orientation) << p_id_size;
-      l_result |= m_id - 1;
+      emp_types::t_binary_piece l_result = (m_id - 1 ) << 2;
+      l_result |= (emp_types::t_binary_piece) p_orientation;
 #ifndef NDEBUG
       emp_types::t_binary_piece l_max_color_code = (1 << p_color_code_size ) -1;
 #endif // NDEBUG

@@ -225,7 +225,7 @@ namespace edge_matching_puzzle
       {
         const std::pair<unsigned int,unsigned int> & l_position = m_generator.get_position(l_index);
         emp_types::t_binary_piece l_binary = (m_positions_strategy[l_index].get_piece_info() >> (4 * m_piece_db.get_color_id_size()));
-        emp_types::t_oriented_piece l_oriented_piece(1 + (l_binary & ((1 << m_piece_db.get_piece_id_size()) - 1)),((emp_types::t_orientation)(l_binary >> m_piece_db.get_piece_id_size())));
+        emp_types::t_oriented_piece l_oriented_piece(1 + (l_binary >> 2),((emp_types::t_orientation)(l_binary & 0x3)));
         l_situation.set_piece(l_position.first,l_position.second,l_oriented_piece);
       }
     std::cout << l_situation.to_string() << std::endl ;
