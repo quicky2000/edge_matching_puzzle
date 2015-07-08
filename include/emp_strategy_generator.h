@@ -62,8 +62,8 @@ namespace edge_matching_puzzle
     virtual void generate(void)=0;
     inline virtual ~emp_strategy_generator(void){}
   protected:
-    void add_coordinate(const unsigned int & p_x,
-			const unsigned int & p_y);
+    inline void add_coordinate(const unsigned int & p_x,
+                               const unsigned int & p_y);
   private:
     const std::string m_name;
     const unsigned int m_width;
