@@ -674,6 +674,7 @@ namespace edge_matching_puzzle
           }
 
         std::cout << "Nb links = " << l_links.size() << std::endl ;
+#if 0
         // Display number of links per pieces
         for(auto l_iter : p_pieces)
           {
@@ -726,7 +727,7 @@ namespace edge_matching_puzzle
               }
           }
 
-
+#endif
         std::cout << "Piece database builded" << std::endl;
         std::cout << "----------------------------------------------" << std::endl;
       }
