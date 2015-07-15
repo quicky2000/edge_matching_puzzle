@@ -55,7 +55,8 @@ namespace edge_matching_puzzle
 
     inline const emp_types:: t_binary_piece get_bitfield_representation(const emp_types::t_orientation & p_orientation,
 									const unsigned & p_id_size,
-									const unsigned & p_color_code_size);
+									const unsigned & p_color_code_size,
+                                                                        const unsigned int & p_border_color_id);
 #if GCC_VERSION > 40702
   protected:
 #endif // GCC_VERSION > 40702
@@ -187,26 +188,24 @@ namespace edge_matching_puzzle
 
     //--------------------------------------------------------------------------
     const emp_types::t_binary_piece emp_piece::get_bitfield_representation(const emp_types::t_orientation & p_orientation,
-                                                          const unsigned & p_id_size,
-                                                          const unsigned & p_color_code_size)
+                                                                           const unsigned & p_id_size,
+                                                                           const unsigned & p_color_code_size,
+                                                                           const unsigned int & p_border_color_id)
     {
       emp_types::t_binary_piece l_result = (m_id - 1 ) << 2;
       l_result |= (emp_types::t_binary_piece) p_orientation;
-#ifndef NDEBUG
-      emp_types::t_binary_piece l_max_color_code = (1 << p_color_code_size ) -1;
-#endif // NDEBUG
       for(unsigned int l_index = 0 ; l_index < 4 ; ++l_index)
         {
           l_result = l_result << p_color_code_size;
           emp_types::t_color_id l_color_id = get_color((emp_types::t_orientation)(3 - l_index),p_orientation);
-          assert(l_color_id <= l_max_color_code);
+          assert(l_color_id < p_border_color_id);
           if(l_color_id)
             {
               l_result |= l_color_id;
             }
           else
             {
-              l_result |= (1 << p_color_code_size ) - 1;
+              l_result |= p_border_color_id;
             }
         }
       return l_result;

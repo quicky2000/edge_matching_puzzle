@@ -61,6 +61,11 @@ namespace edge_matching_puzzle
     inline const unsigned int & get_dumped_piece_id_size(void)const;
 
     /**
+       Return the id used internally to represent border color
+    **/
+    inline const unsigned int & get_border_color_id(void)const;
+
+    /**
        Search Piece by Id
     **/
     inline const emp_piece & get_piece(const unsigned int & p_id)const;
@@ -162,7 +167,12 @@ namespace edge_matching_puzzle
     unsigned int m_dumped_piece_id_size;
 
     /**
-       Necessary size in bits to represent color ids
+       Color Id used to represent border color in the application : max color id + 1
+    **/
+    unsigned int m_border_color_id;
+
+    /**
+       Necessary size in bits to represent color ids including border color ( max color id + 1) and lack of color ( 0 )
      **/
     unsigned int m_color_id_size;
 
@@ -232,6 +242,7 @@ namespace edge_matching_puzzle
     m_nb_pieces{(p_width - 2) * (p_height - 2),2 * (p_width - 2 + p_height - 2),4},
     m_coded_piece_id_size(0),
     m_dumped_piece_id_size(0),
+    m_border_color_id(0),
     m_color_id_size(0),
     m_max_constraint(0),
     m_border_pieces(nullptr),
@@ -408,15 +419,16 @@ namespace edge_matching_puzzle
                 l_max_color_id = l_iter;
               }
           }
-        // Color Id do not start a zero which is reserved for no color
-        m_color_id_size = compute_nb_bits(l_max_color_id + 1);
+        // Color Id do not start a zero which is reserved for no color and l_max_color_id + 1 is used to represent border
+	m_border_color_id = l_max_color_id + 1;
+        m_color_id_size = compute_nb_bits(m_border_color_id);
 
 	// Compute max constraint code that can be coded with available colors
         m_max_constraint = 0;
 	for(unsigned int l_index = 0 ; l_index < 4 ; ++l_index)
 	  {
-	    m_max_constraint |= l_max_color_id;
 	    m_max_constraint = m_max_constraint << m_color_id_size;
+	    m_max_constraint |= (l_index != 2 ? m_border_color_id :  l_max_color_id);
 	  }
 
 	// Compute binary representations
@@ -770,6 +782,12 @@ namespace edge_matching_puzzle
       }
 
     //----------------------------------------------------------------------------
+    const unsigned int &  emp_piece_db::get_border_color_id(void)const
+      {
+	return m_border_color_id;
+      }
+
+    //----------------------------------------------------------------------------
     const emp_types::t_binary_piece & emp_piece_db::get_piece(const emp_types::t_kind & p_kind,
                                                                      const unsigned int & p_id)const
       {
@@ -835,12 +853,13 @@ namespace edge_matching_puzzle
 		      emp_types::t_color_id l_color_id = p_piece.get_color((emp_types::t_orientation)l_border_orient_index,(emp_types::t_orientation)l_piece_orient_index);
                       if(!l_color_id)
                         {
-                          l_color_id = (1 << m_color_id_size) - 1;
+                          l_color_id = m_border_color_id;
                         }
                       // Orientation for constraint is inverted : North constraint will be given by South of upper piece
                       l_constraint |= l_color_id << (m_color_id_size * ((l_border_orient_index + 2) % 4));
                     }
                 }
+	      assert(l_constraint < m_max_constraint);
               m_binary_constraint_db[(unsigned int)p_piece.get_kind()][l_constraint].set(1,1,l_extended_kind_index);
 	    }
 	}

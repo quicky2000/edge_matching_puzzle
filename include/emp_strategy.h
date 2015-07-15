@@ -132,12 +132,15 @@ namespace edge_matching_puzzle
       std::cout << "Color id mask = 0x" << std::hex << l_color_mask << std::dec << std::endl ;
 
       new(&(m_positions_strategy[m_size]))emp_position_strategy(emp_types::t_kind::CENTER,m_centers);
-      m_positions_strategy[m_size].set_piece_info(-1);
+      emp_types::t_binary_piece l_fake_piece;
       for(unsigned int l_index = 0 ; l_index < 4 ; ++l_index)
         {
-          emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[m_size]),l_color_mask << (p_piece_db.get_color_id_size() * l_index));
+	  l_fake_piece = l_fake_piece << p_piece_db.get_color_id_size();
+	  l_fake_piece |= p_piece_db.get_border_color_id();
+          emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[m_size]),l_index != 2 ? l_color_mask << (p_piece_db.get_color_id_size() * l_index) : 0x0);
           m_positions_strategy[m_size].set_neighbour_access((emp_types::t_orientation)((l_index + 2) % 4),l_access_info);
         }
+      m_positions_strategy[m_size].set_piece_info(l_fake_piece);
 
       for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
         {
