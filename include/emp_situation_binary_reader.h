@@ -18,8 +18,12 @@
 */
 #ifndef EMP_SITUATION_BINARY_READER_H
 #define EMP_SITUATION_BINARY_READER_H
+
 #include "emp_FSM_situation.h"
+#include "emp_FSM_info.h"
 #include "quicky_bitfield.h"
+#include "emp_basic_strategy_generator.h"
+#include "emp_stream_strategy_generator.h"
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -30,8 +34,7 @@ namespace edge_matching_puzzle
   {
   public:
     inline emp_situation_binary_reader(const std::string & p_name,
-                                       const unsigned int & p_width,
-                                       const unsigned int & p_height);
+                                       const emp_FSM_info & p_FSM_info);
     inline ~emp_situation_binary_reader(void);
     inline void read(const uint64_t & p_index,
                      emp_FSM_situation & p_situation,
@@ -39,59 +42,87 @@ namespace edge_matching_puzzle
     inline const uint64_t & get_total_situations(void)const;
     inline const uint64_t & get_nb_recorded(void)const;
   private:
-    const unsigned int m_version;
+    const unsigned int m_reader_version;
+    unsigned int m_file_version;
     std::ifstream m_file;
-    quicky_utils::quicky_bitfield m_bitfield;
-    const unsigned int m_record_size;
+    quicky_utils::quicky_bitfield *m_bitfield;
+    unsigned int m_record_size;
     std::streampos m_start;
+    const emp_FSM_info m_FSM_info;
     uint64_t m_situation_number;
     uint64_t m_total_situation;
+    emp_strategy_generator *m_generator;
+    uint32_t m_solution_dump;
+    unsigned int m_input_field_size;
   };
 
   //----------------------------------------------------------------------------
   emp_situation_binary_reader::emp_situation_binary_reader(const std::string & p_name,
-                                                           const unsigned int & p_width,
-                                                           const unsigned int & p_height):
-    m_version(0),
-    m_bitfield(emp_FSM_situation::get_nb_bits()),
-    m_record_size(sizeof(uint64_t)+m_bitfield.size()),
+                                                           const emp_FSM_info & p_FSM_info):
+    m_reader_version(1),
+    m_file_version(0),
+    m_bitfield(nullptr),
+    m_record_size(0),
     m_start(0),
+    m_FSM_info(p_FSM_info),
     m_situation_number(0),
-    m_total_situation(0)
+    m_total_situation(0),
+    m_generator(nullptr),
+    m_solution_dump(0),
+    m_input_field_size(0)
     {
       m_file.open(p_name.c_str(),std::ifstream::binary);
       if(!m_file) throw quicky_exception::quicky_runtime_exception("Unable to read file \""+p_name+"\"",__LINE__,__FILE__);
-      unsigned int l_version;
-      m_file.read((char*)&l_version,sizeof(l_version));
-      std::cout << "Version : " << l_version << std::endl ;
-      if(m_version != l_version) 
-        {
-          std::stringstream l_stream1;
-          l_stream1 << m_version ;
-          std::stringstream l_stream2;
-          l_stream2 << l_version ;
-          throw quicky_exception::quicky_logic_exception("Reader and file does not have the same version "+l_stream1.str()+" != "+l_stream2.str(),__LINE__,__FILE__);
-        }
+      m_file.read((char*)&m_file_version,sizeof(m_file_version));
+      std::cout << "File Format Version : " << m_file_version << std::endl ;
 
+      std::stringstream l_file_version;
+      l_file_version << m_file_version ;
+      if(m_reader_version < m_file_version) 
+        {
+          std::stringstream l_reader_version;
+          l_reader_version << m_reader_version ;
+          throw quicky_exception::quicky_logic_exception("File has a greater version than reader version "+l_file_version.str()+" != "+l_reader_version.str(),__LINE__,__FILE__);
+        }
       unsigned int l_width,l_height;
       m_file.read((char*)&l_width,sizeof(l_width));
       m_file.read((char*)&l_height,sizeof(l_height));
       std::cout << "Width = " << l_width << std::endl ;
       std::cout << "Height = " << l_height << std::endl ;
-      if(l_width != p_width || l_height != p_height)
+      if(l_width != m_FSM_info.get_width() || l_height != m_FSM_info.get_height())
         {
           std::stringstream l_stream ;
-          l_stream << "(" << p_width << "*" << p_height << ") != (" << l_width << "*" << l_height << ")";
+          l_stream << "(" << m_FSM_info.get_width() << "*" << m_FSM_info.get_height() << ") != (" << l_width << "*" << l_height << ")";
           throw quicky_exception::quicky_logic_exception("Reader and file does not have the puzzle dimensions : "+l_stream.str(),__LINE__,__FILE__);
         }
+
+
+      switch(m_file_version)
+	{
+	case 0:
+	  m_generator = new emp_basic_strategy_generator(m_FSM_info.get_width(),m_FSM_info.get_height());
+	  break;
+	case 1:
+          m_file.read((char*)&m_solution_dump,sizeof(m_solution_dump));
+          std::cout << "Solution dump : " << (m_solution_dump ? "YES" : "NO") << std::endl ;
+	  m_generator = new emp_stream_strategy_generator(m_FSM_info.get_width(),m_FSM_info.get_height(),m_file);
+	  break;
+	default:
+	  throw quicky_exception::quicky_logic_exception("Generator creation is not supported for file version "+l_file_version.str(),__LINE__,__FILE__);
+	}
+      m_input_field_size = (2 + (m_solution_dump ? p_FSM_info.get_piece_id_size() : p_FSM_info.get_dumped_piece_id_size()));
+      m_bitfield = new quicky_utils::quicky_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * m_input_field_size);
+      m_record_size = sizeof(uint64_t) + m_bitfield->size();
+      m_generator->generate();
+
       m_start = m_file.tellg();
       m_file.seekg(-sizeof(uint64_t),m_file.end);
-      std::streampos l_length = m_file.tellg() - m_start;
+      std::streampos l_lenght = m_file.tellg() - m_start;
 
-      m_situation_number = l_length / m_record_size;
+      m_situation_number = l_lenght / m_record_size;
       std::cout << "Number of recorded situations = " << m_situation_number << std::endl ;
 
-      if(l_length % m_record_size)
+      if(l_lenght % m_record_size)
         {
           std::cout << "File is truncated" << std::endl ;
         }
@@ -122,8 +153,37 @@ namespace edge_matching_puzzle
       if(p_index < m_situation_number)
         {
           m_file.seekg(m_start +((std::streampos)(p_index * m_record_size)));
-          m_bitfield.read_from(m_file);
-          p_situation.set(m_bitfield);
+          m_bitfield->read_from(m_file);
+	  switch(m_file_version)
+	    {
+	    case 0:
+	      p_situation.set(*m_bitfield);
+	      break;
+	    case 1:
+              {
+                unsigned int l_output_field_size = m_FSM_info.get_dumped_piece_id_size() + 2;
+                quicky_utils::quicky_bitfield l_sorted_bitfield(l_output_field_size * m_FSM_info.get_width() * m_FSM_info.get_height());
+                for(unsigned int l_index = 0 ; l_index < m_FSM_info.get_width() * m_FSM_info.get_height() ; ++l_index)
+                  {
+                    std::pair<unsigned int,unsigned int> l_current_position = m_generator->get_position(l_index);
+                    unsigned int l_new_index = l_current_position.second * m_FSM_info.get_width() + l_current_position.first;
+                    unsigned int l_data=0;
+                    m_bitfield->get(l_data,m_input_field_size,l_index * m_input_field_size);
+                    
+                    unsigned int l_new_data = (((l_data >> 2 ) + (m_solution_dump ? 1 :0)) << 2)+ (l_data & 0x3);
+                    l_sorted_bitfield.set(l_new_data,l_output_field_size,l_new_index * l_output_field_size);
+                  }
+                p_situation.set(l_sorted_bitfield);
+              }
+	      break;
+	    default:
+              {
+                std::stringstream l_stream;
+                l_stream << m_reader_version;
+                throw quicky_exception::quicky_logic_exception("Generator creation is not supported for file version " + l_stream.str(),__LINE__,__FILE__);
+              }
+	    }
+
           m_file.read((char*)&p_number,sizeof(p_number));
         }
       else
@@ -139,6 +199,8 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     emp_situation_binary_reader::~emp_situation_binary_reader(void)
       {
+	delete m_generator;
+        delete m_bitfield;
         if(m_file) m_file.close();
       }
  

@@ -59,7 +59,7 @@ namespace edge_matching_puzzle
                                                  emp_gui & p_gui,
                                                  const std::string & p_file_name):
     algo_based_feature<FSM_framework::algorithm_deep_raw>(p_db,p_info,p_gui),
-    m_dumper("" != p_file_name ? p_file_name : compute_file_name(p_info),p_info.get_width(),p_info.get_height())
+    m_dumper("" != p_file_name ? p_file_name : compute_file_name(p_info),p_info)
     {
     }
 

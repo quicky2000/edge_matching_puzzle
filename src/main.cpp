@@ -135,7 +135,7 @@ int main(int argc,char ** argv)
           // No need to delte this objetct, it will be done in emp_strategy destructor
 	  emp_spiral_strategy_generator * l_generator = new emp_spiral_strategy_generator(l_info.get_width(),l_info.get_height());
 	  l_generator->generate();
-	  l_feature = new emp_strategy(*l_generator,l_piece_db,l_gui);
+	  l_feature = new emp_strategy(*l_generator,l_piece_db,l_gui,l_info,l_dump_file_name);
 	}
       else
         {

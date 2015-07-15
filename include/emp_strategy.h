@@ -23,6 +23,7 @@
 #include "emp_position_strategy.h"
 #include "emp_strategy_generator.h"
 #include "emp_piece_db.h"
+#include "emp_situation_binary_dumper.h"
 #include "feature_if.h"
 #include "emp_gui.h"
 
@@ -40,13 +41,20 @@ namespace edge_matching_puzzle
 
     inline emp_strategy(const emp_strategy_generator & p_generator,
                         const emp_piece_db & p_piece_db,
-                        emp_gui & p_gui);
+                        emp_gui & p_gui,
+                        const emp_FSM_info & p_FSM_info,
+			const std::string & p_file_name);
 
     inline void run(void);
 
 
     inline ~emp_strategy(void);
   private:
+    /**
+       To compute bitfield representation needed when dumping infile
+    **/
+    inline void compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const;
+
     /**
        Comput real available transitions for given index by taking account 
        contraints and available pieces
@@ -92,12 +100,17 @@ namespace edge_matching_puzzle
 
     emp_gui &m_gui;
     const emp_strategy_generator & m_generator;
+
+    emp_situation_binary_dumper m_dumper;
+    quicky_utils::quicky_bitfield m_bitfield;
   };
 
   //----------------------------------------------------------------------------
   emp_strategy::emp_strategy(const emp_strategy_generator & p_generator,
                              const emp_piece_db & p_piece_db,
-                             emp_gui & p_gui):
+                             emp_gui & p_gui,
+                             const emp_FSM_info & p_FSM_info,
+			     const std::string & p_file_name):
     m_piece_db(p_piece_db),
     m_size(p_generator.get_width() * p_generator.get_height()),
     // We allocate a supplementaty emp_position_strategy that will contains
@@ -110,7 +123,9 @@ namespace edge_matching_puzzle
     m_borders(4 * p_piece_db.get_nb_pieces(emp_types::t_kind::BORDER),true),
     m_corners(4 * p_piece_db.get_nb_pieces(emp_types::t_kind::CORNER),true),
     m_gui(p_gui),
-    m_generator(p_generator)
+    m_generator(p_generator),
+    m_dumper(p_file_name,p_FSM_info,&m_generator,true),
+    m_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2))
     {
 
       uint32_t l_color_mask = (1 << p_piece_db.get_color_id_size()) - 1;
@@ -196,6 +211,17 @@ namespace edge_matching_puzzle
       
     }
 
+  //---------------------------------------------------------------------------
+  void emp_strategy::compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const
+  {
+    for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
+      {
+        unsigned int l_data = m_positions_strategy[l_index].get_piece_info() >> ( 4 * m_piece_db.get_color_id_size());
+        unsigned int l_offset = l_index * ( m_piece_db.get_piece_id_size() + 2);
+        p_bitfield.set(l_data,m_piece_db.get_piece_id_size() + 2,l_offset);
+      }
+  }
+
   //--------------------------------------------------------------------------
   void emp_strategy::compute_available_transitions(const unsigned int & p_index)
   {
@@ -244,7 +270,7 @@ namespace edge_matching_puzzle
     uint64_t l_nb_solutions = 0;
     while(/*l_index < m_size && */ l_continu)
       {
-//#define GUI_SOLUTIONS
+        //#define GUI_SOLUTIONS
         unsigned int l_next_transition = m_positions_strategy[l_index].get_next_transition();
         if(l_next_transition)
           {
@@ -263,6 +289,8 @@ namespace edge_matching_puzzle
             if(l_index == m_size - 1)
               {
                 ++l_nb_solutions;
+                compute_bin_id(m_bitfield);
+                m_dumper.dump(m_bitfield,l_nb_situation_explored);
 #ifdef GUI_SOLUTIONS
                 display_on_gui(l_index);
 #endif
@@ -287,6 +315,7 @@ namespace edge_matching_puzzle
 #endif
 	  }
       }
+    m_dumper.dump(l_nb_situation_explored);
     std::cout << "End of algorithm" << std::endl ;
     std::cout << "Total situations explored : "  << l_nb_situation_explored << std::endl ;
     std::cout << "Nb solutions : "  << l_nb_solutions << std::endl ;

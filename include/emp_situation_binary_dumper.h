@@ -20,6 +20,8 @@
 #define EMP_SITUATION_BINARY_DUMPER_H
 
 #include "emp_FSM_situation.h"
+#include "emp_strategy_generator.h"
+#include "emp_basic_strategy_generator.h"
 #include "quicky_bitfield.h"
 #include <fstream>
 #include <iostream>
@@ -31,30 +33,47 @@ namespace edge_matching_puzzle
   {
   public:
     inline emp_situation_binary_dumper(const std::string & p_name,
-                                       const unsigned int & p_width,
-                                       const unsigned int & p_height);
+                                       const emp_FSM_info & p_FSM_info,
+                                       const emp_strategy_generator * const p_generator=NULL,
+                                       bool p_solution_dump=false);
     inline ~emp_situation_binary_dumper(void);
     inline void dump(const emp_FSM_situation & p_situation);
     inline void dump(const uint64_t & p_total_number);
+    inline void dump(const quicky_utils::quicky_bitfield & p_bitfield,
+                     const uint64_t & p_total_number);
   private:
-    const unsigned int m_version;
+    const uint32_t m_version;
     std::ofstream m_file;
     quicky_utils::quicky_bitfield m_bitfield;
+    const uint32_t m_solution_dump;
   };
 
   //----------------------------------------------------------------------------
   emp_situation_binary_dumper::emp_situation_binary_dumper(const std::string & p_name,
-                                                           const unsigned int & p_width,
-                                                           const unsigned int & p_height):
-    m_version(0),
-    m_file(NULL),
-    m_bitfield(emp_FSM_situation::get_nb_bits())
+                                                           const emp_FSM_info & p_FSM_info,
+                                                           const emp_strategy_generator * const p_generator,
+                                                           bool p_solution_dump):
+    m_version(1),
+    m_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * (2 + (p_solution_dump ? p_FSM_info.get_piece_id_size() : p_FSM_info.get_dumped_piece_id_size()))),
+    m_solution_dump(p_solution_dump)
     {
       m_file.open(p_name.c_str(),std::ofstream::binary);
       if(!m_file) throw quicky_exception::quicky_runtime_exception("Unable to create file \""+p_name+"\"",__LINE__,__FILE__);
       m_file.write((char*)&m_version,sizeof(m_version));
-      m_file.write((char*)&p_width,sizeof(p_width));
-      m_file.write((char*)&p_height,sizeof(p_height));
+      m_file.write((char*)&p_FSM_info.get_width(),sizeof(p_FSM_info.get_width()));
+      m_file.write((char*)&p_FSM_info.get_height(),sizeof(p_FSM_info.get_height()));
+      m_file.write((char*)&m_solution_dump,sizeof(m_solution_dump));
+
+      emp_basic_strategy_generator l_basic_generator(p_FSM_info.get_width(),p_FSM_info.get_height());
+      l_basic_generator.generate();
+      const emp_strategy_generator * const l_generator = p_generator ? p_generator : & l_basic_generator;
+
+      for(unsigned int l_index = 0 ; l_index < p_FSM_info.get_width() * p_FSM_info.get_height() ; ++l_index)
+        {
+          const std::pair<unsigned int,unsigned int> & l_position = l_generator->get_position(l_index);
+          m_file.write((char*)&l_position.first,sizeof(l_position.first));
+          m_file.write((char*)&l_position.second,sizeof(l_position.second));
+        }
     }
 
     //----------------------------------------------------------------------------
@@ -62,6 +81,13 @@ namespace edge_matching_puzzle
     {
       p_situation.compute_bin_id(m_bitfield);
       m_bitfield.dump_in(m_file);
+    }
+
+    //----------------------------------------------------------------------------
+    void emp_situation_binary_dumper::dump(const quicky_utils::quicky_bitfield & p_bitfield,const uint64_t & p_total_number)
+    {
+      p_bitfield.dump_in(m_file);
+      dump(p_total_number);
     }
 
     //----------------------------------------------------------------------------

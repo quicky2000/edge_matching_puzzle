@@ -44,7 +44,7 @@ namespace edge_matching_puzzle
   feature_display_dump::feature_display_dump(const std::string & p_file_name,
 					     const emp_FSM_info & p_info,
 					     emp_gui & p_gui):
-    m_reader(p_file_name,p_info.get_width(),p_info.get_height()),
+    m_reader(p_file_name,p_info),
     m_gui(p_gui),
     m_info(p_info)
   {
