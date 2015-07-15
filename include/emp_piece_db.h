@@ -56,6 +56,11 @@ namespace edge_matching_puzzle
     inline const unsigned int & get_piece_id_size(void)const;
 
     /**
+       Return the number of bits necessary to code piece id with id == 0 mean no piece
+    **/
+    inline const unsigned int & get_dumped_piece_id_size(void)const;
+
+    /**
        Search Piece by Id
     **/
     inline const emp_piece & get_piece(const unsigned int & p_id)const;
@@ -152,6 +157,11 @@ namespace edge_matching_puzzle
     unsigned int m_coded_piece_id_size;
 
     /**
+       Necessary size in bits to represent piece ids and missing piece
+     **/
+    unsigned int m_dumped_piece_id_size;
+
+    /**
        Necessary size in bits to represent color ids
      **/
     unsigned int m_color_id_size;
@@ -221,6 +231,7 @@ namespace edge_matching_puzzle
     m_pieces(p_pieces),
     m_nb_pieces{(p_width - 2) * (p_height - 2),2 * (p_width - 2 + p_height - 2),4},
     m_coded_piece_id_size(0),
+    m_dumped_piece_id_size(0),
     m_color_id_size(0),
     m_max_constraint(0),
     m_border_pieces(nullptr),
@@ -387,6 +398,7 @@ namespace edge_matching_puzzle
 
         // Pieces ID are coded as ID - 1 so first piece Id = 1 is coded 0
         m_coded_piece_id_size = compute_nb_bits(l_nb_pieces - 1);
+        m_dumped_piece_id_size = compute_nb_bits(l_nb_pieces);
 
         unsigned int l_max_color_id = 0;
         for(auto l_iter: l_colors)
@@ -749,6 +761,12 @@ namespace edge_matching_puzzle
     const unsigned int & emp_piece_db::get_piece_id_size(void)const
       {
         return m_coded_piece_id_size;
+      }
+
+    //----------------------------------------------------------------------------
+    const unsigned int & emp_piece_db::get_dumped_piece_id_size(void)const
+      {
+        return m_dumped_piece_id_size;
       }
 
     //----------------------------------------------------------------------------

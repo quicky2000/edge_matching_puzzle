@@ -25,19 +25,29 @@ namespace edge_matching_puzzle
     {
     public:
       inline emp_FSM_info(const unsigned int & p_width,
-                          const unsigned int & p_height);
+                          const unsigned int & p_height,
+                          const unsigned int & p_piece_id_size,
+                          const unsigned int & p_dumped_piece_id_size);
       inline const unsigned int & get_width(void)const;
       inline const unsigned int & get_height(void)const;
+      inline const unsigned int & get_piece_id_size(void)const;
+      inline const unsigned int & get_dumped_piece_id_size(void)const;
     private:
       const unsigned int m_width;
       const unsigned int m_height;
+      const unsigned int m_piece_id_size;
+      const unsigned int m_dumped_piece_id_size;
     };
 
   //----------------------------------------------------------------------------
   emp_FSM_info::emp_FSM_info(const unsigned int & p_width,
-                             const unsigned int & p_height):
+                             const unsigned int & p_height,
+                             const unsigned int & p_piece_id_size,
+                             const unsigned int & p_dumped_piece_id_size):
     m_width(p_width),
-    m_height(p_height)
+    m_height(p_height),
+    m_piece_id_size(p_piece_id_size),
+    m_dumped_piece_id_size(p_dumped_piece_id_size)
     {
     }
 
@@ -53,6 +63,17 @@ namespace edge_matching_puzzle
       return m_height;
     }
 
+  //----------------------------------------------------------------------------
+  const unsigned int & emp_FSM_info::get_piece_id_size(void)const
+    {
+      return m_piece_id_size;
+    }
+
+  //----------------------------------------------------------------------------
+  const unsigned int & emp_FSM_info::get_dumped_piece_id_size(void)const
+    {
+      return m_dumped_piece_id_size;
+    }
 }
 #endif // EMP_FSM_INFO_H
 //EOF

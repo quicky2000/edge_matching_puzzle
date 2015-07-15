@@ -95,7 +95,7 @@ int main(int argc,char ** argv)
       emp_gui l_gui(l_width,l_height,l_ressources_path.get_value<std::string>().c_str(),l_pieces);
 
       emp_piece_db l_piece_db(l_pieces,l_width,l_height);
-      emp_FSM_info l_info(l_width,l_height);
+      emp_FSM_info l_info(l_width,l_height,l_piece_db.get_piece_id_size(),l_piece_db.get_dumped_piece_id_size());
 
       emp_FSM_situation::init(l_info);
 
