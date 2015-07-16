@@ -103,6 +103,7 @@ namespace edge_matching_puzzle
 
     emp_situation_binary_dumper m_dumper;
     quicky_utils::quicky_bitfield m_bitfield;
+    quicky_utils::quicky_bitfield m_empty_bitfield;
   };
 
   //----------------------------------------------------------------------------
@@ -131,8 +132,8 @@ namespace edge_matching_puzzle
       uint32_t l_color_mask = (1 << p_piece_db.get_color_id_size()) - 1;
       std::cout << "Color id mask = 0x" << std::hex << l_color_mask << std::dec << std::endl ;
 
-      new(&(m_positions_strategy[m_size]))emp_position_strategy(emp_types::t_kind::CENTER,m_centers);
-      emp_types::t_binary_piece l_fake_piece;
+      new(&(m_positions_strategy[m_size]))emp_position_strategy(emp_types::t_kind::CENTER,m_empty_bitfield);
+      emp_types::t_binary_piece l_fake_piece = 0;
       for(unsigned int l_index = 0 ; l_index < 4 ; ++l_index)
         {
 	  l_fake_piece = l_fake_piece << p_piece_db.get_color_id_size();
@@ -230,7 +231,7 @@ namespace edge_matching_puzzle
   {
     assert(p_index <= m_size);
     emp_position_strategy & l_pos_strategy = m_positions_strategy[p_index];
-    l_pos_strategy.compute_available_transitions(m_piece_db.get_pieces(l_pos_strategy.get_kind(),l_pos_strategy.compute_constraint()));
+    l_pos_strategy.compute_available_transitions(m_piece_db.get_pieces(l_pos_strategy.compute_constraint()));
   }
 
   //--------------------------------------------------------------------------
@@ -274,6 +275,7 @@ namespace edge_matching_puzzle
     while(/*l_index < m_size && */ l_continu)
       {
         //#define GUI_SOLUTIONS
+        //#define GUI
         unsigned int l_next_transition = m_positions_strategy[l_index].get_next_transition();
         if(l_next_transition)
           {

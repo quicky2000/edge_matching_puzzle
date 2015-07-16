@@ -86,12 +86,11 @@ namespace edge_matching_puzzle
                            std::vector<emp_types::t_oriented_piece> & p_pieces)const;
 
     /**
-       Search pieces which specified kind ( corner, border, center ) and matching
-       constraint. The result is a bitfield in which each bit represent a couple
+       Search pieces matching constraint.
+       The result is a bitfield in which each bit represent a couple
        ( Piece kind id, orientation)
     **/
-    inline const quicky_utils::quicky_bitfield & get_pieces(const emp_types::t_kind & p_kind,
-                                                            const emp_types::t_binary_piece & p_constraint)const;
+    inline const quicky_utils::quicky_bitfield & get_pieces(const emp_types::t_binary_piece & p_constraint)const;
 
 
     inline const quicky_utils::quicky_bitfield & get_get_binary_identical_pieces(const emp_types::t_kind & p_kind,
@@ -211,7 +210,7 @@ namespace edge_matching_puzzle
 	Bitfield whose each bit represents an oriented piece matching the constraint
 	used as index
      **/
-    quicky_utils::quicky_bitfield ** m_binary_constraint_db;
+    quicky_utils::quicky_bitfield * m_binary_constraint_db;
 
     /**
 	Bitfield whose each bit represents an oriented piece identical to the one specified as index
@@ -249,7 +248,7 @@ namespace edge_matching_puzzle
     m_center_pieces(nullptr),
     m_piece_id2kind_index(new unsigned int[p_pieces.size()]),
     m_binary_pieces(new emp_types::t_binary_piece*[3]),
-    m_binary_constraint_db(new quicky_utils::quicky_bitfield*[3]),
+    m_binary_constraint_db(nullptr),
     m_binary_identical_pieces(new quicky_utils::quicky_bitfield*[3]),
     m_constraint_db(new t_constraint_db*[3])
       {
@@ -441,26 +440,52 @@ namespace edge_matching_puzzle
 		++l_orient_index)
 	      {
 		unsigned int l_extended_index = (l_index_by_kind[l_kind_index] << 2 ) + l_orient_index;
-		m_binary_pieces[l_kind_index][l_extended_index] = l_iter.get_bitfield_representation((emp_types::t_orientation)l_orient_index,m_coded_piece_id_size,m_color_id_size);
+		m_binary_pieces[l_kind_index][l_extended_index] = l_iter.get_bitfield_representation((emp_types::t_orientation)l_orient_index,m_coded_piece_id_size,m_color_id_size,m_border_color_id);
 	      }
             ++l_index_by_kind[l_kind_index];
 	  }
 
-	// Create empty binary constraints
-        for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER;
-            l_kind_index <= (unsigned int)emp_types::t_kind::CORNER;
-            ++l_kind_index)
-          {
-	    // Allocate memory for binary constraints array for each kind of piece
-	    // I do not want to call empty constructor
-	    m_binary_constraint_db[l_kind_index] = (quicky_utils::quicky_bitfield*)operator new[](sizeof(quicky_utils::quicky_bitfield) * (m_max_constraint + 1));
 
-	    // Call constructor with correct bitfield size
-	    for(unsigned int l_constraint_index = 0 ; l_constraint_index <= m_max_constraint ; ++l_constraint_index)
-	      {
-		new( &(m_binary_constraint_db[l_kind_index][l_constraint_index]))quicky_utils::quicky_bitfield(4 * m_nb_pieces[l_kind_index]);
-	      }
-	  }
+	// Create empty binary constraints
+        // The placement bew will be used just after to initialised possible constraints
+        m_binary_constraint_db = new quicky_utils::quicky_bitfield[m_max_constraint + 1];
+
+        for(unsigned int l_color1 = 0 ; l_color1 <= m_border_color_id ; ++l_color1)
+          {
+            unsigned int l_nb_border = l_color1 != m_border_color_id ? 0 : 1;
+            unsigned int l_constraint_index1 = l_color1 << m_color_id_size;
+            for(unsigned int l_color2 = 0 ; l_color2 <= m_border_color_id ; ++l_color2)
+              {
+                if(l_color2 == m_border_color_id)
+                  {
+                    ++l_nb_border;
+                  }
+                unsigned int l_constraint_index2 = (l_constraint_index1 | l_color2 ) << m_color_id_size;
+                for(unsigned int l_color3 = 0 ; l_color3 <= m_border_color_id ; ++l_color3)
+                  {
+                    if(l_color3 == m_border_color_id)
+                      {
+                        ++l_nb_border;
+                      }
+                    unsigned int l_constraint_index3 = (l_constraint_index2 | l_color3 ) << m_color_id_size;
+                    for(unsigned int l_color4 = 0 ; l_color4 <= m_border_color_id ; ++l_color4)
+                      {
+                        if(l_color4 == m_border_color_id)
+                          {
+                            ++l_nb_border;
+                          }
+                        if(l_nb_border <= 2)
+                          {
+                            unsigned int l_constraint_index4 = l_constraint_index3 | l_color4 ;
+                            new( &(m_binary_constraint_db[l_constraint_index4]))quicky_utils::quicky_bitfield(4 * m_nb_pieces[l_nb_border]);
+                          }
+                      }
+                    --l_nb_border;
+                    }
+                --l_nb_border;
+              }
+            --l_nb_border;
+          }
 
         // Compute constraints related to each piece
         for(auto l_iter : p_pieces)
@@ -525,6 +550,13 @@ namespace edge_matching_puzzle
             exit(-1);
 #endif // HANDLE_IDENTICAL_PIECES
           }
+#ifdef HANDLE_IDENTICAL_PIECES
+        else
+          {
+            std::cout << "There are no identical pieces, please recompile without flag HANDLE_IDENTICAL_PIECES" << std::endl ;
+            exit(-1);
+          }
+#endif // HANDLE_IDENTICAL_PIECES
 
         // Check color repartition on pieces
         unsigned int l_total = 0;
@@ -813,11 +845,10 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const quicky_utils::quicky_bitfield & emp_piece_db::get_pieces(const emp_types::t_kind & p_kind,
-                                                                   const emp_types::t_binary_piece & p_constraint)const
+    const quicky_utils::quicky_bitfield & emp_piece_db::get_pieces(const emp_types::t_binary_piece & p_constraint)const
       {
         assert(p_constraint <= m_max_constraint);
-        return m_binary_constraint_db[(unsigned int)p_kind][p_constraint];
+        return m_binary_constraint_db[p_constraint];
       }
 
     //----------------------------------------------------------------------------
@@ -843,6 +874,7 @@ namespace edge_matching_puzzle
           for(unsigned int l_constraint_squeleton = 0 ; l_constraint_squeleton <= 15 ; ++l_constraint_squeleton)
             {
 	      uint32_t l_constraint = 0;
+              unsigned int l_nb_border = 0;
               for(unsigned int l_border_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
                   l_border_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
                   ++l_border_orient_index)
@@ -854,13 +886,17 @@ namespace edge_matching_puzzle
                       if(!l_color_id)
                         {
                           l_color_id = m_border_color_id;
+                          ++l_nb_border;
                         }
                       // Orientation for constraint is inverted : North constraint will be given by South of upper piece
                       l_constraint |= l_color_id << (m_color_id_size * ((l_border_orient_index + 2) % 4));
                     }
                 }
 	      assert(l_constraint < m_max_constraint);
-              m_binary_constraint_db[(unsigned int)p_piece.get_kind()][l_constraint].set(1,1,l_extended_kind_index);
+              if(l_nb_border == (unsigned int) p_piece.get_kind())
+                {
+                  m_binary_constraint_db[l_constraint].set(1,1,l_extended_kind_index);
+                }
 	    }
 	}
     }
@@ -1023,14 +1059,6 @@ namespace edge_matching_puzzle
             delete[] m_constraint_db[l_index];
           }
         delete[] m_constraint_db;
-	for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER ; l_kind_index <= (unsigned int) emp_types::t_kind::CORNER ; ++l_kind_index)
-	  {
-	    for(unsigned int l_constraint_index = 0 ; l_constraint_index <= m_max_constraint ; ++l_constraint_index)
-	      {
-		m_binary_constraint_db[l_kind_index][l_constraint_index].~quicky_bitfield();
-	      }
-	    operator delete[] ((void*) (m_binary_constraint_db[l_kind_index]));
-	  }
         delete[] m_binary_constraint_db;
 
 
