@@ -24,9 +24,12 @@
 #include "emp_piece_corner.h"
 #include "emp_piece_constraint.h"
 #include "emp_link.h"
+#include "quicky_bitfield.h"
 #include <map>
 #include <set>
 #include <cmath>
+#include <vector>
+#include <sstream>
 
 #define HANDLE_IDENTICAL_PIECES
 
