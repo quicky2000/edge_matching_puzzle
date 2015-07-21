@@ -20,13 +20,15 @@
 #ifndef EMP_STRATEGY_H
 #define EMP_STRATEGY_H
 
+#include "emp_piece_db.h"
 #include "emp_position_strategy.h"
 #include "emp_strategy_generator.h"
-#include "emp_piece_db.h"
 #include "emp_situation_binary_dumper.h"
 #include "feature_if.h"
 #include "emp_gui.h"
+#include "emp_web_server.h"
 
+#define WEBSERVER
 namespace edge_matching_puzzle
 {
   /**
@@ -49,6 +51,17 @@ namespace edge_matching_puzzle
 
 
     inline ~emp_strategy(void);
+
+#ifdef WEBSERVER
+    inline void pause(void);
+    inline void restart(void);
+    inline bool is_paused(void)const;
+    inline void send_info(uint64_t & p_nb_situations,
+                          uint64_t & p_nb_sokutions,
+                          unsigned int & p_shift,
+                          emp_types::t_binary_piece * p_pieces,
+                          const emp_FSM_info & p_FSM_info)const;
+#endif // WEBSERVER
   private:
     /**
        To compute bitfield representation needed when dumping infile
@@ -104,6 +117,14 @@ namespace edge_matching_puzzle
     emp_situation_binary_dumper m_dumper;
     quicky_utils::quicky_bitfield m_bitfield;
     quicky_utils::quicky_bitfield m_empty_bitfield;
+
+    uint64_t m_nb_situation_explored;
+    uint64_t m_nb_solutions;
+#ifdef WEBSERVER
+    emp_web_server * m_web_server;
+    bool m_pause_requested;
+    bool m_paused;
+#endif // WEBSERVER
   };
 
   //----------------------------------------------------------------------------
@@ -126,7 +147,14 @@ namespace edge_matching_puzzle
     m_gui(p_gui),
     m_generator(p_generator),
     m_dumper(p_file_name,p_FSM_info,&m_generator,true),
-    m_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2))
+    m_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2)),
+    m_nb_situation_explored(0),
+    m_nb_solutions(0),
+#ifdef WEBSERVER
+      m_web_server(new emp_web_server(12345,*this,p_gui,p_FSM_info)),
+      m_pause_requested(false),
+      m_paused(false)
+#endif //  WEBSERVER
     {
 
       uint32_t l_color_mask = (1 << p_piece_db.get_color_id_size()) - 1;
@@ -237,6 +265,9 @@ namespace edge_matching_puzzle
   //--------------------------------------------------------------------------
   emp_strategy::~emp_strategy(void)
     {
+#ifdef WEBSERVER
+      delete m_web_server;
+#endif // WEBSERVER
       for(unsigned int l_index = 0 ; l_index <= m_size; ++l_index)
               {
                 m_positions_strategy[l_index].~emp_position_strategy();
@@ -267,11 +298,13 @@ namespace edge_matching_puzzle
   //--------------------------------------------------------------------------
   void emp_strategy::run(void)
   {
+#ifdef WEBSERVER
+    m_web_server->start();
+#endif // WEBSERVER
+
     unsigned int l_index = 0;
     compute_available_transitions(l_index);
     bool l_continu = true;
-    uint64_t l_nb_situation_explored = 0;
-    uint64_t l_nb_solutions = 0;
     while(/*l_index < m_size && */ l_continu)
       {
         //#define GUI_SOLUTIONS
@@ -287,15 +320,15 @@ namespace edge_matching_puzzle
                                                        ,m_piece_db.get_get_binary_identical_pieces(m_positions_strategy[l_index].get_kind(),l_next_transition)
 #endif // HANDLE_IDENTICAL_PIECES
 );
-            ++l_nb_situation_explored;
+            ++m_nb_situation_explored;
 #ifdef GUI
 	    display_on_gui(l_index);
 #endif //GUI
             if(l_index == m_size - 1)
               {
-                ++l_nb_solutions;
+                ++m_nb_solutions;
                 compute_bin_id(m_bitfield);
-                m_dumper.dump(m_bitfield,l_nb_situation_explored);
+                m_dumper.dump(m_bitfield,m_nb_situation_explored);
 #ifdef GUI_SOLUTIONS
                 display_on_gui(l_index);
 #endif
@@ -319,12 +352,70 @@ namespace edge_matching_puzzle
               }
 #endif
 	  }
+
+#ifdef WEBSERVER
+        if(m_pause_requested)
+          {
+#ifdef DEBUG_WEBSERVER
+            std::cout << "Strategy entering in pause" << std::endl;
+#endif
+            m_paused = true;
+            while(m_pause_requested)
+              {
+                usleep(1);
+              }
+#ifdef DEBUG_WEBSERVER
+            std::cout << "Strategy leaving pause" << std::endl;
+#endif
+            m_paused = false;
+          }
+#endif // WEBSERVER
+
       }
-    m_dumper.dump(l_nb_situation_explored);
+    m_dumper.dump(m_nb_situation_explored);
     std::cout << "End of algorithm" << std::endl ;
-    std::cout << "Total situations explored : "  << l_nb_situation_explored << std::endl ;
-    std::cout << "Nb solutions : "  << l_nb_solutions << std::endl ;
+    std::cout << "Total situations explored : "  << m_nb_situation_explored << std::endl ;
+    std::cout << "Nb solutions : "  << m_nb_solutions << std::endl ;
   }
+
+
+#ifdef WEBSERVER
+  //--------------------------------------------------------------------------
+  void emp_strategy::pause(void)
+    {
+      m_pause_requested = true;
+    }
+
+  //--------------------------------------------------------------------------
+  void emp_strategy::restart(void)
+    {
+      m_pause_requested = false;
+    }
+
+  //--------------------------------------------------------------------------
+  bool emp_strategy::is_paused(void)const
+  {
+    return m_paused;
+  }
+  //--------------------------------------------------------------------------
+  void emp_strategy::send_info(uint64_t & p_nb_situations,
+                               uint64_t & p_nb_solutions,
+                               unsigned int & p_shift,
+                               emp_types::t_binary_piece * p_pieces,
+                               const emp_FSM_info & p_FSM_info)const
+  {
+    p_nb_situations = m_nb_situation_explored;
+    p_nb_solutions = m_nb_solutions;
+    p_shift = 4 * m_piece_db.get_color_id_size();
+    for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
+      {
+        const std::pair<unsigned int,unsigned int> & l_position = m_generator.get_position(l_index);
+        p_pieces[p_FSM_info.get_width() * l_position.second + l_position.first] = m_positions_strategy[l_index].get_piece_info();
+      }
+
+  }
+#endif // WEBSERVER
+
 }
 #endif // EMP_STRATEGY_H
 //EOF
