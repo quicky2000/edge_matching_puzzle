@@ -57,7 +57,7 @@ int main(int argc,char ** argv)
   try
     {
       // Defining application command line parameters
-      parameter_manager::parameter_manager l_param_manager("edge_matching_puzzle.exe","--",2);
+      parameter_manager::parameter_manager l_param_manager("edge_matching_puzzle.exe","--",3);
       parameter_if l_definition_file("definition",false);
       l_param_manager.add(l_definition_file);
       parameter_if l_ressources_path("ressources",false);
