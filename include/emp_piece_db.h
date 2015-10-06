@@ -24,7 +24,7 @@
 #include "emp_piece_corner.h"
 #include "emp_piece_constraint.h"
 #include "emp_link.h"
-#include "quicky_bitfield.h"
+#include "emp_types.h"
 #include <map>
 #include <set>
 #include <cmath>
@@ -93,11 +93,11 @@ namespace edge_matching_puzzle
        The result is a bitfield in which each bit represent a couple
        ( Piece kind id, orientation)
     **/
-    inline const quicky_utils::quicky_bitfield & get_pieces(const emp_types::t_binary_piece & p_constraint)const;
+    inline const emp_types::bitfield & get_pieces(const emp_types::t_binary_piece & p_constraint)const;
 
 
-    inline const quicky_utils::quicky_bitfield & get_get_binary_identical_pieces(const emp_types::t_kind & p_kind,
-                                                                                 const emp_types::t_piece_id & p_kind_id)const;
+    inline const emp_types::bitfield & get_get_binary_identical_pieces(const emp_types::t_kind & p_kind,
+											   const emp_types::t_piece_id & p_kind_id)const;
 
     /**
        Get Corner by index
@@ -213,12 +213,12 @@ namespace edge_matching_puzzle
 	Bitfield whose each bit represents an oriented piece matching the constraint
 	used as index
      **/
-    quicky_utils::quicky_bitfield * m_binary_constraint_db;
+    emp_types::bitfield * m_binary_constraint_db;
 
     /**
 	Bitfield whose each bit represents an oriented piece identical to the one specified as index
      **/
-    quicky_utils::quicky_bitfield ** m_binary_identical_pieces;
+    emp_types::bitfield ** m_binary_identical_pieces;
 
 
     typedef std::map<emp_piece_constraint,std::set<emp_types::t_oriented_piece> > t_constraint_db;
@@ -252,7 +252,7 @@ namespace edge_matching_puzzle
     m_piece_id2kind_index(new unsigned int[p_pieces.size()]),
     m_binary_pieces(new emp_types::t_binary_piece*[3]),
     m_binary_constraint_db(nullptr),
-    m_binary_identical_pieces(new quicky_utils::quicky_bitfield*[3]),
+    m_binary_identical_pieces(new emp_types::bitfield*[3]),
     m_constraint_db(new t_constraint_db*[3])
       {
         std::cout << "----------------------------------------------" << std::endl;
@@ -451,7 +451,7 @@ namespace edge_matching_puzzle
 
 	// Create empty binary constraints
         // The placement bew will be used just after to initialised possible constraints
-        m_binary_constraint_db = new quicky_utils::quicky_bitfield[m_max_constraint + 1];
+        m_binary_constraint_db = new emp_types::bitfield[m_max_constraint + 1];
 
         for(unsigned int l_color1 = 0 ; l_color1 <= m_border_color_id ; ++l_color1)
           {
@@ -480,7 +480,7 @@ namespace edge_matching_puzzle
                         if(l_nb_border <= 2)
                           {
                             unsigned int l_constraint_index4 = l_constraint_index3 | l_color4 ;
-                            new( &(m_binary_constraint_db[l_constraint_index4]))quicky_utils::quicky_bitfield(4 * m_nb_pieces[l_nb_border]);
+                            new( &(m_binary_constraint_db[l_constraint_index4]))emp_types::bitfield(4 * m_nb_pieces[l_nb_border]);
                           }
                       }
                     --l_nb_border;
@@ -503,12 +503,12 @@ namespace edge_matching_puzzle
             l_kind_index <= (unsigned int)emp_types::t_kind::CORNER;
             ++l_kind_index)
           {
-            m_binary_identical_pieces[l_kind_index] = (quicky_utils::quicky_bitfield*)operator new[](sizeof(quicky_utils::quicky_bitfield) * m_nb_pieces[l_kind_index] * 4);
+            m_binary_identical_pieces[l_kind_index] = (emp_types::bitfield*)operator new[](sizeof(emp_types::bitfield) * m_nb_pieces[l_kind_index] * 4);
 
 	    // Call constructor with correct bitfield size
 	    for(unsigned int l_constraint_index = 0 ; l_constraint_index < 4 * m_nb_pieces[l_kind_index] ; ++l_constraint_index)
 	      {
-		new( &(m_binary_identical_pieces[l_kind_index][l_constraint_index]))quicky_utils::quicky_bitfield(4 * m_nb_pieces[l_kind_index],true);
+		new( &(m_binary_identical_pieces[l_kind_index][l_constraint_index]))emp_types::bitfield(4 * m_nb_pieces[l_kind_index],true);
                 m_binary_identical_pieces[l_kind_index][l_constraint_index].set(0,1,l_constraint_index);
 	      }
           }
@@ -848,15 +848,15 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const quicky_utils::quicky_bitfield & emp_piece_db::get_pieces(const emp_types::t_binary_piece & p_constraint)const
+    const emp_types::bitfield & emp_piece_db::get_pieces(const emp_types::t_binary_piece & p_constraint)const
       {
         assert(p_constraint <= m_max_constraint);
         return m_binary_constraint_db[p_constraint];
       }
 
     //----------------------------------------------------------------------------
-    const quicky_utils::quicky_bitfield & emp_piece_db::get_get_binary_identical_pieces(const emp_types::t_kind & p_kind,
-                                                                                        const emp_types::t_piece_id & p_kind_id)const
+    const emp_types::bitfield & emp_piece_db::get_get_binary_identical_pieces(const emp_types::t_kind & p_kind,
+												  const emp_types::t_piece_id & p_kind_id)const
       {
         assert(p_kind_id < 4 * m_nb_pieces[(unsigned int)p_kind]);
         return m_binary_identical_pieces[(unsigned int)p_kind][p_kind_id];

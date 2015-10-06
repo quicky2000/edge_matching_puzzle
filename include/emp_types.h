@@ -20,6 +20,7 @@
 #ifndef EMP_TYPES_H
 #define EMP_TYPES_H
 
+#include "quicky_bitfield.h"
 #include "quicky_exception.h"
 #include <string>
 
@@ -38,6 +39,7 @@ namespace edge_matching_puzzle
     inline static const std::string & orientation2string(const t_orientation & p_orientation);
     inline static const char & orientation2short_string(const t_orientation & p_orientation);
     inline static const t_orientation short_string2orientation(const char & p_char);
+    typedef quicky_utils::quicky_bitfield<uint64_t> bitfield;
   private:
     static const std::string m_kind_strings[((uint32_t)t_kind::CORNER) + 1];
     static const std::string m_orientation_strings[((uint32_t)t_orientation::WEST) + 1];

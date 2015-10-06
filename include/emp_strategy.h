@@ -66,7 +66,7 @@ namespace edge_matching_puzzle
     /**
        To compute bitfield representation needed when dumping infile
     **/
-    inline void compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const;
+    inline void compute_bin_id(emp_types::bitfield & p_bitfield)const;
 
     /**
        Comput real available transitions for given index by taking account 
@@ -94,29 +94,29 @@ namespace edge_matching_puzzle
     /**
        Array to store for each kind of position the available pieces of previous position with same kind
     **/
-    quicky_utils::quicky_bitfield const * m_previous_available_pieces[3];
+    emp_types::bitfield const * m_previous_available_pieces[3];
 
     /**
        To bootstrap with all available centers
     **/
-    quicky_utils::quicky_bitfield m_centers;
+    emp_types::bitfield m_centers;
 
     /**
        To bootstrap with all available borders
     **/
-    quicky_utils::quicky_bitfield m_borders;
+    emp_types::bitfield m_borders;
 
     /**
        To bootstrap with all available corners
     **/
-    quicky_utils::quicky_bitfield m_corners;
+    emp_types::bitfield m_corners;
 
     emp_gui &m_gui;
     const emp_strategy_generator & m_generator;
 
     emp_situation_binary_dumper m_dumper;
-    quicky_utils::quicky_bitfield m_bitfield;
-    quicky_utils::quicky_bitfield m_empty_bitfield;
+    emp_types::bitfield m_bitfield;
+    emp_types::bitfield m_empty_bitfield;
 
     uint64_t m_nb_situation_explored;
     uint64_t m_nb_solutions;
@@ -244,7 +244,7 @@ namespace edge_matching_puzzle
     }
 
   //---------------------------------------------------------------------------
-  void emp_strategy::compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const
+  void emp_strategy::compute_bin_id(emp_types::bitfield & p_bitfield)const
   {
     for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
       {

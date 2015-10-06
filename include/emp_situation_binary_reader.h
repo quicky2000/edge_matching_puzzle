@@ -45,7 +45,10 @@ namespace edge_matching_puzzle
     const unsigned int m_reader_version;
     unsigned int m_file_version;
     std::ifstream m_file;
-    quicky_utils::quicky_bitfield *m_bitfield;
+    typedef quicky_utils::quicky_bitfield<uint32_t> t_v0_bitfield;
+    t_v0_bitfield *m_v0_bitfield;
+    typedef quicky_utils::quicky_bitfield<uint64_t> t_v1_bitfield;
+    t_v1_bitfield *m_v1_bitfield;
     unsigned int m_record_size;
     std::streampos m_start;
     const emp_FSM_info m_FSM_info;
@@ -61,7 +64,8 @@ namespace edge_matching_puzzle
                                                            const emp_FSM_info & p_FSM_info):
     m_reader_version(1),
     m_file_version(0),
-    m_bitfield(nullptr),
+    m_v0_bitfield(nullptr),
+    m_v1_bitfield(nullptr),
     m_record_size(0),
     m_start(0),
     m_FSM_info(p_FSM_info),
@@ -101,18 +105,23 @@ namespace edge_matching_puzzle
 	{
 	case 0:
 	  m_generator = new emp_basic_strategy_generator(m_FSM_info.get_width(),m_FSM_info.get_height());
+	  // In this case m_solution_dump is always 0 as it was introduced with v1 version of format
+	  m_input_field_size = (2 + (m_solution_dump ? p_FSM_info.get_piece_id_size() : p_FSM_info.get_dumped_piece_id_size()));
+	  m_v0_bitfield = new t_v0_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * m_input_field_size);
+	  m_v1_bitfield = new t_v1_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * m_input_field_size);
+	  m_record_size = sizeof(uint64_t) + m_v0_bitfield->size();
 	  break;
 	case 1:
           m_file.read((char*)&m_solution_dump,sizeof(m_solution_dump));
           std::cout << "Solution dump : " << (m_solution_dump ? "YES" : "NO") << std::endl ;
 	  m_generator = new emp_stream_strategy_generator(m_FSM_info.get_width(),m_FSM_info.get_height(),m_file);
+	  m_input_field_size = (2 + (m_solution_dump ? p_FSM_info.get_piece_id_size() : p_FSM_info.get_dumped_piece_id_size()));
+	  m_v1_bitfield = new t_v1_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * m_input_field_size);
+	  m_record_size = sizeof(uint64_t) + m_v1_bitfield->size();
 	  break;
 	default:
 	  throw quicky_exception::quicky_logic_exception("Generator creation is not supported for file version "+l_file_version.str(),__LINE__,__FILE__);
 	}
-      m_input_field_size = (2 + (m_solution_dump ? p_FSM_info.get_piece_id_size() : p_FSM_info.get_dumped_piece_id_size()));
-      m_bitfield = new quicky_utils::quicky_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * m_input_field_size);
-      m_record_size = sizeof(uint64_t) + m_bitfield->size();
       m_generator->generate();
 
       m_start = m_file.tellg();
@@ -153,22 +162,30 @@ namespace edge_matching_puzzle
       if(p_index < m_situation_number)
         {
           m_file.seekg(m_start +((std::streampos)(p_index * m_record_size)));
-          m_bitfield->read_from(m_file);
 	  switch(m_file_version)
 	    {
 	    case 0:
-	      p_situation.set(*m_bitfield);
+	      m_v0_bitfield->read_from(m_file);
+	      // Convert from old bitfield format (uint32_t) to new bitfield format ( uint64_t)
+              for(unsigned int l_index = 0 ; l_index < m_FSM_info.get_width() * m_FSM_info.get_height() ; ++l_index)
+              {
+		unsigned int l_data=0;
+		m_v0_bitfield->get(l_data,m_input_field_size,l_index * m_input_field_size);
+		m_v1_bitfield->set(l_data,m_input_field_size,l_index * m_input_field_size);
+	      }
+	      p_situation.set(*m_v1_bitfield);
 	      break;
 	    case 1:
               {
+		m_v1_bitfield->read_from(m_file);
                 unsigned int l_output_field_size = m_FSM_info.get_dumped_piece_id_size() + 2;
-                quicky_utils::quicky_bitfield l_sorted_bitfield(l_output_field_size * m_FSM_info.get_width() * m_FSM_info.get_height());
+                t_v1_bitfield l_sorted_bitfield(l_output_field_size * m_FSM_info.get_width() * m_FSM_info.get_height());
                 for(unsigned int l_index = 0 ; l_index < m_FSM_info.get_width() * m_FSM_info.get_height() ; ++l_index)
                   {
                     std::pair<unsigned int,unsigned int> l_current_position = m_generator->get_position(l_index);
                     unsigned int l_new_index = l_current_position.second * m_FSM_info.get_width() + l_current_position.first;
                     unsigned int l_data=0;
-                    m_bitfield->get(l_data,m_input_field_size,l_index * m_input_field_size);
+                    m_v1_bitfield->get(l_data,m_input_field_size,l_index * m_input_field_size);
                     
                     unsigned int l_new_data = (((l_data >> 2 ) + (m_solution_dump ? 1 :0)) << 2)+ (l_data & 0x3);
                     l_sorted_bitfield.set(l_new_data,l_output_field_size,l_new_index * l_output_field_size);
@@ -200,7 +217,8 @@ namespace edge_matching_puzzle
     emp_situation_binary_reader::~emp_situation_binary_reader(void)
       {
 	delete m_generator;
-        delete m_bitfield;
+        delete m_v1_bitfield;
+        delete m_v0_bitfield;
         if(m_file) m_file.close();
       }
  

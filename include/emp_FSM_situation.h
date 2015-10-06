@@ -24,7 +24,6 @@
 #include "emp_FSM_info.h"
 #include "emp_types.h"
 #include "quicky_exception.h"
-#include "quicky_bitfield.h"
 #include <map>
 #include <sstream>
 #include <iomanip>
@@ -56,11 +55,11 @@ namespace edge_matching_puzzle
     inline bool contains_piece(const unsigned int & p_x,
                                const unsigned int & p_y)const;
 
-    inline void set(const quicky_utils::quicky_bitfield & p_bitfield);
+    inline void set(const emp_types::bitfield & p_bitfield);
     inline void set(const std::string & p_string);
     inline const unsigned int get_level(void)const;
     inline void compute_string_id(std::string & p_id)const;
-    inline void compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const;
+    inline void compute_bin_id(emp_types::bitfield & p_bitfield)const;
     static inline const unsigned int & get_nb_bits(void);
     inline ~emp_FSM_situation(void);
     inline emp_FSM_situation(const emp_FSM_situation & p_situation);
@@ -69,7 +68,7 @@ namespace edge_matching_puzzle
  
     emp_types::t_oriented_piece * m_content;
     unsigned int m_content_size;
-    quicky_utils::quicky_bitfield m_used_positions;
+    emp_types::bitfield m_used_positions;
 
     static unsigned int m_piece_representation_width;
     static emp_FSM_info const * m_info;
@@ -207,7 +206,7 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  void emp_FSM_situation::set(const quicky_utils::quicky_bitfield & p_bitfield)
+  void emp_FSM_situation::set(const emp_types::bitfield & p_bitfield)
   {
     this->reset();
     for(unsigned int l_y = 0 ; l_y < m_info->get_height() ; ++l_y)
@@ -283,7 +282,7 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  void emp_FSM_situation::compute_bin_id(quicky_utils::quicky_bitfield & p_bitfield)const
+  void emp_FSM_situation::compute_bin_id(emp_types::bitfield & p_bitfield)const
   {
     p_bitfield.reset();
     for(unsigned int l_index = 0 ; l_index < m_info->get_width() * m_info->get_height() ; ++l_index)

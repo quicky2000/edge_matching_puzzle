@@ -42,7 +42,7 @@ namespace edge_matching_puzzle
     inline bool is_used(const emp_types::t_piece_id & p_id)const;
     inline void clear(void);
   private:
-    quicky_utils::quicky_bitfield m_used_pieces;
+    quicky_utils::quicky_bitfield<uint64_t> m_used_pieces;
   };
   //----------------------------------------------------------------------------
   emp_FSM_context::emp_FSM_context(const unsigned int & p_size):

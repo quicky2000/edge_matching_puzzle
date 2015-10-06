@@ -39,12 +39,13 @@ namespace edge_matching_puzzle
     inline ~emp_situation_binary_dumper(void);
     inline void dump(const emp_FSM_situation & p_situation);
     inline void dump(const uint64_t & p_total_number);
-    inline void dump(const quicky_utils::quicky_bitfield & p_bitfield,
+    template <typename T>
+    inline void dump(const quicky_utils::quicky_bitfield<T> & p_bitfield,
                      const uint64_t & p_total_number);
   private:
     const uint32_t m_version;
     std::ofstream m_file;
-    quicky_utils::quicky_bitfield m_bitfield;
+    quicky_utils::quicky_bitfield<uint64_t> m_v1_bitfield;
     const uint32_t m_solution_dump;
   };
 
@@ -54,7 +55,7 @@ namespace edge_matching_puzzle
                                                            const emp_strategy_generator * const p_generator,
                                                            bool p_solution_dump):
     m_version(1),
-    m_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * (2 + (p_solution_dump ? p_FSM_info.get_piece_id_size() : p_FSM_info.get_dumped_piece_id_size()))),
+    m_v1_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * (2 + (p_solution_dump ? p_FSM_info.get_piece_id_size() : p_FSM_info.get_dumped_piece_id_size()))),
     m_solution_dump(p_solution_dump)
     {
       m_file.open(p_name.c_str(),std::ofstream::binary);
@@ -79,12 +80,13 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     void emp_situation_binary_dumper::dump(const emp_FSM_situation & p_situation)
     {
-      p_situation.compute_bin_id(m_bitfield);
-      m_bitfield.dump_in(m_file);
+      p_situation.compute_bin_id(m_v1_bitfield);
+      m_v1_bitfield.dump_in(m_file);
     }
 
     //----------------------------------------------------------------------------
-    void emp_situation_binary_dumper::dump(const quicky_utils::quicky_bitfield & p_bitfield,const uint64_t & p_total_number)
+    template <typename T>
+    void emp_situation_binary_dumper::dump(const quicky_utils::quicky_bitfield<T> & p_bitfield,const uint64_t & p_total_number)
     {
       p_bitfield.dump_in(m_file);
       dump(p_total_number);

@@ -25,7 +25,6 @@
 #define EMP_POSITION_STRATEGY_H
 
 #include "emp_types.h"
-#include "quicky_bitfield.h"
 
 namespace edge_matching_puzzle
 {
@@ -37,7 +36,7 @@ namespace edge_matching_puzzle
     typedef std::pair<emp_position_strategy *,emp_types::t_binary_piece> t_neighbour_access;
 
     inline emp_position_strategy(const emp_types::t_kind & p_kind,
-                                 const quicky_utils::quicky_bitfield & p_previous_available_pieces);
+                                 const emp_types::bitfield & p_previous_available_pieces);
 
     /**
        To know which kind of piece is stored in this position
@@ -68,19 +67,19 @@ namespace edge_matching_puzzle
     /**
        Compute real available transitions by taking in account theorical transitions and available pieces
     **/
-    inline void compute_available_transitions(const quicky_utils::quicky_bitfield & p_theoric_transitions);
+    inline void compute_available_transitions(const emp_types::bitfield & p_theoric_transitions);
 
     /**
        Return available pieces
     **/
-    inline const quicky_utils::quicky_bitfield & get_available_pieces(void)const;
+    inline const emp_types::bitfield & get_available_pieces(void)const;
 
     /**
        Select piece and update info to make it no more usable
     **/
     inline void select_piece(const unsigned int & p_transition_id
 #ifdef HANDLE_IDENTICAL_PIECES
-                             ,const quicky_utils::quicky_bitfield & p_identical_pieces
+                             ,const emp_types::bitfield & p_identical_pieces
 #endif // HANDLE_IDENTICAL_PIECES
                              );
 
@@ -92,14 +91,14 @@ namespace edge_matching_puzzle
     const emp_types::t_kind m_position_kind;
     emp_types::t_binary_piece m_piece_info;
     t_neighbour_access m_neighbour_access[4];
-    quicky_utils::quicky_bitfield m_available_transitions;
-    const quicky_utils::quicky_bitfield & m_previous_available_pieces;
-    quicky_utils::quicky_bitfield m_available_pieces;
+    emp_types::bitfield m_available_transitions;
+    const emp_types::bitfield & m_previous_available_pieces;
+    emp_types::bitfield m_available_pieces;
   };
 
   //----------------------------------------------------------------------------
   emp_position_strategy::emp_position_strategy(const emp_types::t_kind & p_kind,
-                                               const quicky_utils::quicky_bitfield & p_previous_available_pieces):
+                                               const emp_types::bitfield & p_previous_available_pieces):
     m_position_kind(p_kind),
     m_piece_info(0),
     m_available_transitions(p_previous_available_pieces.bitsize()),
@@ -136,7 +135,7 @@ namespace edge_matching_puzzle
     }
 
     //--------------------------------------------------------------------------
-    const quicky_utils::quicky_bitfield & emp_position_strategy::get_available_pieces(void)const
+    const emp_types::bitfield & emp_position_strategy::get_available_pieces(void)const
       {
         return m_available_pieces;
       }
@@ -154,7 +153,7 @@ namespace edge_matching_puzzle
     }
 
   //----------------------------------------------------------------------------
-  void emp_position_strategy::compute_available_transitions(const quicky_utils::quicky_bitfield & p_theoric_transitions)
+  void emp_position_strategy::compute_available_transitions(const emp_types::bitfield & p_theoric_transitions)
   {
     m_available_transitions.apply_and(p_theoric_transitions,m_previous_available_pieces);
   }
@@ -162,7 +161,7 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   void emp_position_strategy::select_piece(const unsigned int & p_transition_id
 #ifdef HANDLE_IDENTICAL_PIECES
-                                           ,const quicky_utils::quicky_bitfield & p_identical_pieces
+                                           ,const emp_types::bitfield & p_identical_pieces
 #endif // HANDLE_IDENTICAL_PIECES
 )
   {
