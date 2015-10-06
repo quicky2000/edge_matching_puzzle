@@ -45,7 +45,7 @@ namespace edge_matching_puzzle
   emp_pieces_parser::emp_pieces_parser(const std::string & p_file_name)
     {
       m_file.open(p_file_name.c_str());
-      if(NULL == m_file) throw quicky_exception::quicky_runtime_exception("Unable to open file \""+p_file_name+"\" for reading",__LINE__,__FILE__);
+      if(!m_file.is_open()) throw quicky_exception::quicky_runtime_exception("Unable to open file \""+p_file_name+"\" for reading",__LINE__,__FILE__);
     }
 
 

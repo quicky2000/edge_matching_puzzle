@@ -188,7 +188,7 @@ namespace edge_matching_puzzle
 
       std::ifstream l_stream;
       l_stream.open(l_file_name.c_str());
-      if(NULL == l_stream)
+      if(!l_stream.is_open())
         {
           throw quicky_exception::quicky_runtime_exception("Unable to open " + l_file_name + " file",__LINE__,__FILE__);
         }

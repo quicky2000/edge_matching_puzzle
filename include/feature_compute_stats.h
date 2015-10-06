@@ -74,7 +74,7 @@ namespace edge_matching_puzzle
         l_stream_height << p_info.get_height();
         std::string l_file_name = "stats_"+l_stream_width.str()+"_"+l_stream_height.str()+".txt";
         m_report_file.open(l_file_name.c_str());
-        if(NULL == m_report_file) throw quicky_exception::quicky_runtime_exception("Unable to create file \""+l_file_name+"\"",__LINE__,__FILE__);
+        if(!m_report_file.is_open()) throw quicky_exception::quicky_runtime_exception("Unable to create file \""+l_file_name+"\"",__LINE__,__FILE__);
       }
 
     //----------------------------------------------------------------------------
