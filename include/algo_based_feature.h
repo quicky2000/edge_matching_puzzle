@@ -33,7 +33,7 @@ namespace edge_matching_puzzle
 
   template<typename ALGO>
     class algo_based_feature:public feature_if,
-    public signal_handler_listener_if,
+    public quicky_utils::signal_handler_listener_if,
     public FSM_base::FSM_UI<emp_FSM_situation>
     {
     public:
@@ -53,7 +53,7 @@ namespace edge_matching_puzzle
       inline const ALGO & get_algo(void)const;
       inline ALGO & get_algo(void);
     private:
-      signal_handler m_signal_handler;
+      quicky_utils::signal_handler m_signal_handler;
       ALGO m_algo;
       emp_gui * m_gui;
       emp_FSM m_FSM;
