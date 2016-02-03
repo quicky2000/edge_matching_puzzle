@@ -34,6 +34,7 @@
 
 
 #include "emp_spiral_strategy_generator.h"
+#include "emp_text_strategy_generator.h"
 #include "emp_strategy.h"
 
 #include "quicky_exception.h"
@@ -132,8 +133,15 @@ int main(int argc,char ** argv)
         }
       else if("new_strategy" == l_feature_name)
 	{
-          // No need to delte this objetct, it will be done in emp_strategy destructor
+          // No need to delete this object, it will be done in emp_strategy destructor
 	  emp_spiral_strategy_generator * l_generator = new emp_spiral_strategy_generator(l_info.get_width(),l_info.get_height());
+	  l_generator->generate();
+	  l_feature = new emp_strategy(*l_generator,l_piece_db,l_gui,l_info,l_dump_file_name);
+	}
+      else if("new_text_strategy" == l_feature_name)
+	{
+          // No need to delete this object, it will be done in emp_strategy destructor
+	  emp_text_strategy_generator * l_generator = new emp_text_strategy_generator(l_info.get_width(),l_info.get_height(),"strategy.txt");
 	  l_generator->generate();
 	  l_feature = new emp_strategy(*l_generator,l_piece_db,l_gui,l_info,l_dump_file_name);
 	}
