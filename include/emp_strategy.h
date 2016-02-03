@@ -302,6 +302,9 @@ namespace edge_matching_puzzle
     m_web_server->start();
 #endif // WEBSERVER
 
+#ifdef GUI
+    unsigned int l_max = 0;
+#endif //GUI
     unsigned int l_index = 0;
     compute_available_transitions(l_index);
     bool l_continu = true;
@@ -322,7 +325,12 @@ namespace edge_matching_puzzle
 );
             ++m_nb_situation_explored;
 #ifdef GUI
-	    display_on_gui(l_index);
+	    if(l_index > l_max)
+	      {
+		std::cout << "New max : " << l_index << std::endl ;
+		display_on_gui(l_index);
+		l_max = l_index;
+	      }
 #endif //GUI
             if(l_index == m_size - 1)
               {
@@ -346,9 +354,11 @@ namespace edge_matching_puzzle
             l_continu = l_index > 1;
 	    --l_index;
 #ifdef GUI
-            if(l_continu)
+            if(l_continu && l_index > l_max)
               {
+		std::cout << "New max : " << l_index << std::endl ;
                 display_on_gui(l_index);
+		l_max = l_index;
               }
 #endif
 	  }
