@@ -67,6 +67,8 @@ int main(int argc,char ** argv)
       l_param_manager.add(l_feature_name_parameter);
       parameter_if l_dump_file("dump_file",true);
       l_param_manager.add(l_dump_file);
+      parameter_if l_initial_situation("initial_situation",true);
+      l_param_manager.add(l_initial_situation);
 
       // Treating parameters
       l_param_manager.treat_parameters(argc,argv);
@@ -131,19 +133,29 @@ int main(int argc,char ** argv)
         {
           l_feature = new feature_compute_stats(l_piece_db,l_info,l_gui);
         }
-      else if("new_strategy" == l_feature_name)
+      else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
 	{
           // No need to delete this object, it will be done in emp_strategy destructor
-	  emp_spiral_strategy_generator * l_generator = new emp_spiral_strategy_generator(l_info.get_width(),l_info.get_height());
+	  emp_strategy_generator * l_generator = nullptr;
+	  if("new_strategy" == l_feature_name)
+	    {
+	      l_generator = new emp_spiral_strategy_generator(l_info.get_width(),l_info.get_height());
+	    }
+	  else if("new_text_strategy" == l_feature_name)
+	    {
+	      l_generator = new emp_text_strategy_generator(l_info.get_width(),l_info.get_height(),"strategy.txt");
+	    }
+	  else
+	    {
+	      throw quicky_exception::quicky_logic_exception("Should not occur",__LINE__,__FILE__);
+	    }
 	  l_generator->generate();
-	  l_feature = new emp_strategy(*l_generator,l_piece_db,l_gui,l_info,l_dump_file_name);
-	}
-      else if("new_text_strategy" == l_feature_name)
-	{
-          // No need to delete this object, it will be done in emp_strategy destructor
-	  emp_text_strategy_generator * l_generator = new emp_text_strategy_generator(l_info.get_width(),l_info.get_height(),"strategy.txt");
-	  l_generator->generate();
-	  l_feature = new emp_strategy(*l_generator,l_piece_db,l_gui,l_info,l_dump_file_name);
+	  emp_strategy * l_strategy = new emp_strategy(*l_generator,l_piece_db,l_gui,l_info,l_dump_file_name);
+	  if(l_initial_situation.value_set())
+	    {
+	      l_strategy->set_initial_state(l_initial_situation.get_value<std::string>());
+	    }
+	  l_feature = l_strategy;
 	}
       else
         {

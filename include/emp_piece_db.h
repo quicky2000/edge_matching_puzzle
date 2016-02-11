@@ -31,7 +31,7 @@
 #include <vector>
 #include <sstream>
 
-#define HANDLE_IDENTICAL_PIECES
+//#define HANDLE_IDENTICAL_PIECES
 
 namespace edge_matching_puzzle
 {
@@ -108,6 +108,11 @@ namespace edge_matching_puzzle
        Get pieces identical to a given piece
     **/
     inline const std::set<emp_types::t_piece_id> * const get_identical_pieces(const emp_types::t_piece_id & p_id)const;
+
+    /**
+       Return index of piece in its kind category
+    **/
+    inline const unsigned int get_kind_index(const emp_types::t_piece_id & p_id)const;
 
     inline ~emp_piece_db(void);
   private:
@@ -1107,6 +1112,13 @@ namespace edge_matching_puzzle
         assert(m_corners[p_index]);
         return *(m_corners[p_index]);
       }
+    //----------------------------------------------------------------------------
+    const unsigned int emp_piece_db::get_kind_index(const emp_types::t_piece_id & p_id)const
+    {
+      assert(p_id <= m_pieces.size());
+      assert(p_id);
+      return m_piece_id2kind_index[p_id - 1];
+    }
 
 
 }

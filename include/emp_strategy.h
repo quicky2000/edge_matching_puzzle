@@ -28,7 +28,7 @@
 #include "emp_gui.h"
 #include "emp_web_server.h"
 
-#define WEBSERVER
+//#define WEBSERVER
 namespace edge_matching_puzzle
 {
   /**
@@ -51,8 +51,9 @@ namespace edge_matching_puzzle
 
 
     inline ~emp_strategy(void);
+    inline void set_initial_state(const std::string & p_situation);
 
-#ifdef WEBSERVER
+    // Methods used by webserver when activated
     inline void pause(void);
     inline void restart(void);
     inline bool is_paused(void)const;
@@ -61,7 +62,7 @@ namespace edge_matching_puzzle
                           unsigned int & p_shift,
                           emp_types::t_binary_piece * p_pieces,
                           const emp_FSM_info & p_FSM_info)const;
-#endif // WEBSERVER
+    // End of methods used by webserver
   private:
     /**
        To compute bitfield representation needed when dumping infile
@@ -122,9 +123,10 @@ namespace edge_matching_puzzle
     uint64_t m_nb_solutions;
 #ifdef WEBSERVER
     emp_web_server * m_web_server;
+#endif // WEBSERVER
     bool m_pause_requested;
     bool m_paused;
-#endif // WEBSERVER
+    unsigned int m_start_index;
   };
 
   //----------------------------------------------------------------------------
@@ -151,10 +153,11 @@ namespace edge_matching_puzzle
     m_nb_situation_explored(0),
     m_nb_solutions(0),
 #ifdef WEBSERVER
-      m_web_server(new emp_web_server(12345,*this,p_gui,p_FSM_info)),
-      m_pause_requested(false),
-      m_paused(false)
+    m_web_server(new emp_web_server(12345,*this,p_gui,p_FSM_info)),
 #endif //  WEBSERVER
+    m_pause_requested(false),
+    m_paused(false),
+    m_start_index(0)
     {
 
       uint32_t l_color_mask = (1 << p_piece_db.get_color_id_size()) - 1;
@@ -305,7 +308,7 @@ namespace edge_matching_puzzle
 #ifdef GUI
     unsigned int l_max = 0;
 #endif //GUI
-    unsigned int l_index = 0;
+    unsigned int l_index = m_start_index;
     compute_available_transitions(l_index);
     bool l_continu = true;
     while(/*l_index < m_size && */ l_continu)
@@ -388,8 +391,60 @@ namespace edge_matching_puzzle
     std::cout << "Nb solutions : "  << m_nb_solutions << std::endl ;
   }
 
+  //--------------------------------------------------------------------------
+  void emp_strategy::set_initial_state(const std::string & p_situation)
+  {
+    std::cout << "Setting initial state @ \"" << p_situation << "\"" << std::endl;
+    emp_FSM_situation l_initial_situation;
+    l_initial_situation.set_context(*(new emp_FSM_context(m_size)));
 
-#ifdef WEBSERVER
+    // Fill emp_FSM_situation with string to have a nice access to situation information
+    l_initial_situation.set(p_situation);
+
+    // Fill emp_strategy thanks to information of emp_FSM_situation
+    unsigned int l_index = 0;
+    bool l_continu = true;
+    while(l_continu && l_index < m_size)
+      {
+        const std::pair<unsigned int,unsigned int> & l_position = m_generator.get_position(l_index);
+	l_continu = l_initial_situation.contains_piece(l_position.first,l_position.second);
+
+	if(l_continu)
+	  {
+	    compute_available_transitions(l_index);
+	    const emp_types::t_oriented_piece & l_oriented_piece = l_initial_situation.get_piece(l_position.first,l_position.second);
+	    const unsigned int l_searched_transition = (m_piece_db.get_kind_index(l_oriented_piece.first) << 2) + (unsigned int)l_oriented_piece.second;
+	    unsigned int l_next_transition = 0;
+	    do
+	      {
+		l_next_transition = m_positions_strategy[l_index].get_next_transition();
+		assert(l_next_transition);
+
+		// Need to decrement the transition id because 0 indicate no transition and bit[0] correspond to l_next_transition = 1
+		--l_next_transition;
+		m_positions_strategy[l_index].select_piece(l_next_transition
+#ifdef HANDLE_IDENTICAL_PIECES
+							   ,m_piece_db.get_get_binary_identical_pieces(m_positions_strategy[l_index].get_kind(),l_next_transition)
+#endif // HANDLE_IDENTICAL_PIECES
+							   );
+	      }
+	    while(l_next_transition != l_searched_transition);
+            m_positions_strategy[l_index].set_piece_info(m_piece_db.get_piece(m_positions_strategy[l_index].get_kind(),l_searched_transition));
+	    ++l_index;
+	  }
+	else
+	  {
+	    --l_index;
+	  }
+      }
+
+#ifdef GUI
+    display_on_gui(l_index);
+#endif // GUI
+    m_start_index = l_index;
+    sleep(20);
+  }
+
   //--------------------------------------------------------------------------
   void emp_strategy::pause(void)
     {
@@ -424,7 +479,6 @@ namespace edge_matching_puzzle
       }
 
   }
-#endif // WEBSERVER
 
 }
 #endif // EMP_STRATEGY_H
