@@ -33,7 +33,7 @@
 
 namespace edge_matching_puzzle
 {
-  class emp_gui: public simple_gui
+  class emp_gui: public simple_gui::simple_gui
   {
   public:
     inline emp_gui(const unsigned int & p_puzzle_width,
@@ -127,7 +127,7 @@ namespace edge_matching_puzzle
         {
           m_pieces_pictures[l_index] = new lib_bmp::my_bmp(m_piece_size,m_piece_size,24);
         }
-      this->createWindow(p_puzzle_width * m_piece_size + (p_puzzle_width - 1) * m_separator_size ,p_puzzle_height * m_piece_size + (p_puzzle_height - 1) * m_separator_size);
+      this->create_window(p_puzzle_width * m_piece_size + (p_puzzle_width - 1) * m_separator_size ,p_puzzle_height * m_piece_size + (p_puzzle_height - 1) * m_separator_size);
 
       std::map<emp_types::t_color_id,lib_bmp::my_bmp *> l_colors_pictures;
 
@@ -240,7 +240,7 @@ namespace edge_matching_puzzle
                   
                 }
               const lib_bmp::my_color_alpha & l_rgb_color = m_pieces_pictures[p_id - 1]->get_pixel_color(l_oriented_x,l_oriented_y);
-              uint32_t l_color_code = getColorCode(l_rgb_color.get_red(),l_rgb_color.get_green(),l_rgb_color.get_blue());
+              uint32_t l_color_code = get_color_code(l_rgb_color.get_red(),l_rgb_color.get_green(),l_rgb_color.get_blue());
               set_pixel_without_lock(l_x,l_y,l_color_code);
             }
         }
@@ -249,7 +249,7 @@ namespace edge_matching_puzzle
     void emp_gui::clear_piece_without_lock(const unsigned int & p_x,
                                            const unsigned int & p_y)
     {
-      uint32_t l_color_code = getColorCode(0,0,0);
+      uint32_t l_color_code = get_color_code(0,0,0);
       for(unsigned int l_index_x = 0 ;
           l_index_x < m_piece_size;
           ++l_index_x)
