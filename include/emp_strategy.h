@@ -27,8 +27,12 @@
 #include "feature_if.h"
 #include "emp_gui.h"
 #include "emp_web_server.h"
+#include <atomic>
+#include <thread>
+#include <chrono>
 
 //#define WEBSERVER
+//#define SAVE_THREAD
 namespace edge_matching_puzzle
 {
   /**
@@ -64,6 +68,10 @@ namespace edge_matching_puzzle
                           const emp_FSM_info & p_FSM_info)const;
     // End of methods used by webserver
   private:
+#ifdef SAVE_THREAD
+    inline static void periodic_save(const std::atomic<bool> & p_stop, emp_strategy & p_strategy);
+#endif // SAVE_THREAD
+
     /**
        To compute bitfield representation needed when dumping infile
     **/
@@ -124,9 +132,14 @@ namespace edge_matching_puzzle
 #ifdef WEBSERVER
     emp_web_server * m_web_server;
 #endif // WEBSERVER
-    bool m_pause_requested;
-    bool m_paused;
+    std::atomic<bool> m_pause_requested;
+    std::atomic<bool> m_paused;
     unsigned int m_start_index;
+    const emp_FSM_info & m_FSM_info;
+#ifdef SAVE_THREAD
+    std::atomic<bool> m_stop_save_thread;
+    std::thread * m_save_thread;
+#endif // SAVE_THREAD
   };
 
   //----------------------------------------------------------------------------
@@ -137,6 +150,7 @@ namespace edge_matching_puzzle
 			     const std::string & p_file_name):
     m_piece_db(p_piece_db),
     m_size(p_generator.get_width() * p_generator.get_height()),
+    //m_size(2 * (p_generator.get_width() + p_generator.get_height() - 2 )),
     // We allocate a supplementaty emp_position_strategy that will contains
     // no information. it will be used by corners and borders pieces as 
     // neighbour for orientations that are outside
@@ -157,7 +171,13 @@ namespace edge_matching_puzzle
 #endif //  WEBSERVER
     m_pause_requested(false),
     m_paused(false),
-    m_start_index(0)
+    m_start_index(0),
+    m_FSM_info(p_FSM_info)
+#ifdef SAVE_THREAD
+      ,
+      m_stop_save_thread(false),
+      m_save_thread(nullptr)
+#endif // SAVE_THREAD
     {
 
       uint32_t l_color_mask = (1 << p_piece_db.get_color_id_size()) - 1;
@@ -243,7 +263,9 @@ namespace edge_matching_puzzle
             }
 
         }
-      
+#ifdef SAVE_THREAD
+      m_save_thread = new std::thread(periodic_save,std::ref(m_stop_save_thread),std::ref(*this));
+#endif // SAVE_THREAD
     }
 
   //---------------------------------------------------------------------------
@@ -268,6 +290,11 @@ namespace edge_matching_puzzle
   //--------------------------------------------------------------------------
   emp_strategy::~emp_strategy(void)
     {
+#ifdef SAVE_THREAD
+      m_stop_save_thread = true;
+      m_save_thread->join();
+      delete m_save_thread;
+#endif // SAVE_THREAD
 #ifdef WEBSERVER
       delete m_web_server;
 #endif // WEBSERVER
@@ -366,18 +393,20 @@ namespace edge_matching_puzzle
 #endif
 	  }
 
-#ifdef WEBSERVER
+#if defined WEBSERVER || defined SAVE_THREAD
         if(m_pause_requested)
           {
-#ifdef DEBUG_WEBSERVER
+#if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
             std::cout << "Strategy entering in pause" << std::endl;
 #endif
+	    emp_situation_binary_dumper l_dumper("save.bin", m_FSM_info, &m_generator,false);
+	    l_dumper.dump(m_bitfield,m_nb_situation_explored);
             m_paused = true;
             while(m_pause_requested)
               {
                 usleep(1);
               }
-#ifdef DEBUG_WEBSERVER
+#if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
             std::cout << "Strategy leaving pause" << std::endl;
 #endif
             m_paused = false;
@@ -479,6 +508,27 @@ namespace edge_matching_puzzle
       }
 
   }
+
+#ifdef SAVE_THREAD
+  //--------------------------------------------------------------------------
+  void emp_strategy::periodic_save(const std::atomic<bool> & p_stop, emp_strategy & p_strategy)
+  {
+    std::cout << "Create save thread" << std::endl ;
+    while(!static_cast<bool>(p_stop))
+      {
+	std::this_thread::sleep_for(std::chrono::duration<int>(60));
+	//	std::cout << "Ask for save" << std::endl ;
+	p_strategy.pause();
+	//	std::cout << "Wait for save done" << std::endl ;
+	while(!p_strategy.is_paused())
+	  {
+	    usleep(1);
+	  }
+	//	std::cout << "Save done" << std::endl ;
+	p_strategy.restart();
+      }
+  }
+#endif // SAVE_THREAD
 
 }
 #endif // EMP_STRATEGY_H
