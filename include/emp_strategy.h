@@ -33,6 +33,8 @@
 
 //#define WEBSERVER
 //#define SAVE_THREAD
+#define MAX_DISPLAY
+
 namespace edge_matching_puzzle
 {
   /**
@@ -362,8 +364,10 @@ namespace edge_matching_puzzle
     l_situation.set_context(*(new emp_FSM_context(m_size)));
     extract_situation(l_situation,p_index);
     std::cout << l_situation.to_string() << std::endl ;
+#ifdef GUI
     m_gui.display(l_situation);
     m_gui.refresh();
+#endif // GUI
   }
 
 
@@ -374,9 +378,9 @@ namespace edge_matching_puzzle
     m_web_server->start();
 #endif // WEBSERVER
 
-#ifdef GUI
+#ifdef MAX_DISPLAY
     unsigned int l_max = 0;
-#endif //GUI
+#endif //MAX_DISPLAY
     unsigned int l_index = m_start_index;
     compute_available_transitions(l_index);
     bool l_continu = true;
@@ -396,14 +400,14 @@ namespace edge_matching_puzzle
 #endif // HANDLE_IDENTICAL_PIECES
 );
             ++m_nb_situation_explored;
-#ifdef GUI
+#ifdef MAX_DISPLAY
 	    if(l_index > l_max)
 	      {
 		std::cout << "New max : " << l_index << std::endl ;
 		display_on_gui(l_index);
 		l_max = l_index;
 	      }
-#endif //GUI
+#endif //MAX_DISPLAY
             if(l_index == m_size - 1)
               {
                 ++m_nb_solutions;
@@ -411,7 +415,7 @@ namespace edge_matching_puzzle
                 m_dumper.dump(m_solution_bitfield,m_nb_situation_explored);
 #ifdef GUI_SOLUTIONS
                 display_on_gui(l_index);
-#endif
+#endif // GUI_SOLUTIONS
               }
 
 	    ++l_index;
@@ -425,14 +429,14 @@ namespace edge_matching_puzzle
               }
             l_continu = l_index > 1;
 	    --l_index;
-#ifdef GUI
+#ifdef MAX_DISPLAY
             if(l_continu && l_index > l_max)
               {
 		std::cout << "New max : " << l_index << std::endl ;
                 display_on_gui(l_index);
 		l_max = l_index;
               }
-#endif
+#endif // MAX_DISPLAY
 	  }
 
 #if defined WEBSERVER || defined SAVE_THREAD
@@ -514,9 +518,7 @@ namespace edge_matching_puzzle
 	  }
       }
 
-#ifdef GUI
     display_on_gui(l_index);
-#endif // GUI
     m_start_index = l_index;
     sleep(20);
   }
