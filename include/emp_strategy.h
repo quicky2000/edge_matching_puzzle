@@ -68,6 +68,12 @@ namespace edge_matching_puzzle
                           const emp_FSM_info & p_FSM_info)const;
     // End of methods used by webserver
   private:
+    /**
+       To generate a emp_FSM_situation. This is usefull for dump or display as
+       it package inrernal strategy representation to more generic situation that
+       is user friendly to extract information
+    **/
+    inline void extract_situation(emp_FSM_situation & p_situation, const unsigned int & p_index);
 #ifdef SAVE_THREAD
     inline static void periodic_save(const std::atomic<bool> & p_stop, emp_strategy & p_strategy);
 #endif // SAVE_THREAD
@@ -307,18 +313,23 @@ namespace edge_matching_puzzle
     }
 
   //--------------------------------------------------------------------------
-  void emp_strategy::display_on_gui(const unsigned int & p_index)
+  void emp_strategy::extract_situation(emp_FSM_situation & p_situation, const unsigned int & p_index)
   {
-    emp_FSM_situation l_situation;
-    l_situation.set_context(*(new emp_FSM_context(m_size)));
-
     for(unsigned int l_index = 0 ; l_index <= p_index ; ++l_index)
       {
         const std::pair<unsigned int,unsigned int> & l_position = m_generator.get_position(l_index);
         emp_types::t_binary_piece l_binary = (m_positions_strategy[l_index].get_piece_info() >> (4 * m_piece_db.get_color_id_size()));
         emp_types::t_oriented_piece l_oriented_piece(1 + (l_binary >> 2),((emp_types::t_orientation)(l_binary & 0x3)));
-        l_situation.set_piece(l_position.first,l_position.second,l_oriented_piece);
+        p_situation.set_piece(l_position.first,l_position.second,l_oriented_piece);
       }
+  }
+
+  //--------------------------------------------------------------------------
+  void emp_strategy::display_on_gui(const unsigned int & p_index)
+  {
+    emp_FSM_situation l_situation;
+    l_situation.set_context(*(new emp_FSM_context(m_size)));
+    extract_situation(l_situation,p_index);
     std::cout << l_situation.to_string() << std::endl ;
     m_gui.display(l_situation);
     m_gui.refresh();
@@ -399,8 +410,21 @@ namespace edge_matching_puzzle
 #if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
             std::cout << "Strategy entering in pause" << std::endl;
 #endif
-	    emp_situation_binary_dumper l_dumper("save.bin", m_FSM_info, &m_generator,false);
-	    l_dumper.dump(m_bitfield,m_nb_situation_explored);
+	    {
+	      emp_situation_binary_dumper l_dumper("save.bin", m_FSM_info, &m_generator,false);
+	      compute_bin_id(m_bitfield);
+	      emp_types::bitfield l_v1_bitfield(m_size * (m_piece_db.get_dumped_piece_id_size() + 2));
+	      for(unsigned int l_new_index = 0 ; l_new_index <= l_index ; ++l_new_index)
+		{
+		  unsigned int l_data = 0;
+		  m_bitfield.get(l_data, m_piece_db.get_piece_id_size() + 2, l_new_index * (m_piece_db.get_piece_id_size() + 2));
+		  l_data += 4; // to add 1 to piece_id
+		  l_v1_bitfield.set(l_data, m_piece_db.get_dumped_piece_id_size() + 2, l_new_index * (m_piece_db.get_dumped_piece_id_size() + 2));
+		}
+		l_dumper.dump(l_v1_bitfield, m_nb_situation_explored);
+	      // Dump pseudo total number of situation explored to have non truncated file
+	      l_dumper.dump(m_nb_situation_explored);
+	    }
             m_paused = true;
             while(m_pause_requested)
               {
