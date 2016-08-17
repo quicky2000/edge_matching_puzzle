@@ -79,9 +79,15 @@ namespace edge_matching_puzzle
 #endif // SAVE_THREAD
 
     /**
-       To compute bitfield representation needed when dumping infile
+       To compute bitfield representation needed when dumping solutions
     **/
-    inline void compute_bin_id(emp_types::bitfield & p_bitfield)const;
+    inline void compute_solution_bin_id(emp_types::bitfield & p_bitfield)const;
+
+    /**
+       To compute bitfield representation needed when dumping partial
+       situation
+    **/
+    inline void compute_partial_bin_id(emp_types::bitfield & p_bitfield, unsigned int p_max)const;
 
     /**
        Comput real available transitions for given index by taking account 
@@ -130,7 +136,19 @@ namespace edge_matching_puzzle
     const emp_strategy_generator & m_generator;
 
     emp_situation_binary_dumper m_dumper;
-    emp_types::bitfield m_bitfield;
+
+    /**
+       Bitfield used to store solution.
+       Fields are ordered accoring to strategy
+    */
+    emp_types::bitfield m_solution_bitfield;
+
+    /**
+       Bitfield used to store non solution situattions.
+       Fields are ordered accoring to strategy
+    */
+    emp_types::bitfield m_partial_bitfield;
+
     emp_types::bitfield m_empty_bitfield;
 
     uint64_t m_nb_situation_explored;
@@ -169,7 +187,8 @@ namespace edge_matching_puzzle
     m_gui(p_gui),
     m_generator(p_generator),
     m_dumper(p_file_name,p_FSM_info,&m_generator,true),
-    m_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2)),
+    m_solution_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2)),
+    m_partial_bitfield(m_size * (m_piece_db.get_dumped_piece_id_size() + 2)),
     m_nb_situation_explored(0),
     m_nb_solutions(0),
 #ifdef WEBSERVER
@@ -275,13 +294,25 @@ namespace edge_matching_puzzle
     }
 
   //---------------------------------------------------------------------------
-  void emp_strategy::compute_bin_id(emp_types::bitfield & p_bitfield)const
+  void emp_strategy::compute_solution_bin_id(emp_types::bitfield & p_bitfield)const
   {
     for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
       {
         unsigned int l_data = m_positions_strategy[l_index].get_piece_info() >> ( 4 * m_piece_db.get_color_id_size());
         unsigned int l_offset = l_index * ( m_piece_db.get_piece_id_size() + 2);
         p_bitfield.set(l_data,m_piece_db.get_piece_id_size() + 2,l_offset);
+      }
+  }
+
+  //---------------------------------------------------------------------------
+  void emp_strategy::compute_partial_bin_id(emp_types::bitfield & p_bitfield, unsigned int p_max)const
+  {
+    for(unsigned int l_index = 0 ; l_index <= p_max ; ++l_index)
+      {
+        unsigned int l_data = m_positions_strategy[l_index].get_piece_info() >> ( 4 * m_piece_db.get_color_id_size());
+	l_data += 4; // to add 1 to piece_id
+        unsigned int l_offset = l_index * ( m_piece_db.get_dumped_piece_id_size() + 2);
+        p_bitfield.set(l_data,m_piece_db.get_dumped_piece_id_size() + 2,l_offset);
       }
   }
 
@@ -376,8 +407,8 @@ namespace edge_matching_puzzle
             if(l_index == m_size - 1)
               {
                 ++m_nb_solutions;
-                compute_bin_id(m_bitfield);
-                m_dumper.dump(m_bitfield,m_nb_situation_explored);
+                compute_solution_bin_id(m_solution_bitfield);
+                m_dumper.dump(m_solution_bitfield,m_nb_situation_explored);
 #ifdef GUI_SOLUTIONS
                 display_on_gui(l_index);
 #endif
@@ -412,16 +443,8 @@ namespace edge_matching_puzzle
 #endif
 	    {
 	      emp_situation_binary_dumper l_dumper("save.bin", m_FSM_info, &m_generator,false);
-	      compute_bin_id(m_bitfield);
-	      emp_types::bitfield l_v1_bitfield(m_size * (m_piece_db.get_dumped_piece_id_size() + 2));
-	      for(unsigned int l_new_index = 0 ; l_new_index <= l_index ; ++l_new_index)
-		{
-		  unsigned int l_data = 0;
-		  m_bitfield.get(l_data, m_piece_db.get_piece_id_size() + 2, l_new_index * (m_piece_db.get_piece_id_size() + 2));
-		  l_data += 4; // to add 1 to piece_id
-		  l_v1_bitfield.set(l_data, m_piece_db.get_dumped_piece_id_size() + 2, l_new_index * (m_piece_db.get_dumped_piece_id_size() + 2));
-		}
-		l_dumper.dump(l_v1_bitfield, m_nb_situation_explored);
+	      compute_partial_bin_id(m_partial_bitfield,l_index);
+	      l_dumper.dump(m_partial_bitfield, m_nb_situation_explored);
 	      // Dump pseudo total number of situation explored to have non truncated file
 	      l_dumper.dump(m_nb_situation_explored);
 	    }
