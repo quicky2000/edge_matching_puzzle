@@ -43,7 +43,7 @@ namespace edge_matching_puzzle
     inline const uint64_t & get_nb_recorded(void)const;
   private:
     const unsigned int m_reader_version;
-    unsigned int m_file_version;
+    uint32_t m_file_version;
     std::ifstream m_file;
     typedef quicky_utils::quicky_bitfield<uint32_t> t_v0_bitfield;
     t_v0_bitfield *m_v0_bitfield;
@@ -88,7 +88,7 @@ namespace edge_matching_puzzle
           l_reader_version << m_reader_version ;
           throw quicky_exception::quicky_logic_exception("File has a greater version than reader version "+l_file_version.str()+" != "+l_reader_version.str(),__LINE__,__FILE__);
         }
-      unsigned int l_width,l_height;
+      uint32_t l_width,l_height;
       m_file.read((char*)&l_width,sizeof(l_width));
       m_file.read((char*)&l_height,sizeof(l_height));
       std::cout << "Width = " << l_width << std::endl ;

@@ -71,7 +71,7 @@ namespace edge_matching_puzzle
 
       for(unsigned int l_index = 0 ; l_index < p_FSM_info.get_width() * p_FSM_info.get_height() ; ++l_index)
         {
-          const std::pair<unsigned int,unsigned int> & l_position = l_generator->get_position(l_index);
+          const std::pair<uint32_t,uint32_t> & l_position = l_generator->get_position(l_index);
           m_file.write((char*)&l_position.first,sizeof(l_position.first));
           m_file.write((char*)&l_position.second,sizeof(l_position.second));
         }
@@ -88,6 +88,7 @@ namespace edge_matching_puzzle
     template <typename T>
     void emp_situation_binary_dumper::dump(const quicky_utils::quicky_bitfield<T> & p_bitfield,const uint64_t & p_total_number)
     {
+      assert(p_bitfield.bitsize() == m_v1_bitfield.bitsize());
       p_bitfield.dump_in(m_file);
       dump(p_total_number);
     }

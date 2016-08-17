@@ -24,24 +24,24 @@ namespace edge_matching_puzzle
   class emp_FSM_info
     {
     public:
-      inline emp_FSM_info(const unsigned int & p_width,
-                          const unsigned int & p_height,
+      inline emp_FSM_info(const uint32_t & p_width,
+                          const uint32_t & p_height,
                           const unsigned int & p_piece_id_size,
                           const unsigned int & p_dumped_piece_id_size);
-      inline const unsigned int & get_width(void)const;
-      inline const unsigned int & get_height(void)const;
+      inline const uint32_t & get_width(void)const;
+      inline const uint32_t & get_height(void)const;
       inline const unsigned int & get_piece_id_size(void)const;
       inline const unsigned int & get_dumped_piece_id_size(void)const;
     private:
-      const unsigned int m_width;
-      const unsigned int m_height;
+      const uint32_t m_width;
+      const uint32_t m_height;
       const unsigned int m_piece_id_size;
       const unsigned int m_dumped_piece_id_size;
     };
 
   //----------------------------------------------------------------------------
-  emp_FSM_info::emp_FSM_info(const unsigned int & p_width,
-                             const unsigned int & p_height,
+  emp_FSM_info::emp_FSM_info(const uint32_t & p_width,
+                             const uint32_t & p_height,
                              const unsigned int & p_piece_id_size,
                              const unsigned int & p_dumped_piece_id_size):
     m_width(p_width),
@@ -52,13 +52,13 @@ namespace edge_matching_puzzle
     }
 
   //----------------------------------------------------------------------------
-  const unsigned int & emp_FSM_info::get_width(void)const
+  const uint32_t & emp_FSM_info::get_width(void)const
     {
       return m_width;
     }
   
   //----------------------------------------------------------------------------
-  const unsigned int & emp_FSM_info::get_height(void)const
+  const uint32_t & emp_FSM_info::get_height(void)const
     {
       return m_height;
     }
