@@ -31,6 +31,8 @@
 #include "feature_compute_stats.h"
 #include "feature_dump_summary.h"
 #include "feature_display_dump.h"
+#include "feature_display_dump.h"
+#include "feature_display_situation.h"
 
 
 #include "emp_spiral_strategy_generator.h"
@@ -128,6 +130,10 @@ int main(int argc,char ** argv)
       else if("display_dump" == l_feature_name)
         {
           l_feature = new feature_display_dump(l_dump_file_name,l_info,l_gui);
+        }
+      else if("display_situation" == l_feature_name)
+        {
+          l_feature = new feature_display_situation(l_initial_situation.get_value<std::string>(),l_info,l_gui);
         }
       else if("compute_stats" == l_feature_name)
         {
