@@ -386,6 +386,7 @@ namespace edge_matching_puzzle
     bool l_continu = true;
 #if defined SAVE_THREAD
     bool l_tic_toc = false;
+    bool l_correct_index = false;
     std::string l_save_name[2] = {"save_tic.bin", "save_toc.bin"};
 #endif // SAVE_THREAD
     while(/*l_index < m_size && */ l_continu)
@@ -422,6 +423,9 @@ namespace edge_matching_puzzle
 #endif // GUI_SOLUTIONS
               }
 
+#if defined SAVE_THREAD
+	    l_correct_index = true;
+#endif // SAVE_THREAD
 	    ++l_index;
 	    compute_available_transitions(l_index);
           }
@@ -433,6 +437,9 @@ namespace edge_matching_puzzle
               }
             l_continu = l_index > 1;
 	    --l_index;
+#if defined SAVE_THREAD
+	    l_correct_index = false;
+#endif // SAVE_THREAD
 #ifdef MAX_DISPLAY
             if(l_continu && l_index > l_max)
               {
@@ -452,7 +459,7 @@ namespace edge_matching_puzzle
 	    {
 	      emp_situation_binary_dumper l_dumper(l_save_name[l_tic_toc], m_FSM_info, &m_generator,false);
 	      l_tic_toc = !l_tic_toc;
-	      compute_partial_bin_id(m_partial_bitfield,l_index);
+	      compute_partial_bin_id(m_partial_bitfield,l_index - l_correct_index);
 	      l_dumper.dump(m_partial_bitfield, m_nb_situation_explored);
 	      // Dump pseudo total number of situation explored to have non truncated file
 	      l_dumper.dump(m_nb_situation_explored);
