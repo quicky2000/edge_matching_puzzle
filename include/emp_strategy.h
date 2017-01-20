@@ -384,6 +384,10 @@ namespace edge_matching_puzzle
     unsigned int l_index = m_start_index;
     compute_available_transitions(l_index);
     bool l_continu = true;
+#if defined SAVE_THREAD
+    bool l_tic_toc = false;
+    std::string l_save_name[2] = {"save_tic.bin", "save_toc.bin"};
+#endif // SAVE_THREAD
     while(/*l_index < m_size && */ l_continu)
       {
         //#define GUI_SOLUTIONS
@@ -446,7 +450,8 @@ namespace edge_matching_puzzle
             std::cout << "Strategy entering in pause" << std::endl;
 #endif
 	    {
-	      emp_situation_binary_dumper l_dumper("save.bin", m_FSM_info, &m_generator,false);
+	      emp_situation_binary_dumper l_dumper(l_save_name[l_tic_toc], m_FSM_info, &m_generator,false);
+	      l_tic_toc = !l_tic_toc;
 	      compute_partial_bin_id(m_partial_bitfield,l_index);
 	      l_dumper.dump(m_partial_bitfield, m_nb_situation_explored);
 	      // Dump pseudo total number of situation explored to have non truncated file
