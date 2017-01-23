@@ -149,8 +149,6 @@ namespace edge_matching_puzzle
        Bitfield used to store non solution situattions.
        Fields are ordered accoring to strategy
     */
-    emp_types::bitfield m_partial_bitfield;
-
     emp_types::bitfield m_empty_bitfield;
 
     uint64_t m_nb_situation_explored;
@@ -190,7 +188,6 @@ namespace edge_matching_puzzle
     m_generator(p_generator),
     m_dumper(p_file_name,p_FSM_info,&m_generator,true),
     m_solution_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2)),
-    m_partial_bitfield(m_size * (m_piece_db.get_dumped_piece_id_size() + 2)),
     m_nb_situation_explored(0),
     m_nb_solutions(0),
 #ifdef WEBSERVER
@@ -459,8 +456,9 @@ namespace edge_matching_puzzle
 	    {
 	      emp_situation_binary_dumper l_dumper(l_save_name[l_tic_toc], m_FSM_info, &m_generator,false);
 	      l_tic_toc = !l_tic_toc;
-	      compute_partial_bin_id(m_partial_bitfield,l_index - l_correct_index);
-	      l_dumper.dump(m_partial_bitfield, m_nb_situation_explored);
+	      emp_types::bitfield l_partial_bitfield(m_size * (m_piece_db.get_dumped_piece_id_size() + 2));
+	      compute_partial_bin_id(l_partial_bitfield,l_index - l_correct_index);
+	      l_dumper.dump(l_partial_bitfield, m_nb_situation_explored);
 	      // Dump pseudo total number of situation explored to have non truncated file
 	      l_dumper.dump(m_nb_situation_explored);
 	    }
