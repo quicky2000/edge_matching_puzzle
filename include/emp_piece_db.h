@@ -336,6 +336,9 @@ namespace edge_matching_puzzle
         t_color2oriented_pieces l_color2pieces;
 
  
+	// Number of occurence for border colors
+	std::map<emp_types::t_color_id,unsigned int> l_border2center_colors_nb;
+
         // Examining pieces:
         // _ Fill color lists
         // _ Fill database which store correspondancie from color to pieces
@@ -371,6 +374,15 @@ namespace edge_matching_puzzle
 		  m_piece_id2kind_index[l_iter.get_id() - 1] = l_border_index;
 		  ++l_border_index;
 
+		  std::map<emp_types::t_color_id,unsigned int>::iterator l_border_color_counter_iter = l_border2center_colors_nb.find(l_border->get_center_color());
+		  if(l_border2center_colors_nb.end() == l_border_color_counter_iter)
+		    {
+		      l_border2center_colors_nb.insert(std::map<emp_types::t_color_id,unsigned int>::value_type(l_border->get_center_color(),1));
+		    }
+		  else
+		    {
+		      ++(l_border_color_counter_iter->second);
+		    }
                   // Fill color lists
                   std::pair<emp_types::t_color_id,emp_types::t_color_id> l_piece_border_colors = l_border->get_border_colors();
                   l_colors.insert(l_piece_border_colors.first);
@@ -792,6 +804,27 @@ namespace edge_matching_puzzle
           }
 
 #endif
+
+	// Display number of occurence for border colors
+	std::cout << "Border2center colors occurences : " << std::endl ;
+	unsigned int l_remaining = m_nb_pieces[(unsigned int)emp_types::t_kind::BORDER];
+	uint64_t l_total_combi = 1;
+	for(auto l_iter: l_border2center_colors_nb)
+	  {
+	    uint64_t l_numerator = l_remaining;
+	    uint64_t l_denominator = 1;
+	    for(unsigned int l_index = 1 ; l_index < l_iter.second ; ++l_index)
+	      {
+		l_numerator *= l_remaining - l_index;
+		l_denominator *= (l_index + 1);
+	      }
+	    uint64_t l_combi = l_numerator / l_denominator;
+	    l_total_combi *= l_combi;
+	    std::cout << "Border2center color " << l_iter.first << " is present on " <<   l_iter.second << " border pieces\t" << l_remaining << "C" << l_iter.second << " = " << l_combi << std::endl;
+	    l_remaining -= l_iter.second;
+	  }
+	std::cout << "Total combination " << l_total_combi << std::endl ;
+
         std::cout << "Piece database builded" << std::endl;
         std::cout << "----------------------------------------------" << std::endl;
       }
