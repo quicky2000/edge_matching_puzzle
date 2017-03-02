@@ -40,7 +40,8 @@ namespace edge_matching_puzzle
   public:
     inline emp_piece_db(const std::vector<emp_piece> & p_pieces,
 			const unsigned int & p_width,
-			const unsigned int & p_height);
+			const unsigned int & p_height
+			);
 
     /**
        Accessor to number of pieces of each kind
@@ -78,7 +79,8 @@ namespace edge_matching_puzzle
        index in list of piece of same kind ( kind ID)
     **/
     inline const emp_types::t_binary_piece & get_piece(const emp_types::t_kind & p_kind,
-                                                       const unsigned int & p_id)const;
+                                                       const unsigned int & p_id
+						       ) const;
 
     /**
        Search pieces which specified kind ( corner, border, center ) and matching
@@ -86,7 +88,8 @@ namespace edge_matching_puzzle
     **/
     inline void get_pieces(const emp_types::t_kind & p_kind,
                            const std::set<emp_constraint> & p_constraints,
-                           std::vector<emp_types::t_oriented_piece> & p_pieces)const;
+                           std::vector<emp_types::t_oriented_piece> & p_pieces
+			   ) const;
 
     /**
        Search pieces matching constraint.
@@ -97,7 +100,8 @@ namespace edge_matching_puzzle
 
 
     inline const emp_types::bitfield & get_get_binary_identical_pieces(const emp_types::t_kind & p_kind,
-											   const emp_types::t_piece_id & p_kind_id)const;
+								       const emp_types::t_piece_id & p_kind_id
+								       ) const;
 
     /**
        Get Corner by index
@@ -139,16 +143,19 @@ namespace edge_matching_puzzle
     static inline void print_list(const std::string & p_name,
 				  const std::set<unsigned int> & p_list);
     static inline void print_auto_similarities(const emp_piece::t_auto_similarity & p_similarity,
-                                               const std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> & p_auto_similarities);
+                                               const std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> & p_auto_similarities
+					       );
 
     typedef std::map<emp_types::t_color_id,std::set<emp_types::t_oriented_piece> > t_color2oriented_pieces;
 
     static inline void store_color2piece(t_color2oriented_pieces& p_color2pieces, 
                                          const emp_types::t_color_id & p_color_id,
-                                         const emp_types::t_oriented_piece & p_piece);
+                                         const emp_types::t_oriented_piece & p_piece
+					 );
 
     inline void record_identical_pieces(const emp_types::t_piece_id & p_id1,
-					const emp_types::t_piece_id & p_id2);
+					const emp_types::t_piece_id & p_id2
+					);
 
     typedef std::pair<std::pair<emp_types::t_color_id,emp_types::t_color_id>,std::pair<emp_types::t_color_id,emp_types::t_color_id> > t_constraint;
     typedef std::map<emp_types::t_piece_id,std::set<emp_types::t_piece_id> > t_identical_pieces_db;
@@ -244,7 +251,8 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   emp_piece_db::emp_piece_db(const std::vector<emp_piece> & p_pieces,
 			     const unsigned int & p_width,
-			     const unsigned int & p_height):
+			     const unsigned int & p_height
+			     ):
     m_pieces(p_pieces),
     m_nb_pieces{(p_width - 2) * (p_height - 2),2 * (p_width - 2 + p_height - 2),4},
     m_coded_piece_id_size(0),
@@ -269,19 +277,26 @@ namespace edge_matching_puzzle
         // Creating constraints database
         for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER;
             l_index <= (unsigned int)emp_types::t_kind::CORNER;
-            ++l_index)
+            ++l_index
+	    )
           {
             m_constraint_db[l_index] = new t_constraint_db[4 - l_index];
           }
 
         // Creating corner array
-        for(unsigned int l_index = 0 ; l_index < 4 ; ++l_index)
+        for(unsigned int l_index = 0;
+	    l_index < 4 ;
+	    ++l_index
+	    )
           {
             m_corners[l_index] = NULL;
           }
 
 	// Create arrays to store binary representation of each piece
-	for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER ; l_index <= (unsigned int) emp_types::t_kind::CORNER ; ++l_index)
+	for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER;
+	    l_index <= (unsigned int) emp_types::t_kind::CORNER;
+	    ++l_index
+	    )
 	  {
 	    m_binary_pieces[l_index] = new emp_types::t_binary_piece[4 * m_nb_pieces[l_index]];
 	  }
@@ -356,7 +371,8 @@ namespace edge_matching_puzzle
 		++l_center_index;
                 for(unsigned int l_index = (unsigned int)emp_types::t_orientation::NORTH ;
                     l_index <= (unsigned int)emp_types::t_orientation::WEST; 
-                    ++l_index)
+                    ++l_index
+		    )
                   {
                     // Fill color lists
                     emp_types::t_color_id l_color = l_iter.get_color((emp_types::t_orientation )l_index);
@@ -444,7 +460,10 @@ namespace edge_matching_puzzle
 
 	// Compute max constraint code that can be coded with available colors
         m_max_constraint = 0;
-	for(unsigned int l_index = 0 ; l_index < 4 ; ++l_index)
+	for(unsigned int l_index = 0 ;
+	    l_index < 4 ;
+	    ++l_index
+	    )
 	  {
 	    m_max_constraint = m_max_constraint << m_color_id_size;
 	    m_max_constraint |= (l_index != 2 ? m_border_color_id :  l_max_color_id);
@@ -457,7 +476,8 @@ namespace edge_matching_puzzle
             unsigned int l_kind_index = (unsigned int)l_iter.get_kind();
 	    for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
 		l_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
-		++l_orient_index)
+		++l_orient_index
+		)
 	      {
 		unsigned int l_extended_index = (l_index_by_kind[l_kind_index] << 2 ) + l_orient_index;
 		m_binary_pieces[l_kind_index][l_extended_index] = l_iter.get_bitfield_representation((emp_types::t_orientation)l_orient_index,m_coded_piece_id_size,m_color_id_size,m_border_color_id);
@@ -470,25 +490,37 @@ namespace edge_matching_puzzle
         // The placement bew will be used just after to initialised possible constraints
         m_binary_constraint_db = new emp_types::bitfield[m_max_constraint + 1];
 
-        for(unsigned int l_color1 = 0 ; l_color1 <= m_border_color_id ; ++l_color1)
+        for(unsigned int l_color1 = 0;
+	    l_color1 <= m_border_color_id;
+	    ++l_color1
+	    )
           {
             unsigned int l_nb_border = l_color1 != m_border_color_id ? 0 : 1;
             unsigned int l_constraint_index1 = l_color1 << m_color_id_size;
-            for(unsigned int l_color2 = 0 ; l_color2 <= m_border_color_id ; ++l_color2)
+            for(unsigned int l_color2 = 0;
+		l_color2 <= m_border_color_id;
+		++l_color2
+		)
               {
                 if(l_color2 == m_border_color_id)
                   {
                     ++l_nb_border;
                   }
                 unsigned int l_constraint_index2 = (l_constraint_index1 | l_color2 ) << m_color_id_size;
-                for(unsigned int l_color3 = 0 ; l_color3 <= m_border_color_id ; ++l_color3)
+                for(unsigned int l_color3 = 0 ;
+		    l_color3 <= m_border_color_id ;
+		    ++l_color3
+		    )
                   {
                     if(l_color3 == m_border_color_id)
                       {
                         ++l_nb_border;
                       }
                     unsigned int l_constraint_index3 = (l_constraint_index2 | l_color3 ) << m_color_id_size;
-                    for(unsigned int l_color4 = 0 ; l_color4 <= m_border_color_id ; ++l_color4)
+                    for(unsigned int l_color4 = 0;
+			l_color4 <= m_border_color_id ;
+			++l_color4
+			)
                       {
                         if(l_color4 == m_border_color_id)
                           {
@@ -518,12 +550,16 @@ namespace edge_matching_puzzle
 	// Create empty bitfield for each kind of piece
         for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER;
             l_kind_index <= (unsigned int)emp_types::t_kind::CORNER;
-            ++l_kind_index)
+            ++l_kind_index
+	    )
           {
             m_binary_identical_pieces[l_kind_index] = (emp_types::bitfield*)operator new[](sizeof(emp_types::bitfield) * m_nb_pieces[l_kind_index] * 4);
 
 	    // Call constructor with correct bitfield size
-	    for(unsigned int l_constraint_index = 0 ; l_constraint_index < 4 * m_nb_pieces[l_kind_index] ; ++l_constraint_index)
+	    for(unsigned int l_constraint_index = 0;
+		l_constraint_index < 4 * m_nb_pieces[l_kind_index];
+		++l_constraint_index
+		)
 	      {
 		new( &(m_binary_identical_pieces[l_kind_index][l_constraint_index]))emp_types::bitfield(4 * m_nb_pieces[l_kind_index],true);
                 m_binary_identical_pieces[l_kind_index][l_constraint_index].set(0,1,l_constraint_index);
@@ -549,13 +585,15 @@ namespace edge_matching_puzzle
 		    // Check for which orientation they are identic
 		    for(unsigned int l_color_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
 			l_color_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
-			++l_color_orient_index)
+			++l_color_orient_index
+			)
 		      {
 			if(l_piece.compare_to(l_piece_second,(emp_types::t_orientation) l_color_orient_index))
 			  {
 			    for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
 				l_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
-				++l_orient_index)
+				++l_orient_index
+				)
 			      {
 				unsigned int l_extended_index = (l_kind_index << 2) + l_orient_index;
 				unsigned int l_extended_index_second = (l_kind_index_second << 2) + ((l_color_orient_index + l_orient_index) % 4);
@@ -613,11 +651,15 @@ namespace edge_matching_puzzle
         t_piece2links l_piece2links;
         typedef std::multimap<emp_types::t_oriented_piece,emp_link> t_piece_edge_2links;
         t_piece_edge_2links l_piece_edge_2links;
-        for(unsigned int l_index1 = 0 ; l_index1 < p_pieces.size() ; ++l_index1)
+        for(unsigned int l_index1 = 0;
+	    l_index1 < p_pieces.size();
+	    ++l_index1
+	    )
           {
             for(unsigned int l_orient_index1 = (unsigned int)emp_types::t_orientation::NORTH ;
                 l_orient_index1 <= (unsigned int)emp_types::t_orientation::WEST; 
-                ++l_orient_index1)
+                ++l_orient_index1
+		)
               {
                 emp_types::t_piece_id l_id = p_pieces[l_index1].get_id();
                 emp_types::t_orientation l_orientation = (emp_types::t_orientation)l_orient_index1;
@@ -662,7 +704,8 @@ namespace edge_matching_puzzle
           {
             for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
                 l_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
-                ++l_orient_index)
+                ++l_orient_index
+		)
               {
                 emp_types::t_piece_id l_id = l_iter.get_id();
                 emp_types::t_orientation l_orientation = (emp_types::t_orientation)l_orient_index;
@@ -695,7 +738,8 @@ namespace edge_matching_puzzle
         // Display number of pieces ok each kind
         for(unsigned int l_index = ((uint32_t)emp_types::t_kind::CENTER) ;
             l_index <= ((uint32_t)emp_types::t_kind::CORNER);
-            ++l_index)
+            ++l_index
+	    )
           {
             std::cout << "\t" << emp_types::kind2string((emp_types::t_kind)l_index) << "\t: " << m_nb_pieces[l_index] << std::endl ;
           }
@@ -704,7 +748,8 @@ namespace edge_matching_puzzle
         std::cout << "Number of pieces depending on auto_similarity :" << std::endl ;
         for(unsigned int l_index = ((uint32_t)emp_piece::t_auto_similarity::NONE) ;
             l_index <= ((uint32_t)emp_piece::t_auto_similarity::SIMILAR);
-            ++l_index)
+            ++l_index
+	    )
           {
             std::cout << "\t" << emp_piece::auto_similarity2string((emp_piece::t_auto_similarity)l_index) << "\t: " << l_nb_auto_similarity[l_index] << std::endl ;
           }
@@ -763,7 +808,8 @@ namespace edge_matching_puzzle
           {
             for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
                 l_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
-                ++l_orient_index)
+                ++l_orient_index
+		)
               {
                 emp_types::t_piece_id l_id = l_iter.get_id();
                 emp_types::t_orientation l_orientation = (emp_types::t_orientation)l_orient_index;
@@ -778,9 +824,13 @@ namespace edge_matching_puzzle
         // Display pieces matching constraints
         for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER;
             l_kind_index <= (unsigned int)emp_types::t_kind::CORNER;
-            ++l_kind_index)
+            ++l_kind_index
+	    )
           {
-            for(unsigned int l_constraint_size_index = 0 ; l_constraint_size_index < 4 - l_kind_index ; ++l_constraint_size_index)
+            for(unsigned int l_constraint_size_index = 0 ;
+		l_constraint_size_index < 4 - l_kind_index;
+		++l_constraint_size_index
+		)
               {
                 for(auto l_constraint_iter : m_constraint_db[l_kind_index][l_constraint_size_index])
                   {
@@ -803,7 +853,7 @@ namespace edge_matching_puzzle
               }
           }
 
-#endif
+#endif // 0
 
 	// Display number of occurence for border colors
 	std::cout << "Border2center colors occurences : " << std::endl ;
@@ -813,7 +863,10 @@ namespace edge_matching_puzzle
 	  {
 	    uint64_t l_numerator = l_remaining;
 	    uint64_t l_denominator = 1;
-	    for(unsigned int l_index = 1 ; l_index < l_iter.second ; ++l_index)
+	    for(unsigned int l_index = 1 ;
+		l_index < l_iter.second ;
+		++l_index
+		)
 	      {
 		l_numerator *= l_remaining - l_index;
 		l_denominator *= (l_index + 1);
@@ -862,7 +915,8 @@ namespace edge_matching_puzzle
 
     //----------------------------------------------------------------------------
     const emp_types::t_binary_piece & emp_piece_db::get_piece(const emp_types::t_kind & p_kind,
-                                                                     const unsigned int & p_id)const
+							      const unsigned int & p_id
+							      ) const
       {
 	return m_binary_pieces[(unsigned int)p_kind][p_id];
       }
@@ -870,7 +924,8 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     void emp_piece_db::get_pieces(const emp_types::t_kind & p_kind,
                                   const std::set<emp_constraint> & p_constraints,
-                                  std::vector<emp_types::t_oriented_piece> & p_pieces)const
+                                  std::vector<emp_types::t_oriented_piece> & p_pieces
+				  )const
     {
       unsigned int l_index = (unsigned int) p_kind;
       assert(l_index < 3);
@@ -894,7 +949,8 @@ namespace edge_matching_puzzle
 
     //----------------------------------------------------------------------------
     const emp_types::bitfield & emp_piece_db::get_get_binary_identical_pieces(const emp_types::t_kind & p_kind,
-												  const emp_types::t_piece_id & p_kind_id)const
+									      const emp_types::t_piece_id & p_kind_id
+									      )const
       {
         assert(p_kind_id < 4 * m_nb_pieces[(unsigned int)p_kind]);
         return m_binary_identical_pieces[(unsigned int)p_kind][p_kind_id];
@@ -907,18 +963,23 @@ namespace edge_matching_puzzle
       // Compute for different orientations of piece
       for(unsigned int l_piece_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
           l_piece_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
-          l_piece_orient_index += l_increment)
+          l_piece_orient_index += l_increment
+	  )
         {
 	  unsigned int l_extended_kind_index = (m_piece_id2kind_index[p_piece.get_id() - 1] << 2) + l_piece_orient_index;
 
           // Compute the various constraints
-          for(unsigned int l_constraint_squeleton = 0 ; l_constraint_squeleton <= 15 ; ++l_constraint_squeleton)
+          for(unsigned int l_constraint_squeleton = 0;
+	      l_constraint_squeleton <= 15;
+	      ++l_constraint_squeleton
+	      )
             {
 	      uint32_t l_constraint = 0;
               unsigned int l_nb_border = 0;
               for(unsigned int l_border_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
                   l_border_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
-                  ++l_border_orient_index)
+                  ++l_border_orient_index
+		  )
                 {
 		  // Check if this side of piece is meaningfull for this constraint skeleton
                   if((1 << l_border_orient_index) & l_constraint_squeleton)
@@ -949,14 +1010,16 @@ namespace edge_matching_puzzle
       // Compute for different orientations of piece
       for(unsigned int l_piece_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
           l_piece_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
-          l_piece_orient_index += l_increment)
+          l_piece_orient_index += l_increment
+	  )
         {
           emp_types::t_oriented_piece l_oriented_piece(p_piece.get_id(),(emp_types::t_orientation)l_piece_orient_index);
           std::array<const emp_constraint*,4> l_oriented_piece_constraints;
           // Fill array with oriented colors
           for(unsigned int l_border_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
               l_border_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
-              ++l_border_orient_index)
+              ++l_border_orient_index
+	      )
             {
               emp_constraint l_constraint(p_piece.get_color((emp_types::t_orientation)l_border_orient_index,(emp_types::t_orientation)l_piece_orient_index),(emp_types::t_orientation)l_border_orient_index);
               std::set<emp_constraint>::const_iterator l_iter_constraint = m_single_constraints.find(l_constraint);
@@ -968,7 +1031,9 @@ namespace edge_matching_puzzle
             }
 
           // Compute the various constraints
-          for(unsigned int l_index = 1 ; l_index <= 15 ; ++l_index)
+          for(unsigned int l_index = 1 ;
+	      l_index <= 15;
+	      ++l_index)
             {
               std::set<emp_constraint> l_constraint;
               for(unsigned int l_border_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
@@ -1007,7 +1072,8 @@ namespace edge_matching_puzzle
 
     //------------------------------------------------------------------------------
     void emp_piece_db::print_list(const std::string & p_name,
-                                  const std::set<unsigned int> & p_list)
+                                  const std::set<unsigned int> & p_list
+				  )
     {
       std::cout << p_name << " : " << p_list.size() ;
       if(p_list.size())
@@ -1015,7 +1081,8 @@ namespace edge_matching_puzzle
           std::cout << " = { " << *(p_list.begin());
           for(std::set<unsigned int>::const_iterator l_iter = ++(p_list.begin());
               l_iter != p_list.end();
-              ++l_iter)
+              ++l_iter
+	      )
             {
               std::cout << ", " << *l_iter ;
             }
@@ -1026,7 +1093,8 @@ namespace edge_matching_puzzle
 
     //------------------------------------------------------------------------------
     void emp_piece_db::print_auto_similarities(const emp_piece::t_auto_similarity & p_similarity,
-                                               const std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> & p_auto_similarities)
+                                               const std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id> & p_auto_similarities
+					       )
     {
       std::pair<std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id>::const_iterator,std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id>::const_iterator> l_values = p_auto_similarities.equal_range(p_similarity);
       if(l_values.first != l_values.second)
@@ -1035,7 +1103,8 @@ namespace edge_matching_puzzle
           std::cout  << "{ " << l_values.first->second ;
           for(std::multimap<emp_piece::t_auto_similarity,emp_types::t_piece_id>::const_iterator l_iter = ++(l_values.first) ;
               l_values.first != l_values.second;
-              ++l_values.first)
+              ++l_values.first
+	      )
             {
               std::cout << ", " << l_iter->second ;
             }
@@ -1046,7 +1115,8 @@ namespace edge_matching_puzzle
     //------------------------------------------------------------------------------
     void emp_piece_db::store_color2piece(t_color2oriented_pieces& p_color2pieces, 
                                          const emp_types::t_color_id & p_color_id,
-                                         const emp_types::t_oriented_piece & p_piece)
+                                         const emp_types::t_oriented_piece & p_piece
+					 )
     {
       t_color2oriented_pieces::iterator l_iter_color = p_color2pieces.find(p_color_id);
       if(p_color2pieces.end() == l_iter_color)
@@ -1058,7 +1128,8 @@ namespace edge_matching_puzzle
 
     //------------------------------------------------------------------------------
     void emp_piece_db::record_identical_pieces(const emp_types::t_piece_id & p_id1,
-                                               const emp_types::t_piece_id & p_id2)
+                                               const emp_types::t_piece_id & p_id2
+					       )
     {
       t_identical_pieces_db::iterator l_iter = m_identical_pieces_db.find(p_id1);
       if(m_identical_pieces_db.end() == l_iter)
@@ -1072,30 +1143,43 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     emp_piece_db::~emp_piece_db(void)
       {
-        for(unsigned int l_index = 0 ; l_index < 4 ; ++l_index)
+        for(unsigned int l_index = 0 ;
+	    l_index < 4 ;
+	    ++l_index
+	    )
           {
             delete m_corners[l_index];
           }
 
-	for(unsigned int l_index = 0 ; l_index < m_nb_pieces[(unsigned int)emp_types::t_kind::CENTER] ; ++l_index)
+	for(unsigned int l_index = 0 ;
+	    l_index < m_nb_pieces[(unsigned int)emp_types::t_kind::CENTER];
+	    ++l_index
+	    )
 	  {
 	    delete m_center_pieces[l_index];
 	  }
 	delete[] m_center_pieces;
-	for(unsigned int l_index = 0 ; l_index < m_nb_pieces[(unsigned int)emp_types::t_kind::BORDER] ; ++l_index)
+	for(unsigned int l_index = 0 ;
+	    l_index < m_nb_pieces[(unsigned int)emp_types::t_kind::BORDER];
+	    ++l_index
+	    )
 	  {
 	    delete m_border_pieces[l_index];
 	  }
 	delete[] m_border_pieces;
 
-	for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER ; l_index <= (unsigned int) emp_types::t_kind::CORNER ; ++l_index)
+	for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER;
+	    l_index <= (unsigned int) emp_types::t_kind::CORNER;
+	    ++l_index
+	    )
 	  {
 	    delete[] m_binary_pieces[l_index];
 	  }
 
         for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER;
             l_index <= (unsigned int)emp_types::t_kind::CORNER;
-            ++l_index)
+            ++l_index
+	    )
           {
             delete[] m_constraint_db[l_index];
           }
@@ -1103,9 +1187,15 @@ namespace edge_matching_puzzle
         delete[] m_binary_constraint_db;
 
 
-	for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER ; l_kind_index <= (unsigned int) emp_types::t_kind::CORNER ; ++l_kind_index)
+	for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER;
+	    l_kind_index <= (unsigned int) emp_types::t_kind::CORNER;
+	    ++l_kind_index
+	    )
 	  {
-	    for(unsigned int l_constraint_index = 0 ; l_constraint_index < m_nb_pieces[(unsigned int)l_kind_index] * 4; ++l_constraint_index)
+	    for(unsigned int l_constraint_index = 0 ;
+		l_constraint_index < m_nb_pieces[(unsigned int)l_kind_index] * 4;
+		++l_constraint_index
+		)
 	      {
 		m_binary_identical_pieces[l_kind_index][l_constraint_index].~quicky_bitfield();
 	      }
@@ -1128,8 +1218,6 @@ namespace edge_matching_puzzle
         }
       return l_nb_bits;
     }
-
-
 
     //----------------------------------------------------------------------------
     const std::set<emp_types::t_piece_id> * const emp_piece_db::get_identical_pieces(const emp_types::t_piece_id & p_id)const
@@ -1156,3 +1244,4 @@ namespace edge_matching_puzzle
 
 }
 #endif // EMP_PIECE_DB_H
+// EOF
