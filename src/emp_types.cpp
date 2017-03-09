@@ -21,7 +21,7 @@
 
 namespace edge_matching_puzzle
 {
-  const std::string emp_types::m_kind_strings[((uint32_t)emp_types::t_kind::CORNER) + 1] = {"Center","Border","Corner"};
+  const std::string emp_types::m_kind_strings[((uint32_t)emp_types::t_kind::UNDEFINED) + 1] = {"Center","Border","Corner","Undefined"};
   const std::string emp_types::m_orientation_strings[((uint32_t)emp_types::t_orientation::WEST) + 1] = {"North","East","South","West"};
   const char emp_types::m_short_orientation_strings[((uint32_t)emp_types::t_orientation::WEST) + 1] = {'N','E','S','W'};
 }

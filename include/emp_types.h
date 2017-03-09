@@ -30,7 +30,7 @@ namespace edge_matching_puzzle
   {
   public:
     typedef enum class orientation {NORTH=0,EAST,SOUTH,WEST} t_orientation;
-    typedef enum class kind {CENTER=0,BORDER,CORNER} t_kind;
+    typedef enum class kind {CENTER=0,BORDER,CORNER,UNDEFINED} t_kind;
     typedef unsigned int t_piece_id;
     typedef unsigned int t_color_id;
     typedef uint32_t t_binary_piece;
@@ -41,7 +41,7 @@ namespace edge_matching_puzzle
     inline static const t_orientation short_string2orientation(const char & p_char);
     typedef quicky_utils::quicky_bitfield<uint64_t> bitfield;
   private:
-    static const std::string m_kind_strings[((uint32_t)t_kind::CORNER) + 1];
+    static const std::string m_kind_strings[((uint32_t)t_kind::UNDEFINED) + 1];
     static const std::string m_orientation_strings[((uint32_t)t_orientation::WEST) + 1];
     static const char m_short_orientation_strings[((uint32_t)t_orientation::WEST) + 1];
   };
