@@ -1,0 +1,46 @@
+sudo: required
+dist: trusty
+language: cpp
+compiler:
+  - gcc
+#  - clang
+
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y libsdl1.2-dev libmicrohttpd-dev
+  - MY_LOCATION=`pwd`
+  - echo $MY_LOCATION
+  - mkdir ../repositories
+  - cd ..
+  - mv $MY_LOCATION repositories
+  - QUICKY_REPOSITORY=`pwd`/repositories
+  - export QUICKY_REPOSITORY
+  - MY_LOCATION=`pwd`
+  - echo $MY_LOCATION
+  - cd $MY_LOCATION/repositories
+  - git clone https://github.com/quicky2000/quicky_tools.git
+  - git clone https://github.com/quicky2000/quicky_exception.git
+  - git clone https://github.com/quicky2000/EXT_microhttpd.git
+  - git clone https://github.com/quicky2000/FSM_base.git
+  - git clone https://github.com/quicky2000/FSM_framework.git
+  - git clone https://github.com/quicky2000/FSM_interfaces.git
+  - git clone https://github.com/quicky2000/lib_bmp.git
+  - git clone https://github.com/quicky2000/parameter_manager.git
+  - git clone https://github.com/quicky2000/quicky_utils.git
+  - git clone https://github.com/quicky2000/simple_gui.git
+  - cd quicky_tools/setup
+  - . setup.sh
+  - EXT_MICROHTTPD_INC_DIR=/usr/include
+  - export EXT_MICROHTTPD_INC_DIR
+  - EXT_MICROHTTPD_LIB_DIR=/usr/lib/x86_64-linux-gnu/
+  - export EXT_MICROHTTPD_LIB_DIR
+  - cd $MY_LOCATION
+  - chmod a+x repositories/quicky_tools/bin/*
+  - mkdir build
+  - cd build
+
+script:
+  - generate_makefile edge_matching_puzzle
+  - make
+#EOF
