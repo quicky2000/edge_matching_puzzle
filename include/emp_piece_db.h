@@ -216,6 +216,11 @@ namespace edge_matching_puzzle
     unsigned int * m_piece_id2kind_index;
 
     /**
+       Pieces counters for each kind of piece
+    **/
+    unsigned int m_nb_color_kinds[((uint32_t)emp_types::t_kind::CORNER) + 1];
+
+    /**
        Bitfield representation for each kind of piece
      **/
     emp_types::t_binary_piece ** m_binary_pieces;
@@ -263,6 +268,7 @@ namespace edge_matching_puzzle
     m_border_pieces(nullptr),
     m_center_pieces(nullptr),
     m_piece_id2kind_index(new unsigned int[p_pieces.size()]),
+    m_nb_color_kinds{0,0,0},
     m_binary_pieces(new emp_types::t_binary_piece*[3]),
     m_binary_constraint_db(nullptr),
     m_binary_identical_pieces(new emp_types::bitfield*[3]),
@@ -457,6 +463,11 @@ namespace edge_matching_puzzle
         // Color Id do not start a zero which is reserved for no color and l_max_color_id + 1 is used to represent border
 	m_border_color_id = l_max_color_id + 1;
         m_color_id_size = compute_nb_bits(m_border_color_id);
+
+	assert(l_center_colors.size() == l_border2center_colors.size());
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CORNER] = l_corner_colors.size();
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::BORDER] = l_border_colors.size();
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CENTER] = l_border2center_colors.size();
 
 	// Compute max constraint code that can be coded with available colors
         m_max_constraint = 0;
