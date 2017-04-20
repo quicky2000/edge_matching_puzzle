@@ -119,6 +119,21 @@ namespace edge_matching_puzzle
     inline const unsigned int get_kind_index(const emp_types::t_piece_id & p_id)const;
 
     /**
+       Return index of color in its kind category knowing that category is the more specific one,
+       for example is color is both on corner and border method with return color index in corner kind
+    **/
+    inline const unsigned int get_color_kind_index(const emp_types::t_color_id & p_id)const;
+
+    /**
+       Return index of color in the specified kind category
+       @param p_id Color id
+       @param p_kind color category
+     */
+    inline const unsigned int get_color_kind_index(const emp_types::t_color_id & p_id,
+						   const emp_types::t_kind & p_kind
+						   )const;
+
+    /**
        Return color kind
     **/
     inline const emp_types::t_kind get_color_kind(const emp_types::t_color_id & p_id)const;
@@ -233,6 +248,16 @@ namespace edge_matching_puzzle
     unsigned int m_nb_color_kinds[((uint32_t)emp_types::t_kind::CORNER) + 1];
 
     /**
+       Array storing correspondance from color id to its index in its kind array
+    **/
+    unsigned int * m_color_id2kind_index;
+
+    /**
+       Array storing correspondance from color id to its index in a specified kind array
+    **/
+    unsigned int ** m_color_id2specific_kind_index;
+
+    /**
        Array storing correspondance from kind color id to color id
      **/
     emp_types::t_color_id ** m_color_kind_index2color_id;
@@ -291,6 +316,8 @@ namespace edge_matching_puzzle
     m_center_pieces(nullptr),
     m_piece_id2kind_index(new unsigned int[p_pieces.size()]),
     m_nb_color_kinds{0,0,0},
+    m_color_id2kind_index(nullptr),
+    m_color_id2specific_kind_index(new unsigned int*[3]),
     m_color_kind_index2color_id(new emp_types::t_color_id*[3]),
     m_color_kind(nullptr),
     m_binary_pieces(new emp_types::t_binary_piece*[3]),
@@ -329,6 +356,7 @@ namespace edge_matching_puzzle
 	    )
 	  {
 	    m_binary_pieces[l_index] = new emp_types::t_binary_piece[4 * m_nb_pieces[l_index]];
+	    m_color_id2specific_kind_index[l_index] = nullptr;
 	    m_color_kind_index2color_id[l_index] = nullptr;
 	  }
 	m_border_pieces = new emp_piece_border*[m_nb_pieces[(unsigned int)emp_types::t_kind::BORDER]];
@@ -489,23 +517,55 @@ namespace edge_matching_puzzle
 	m_border_color_id = l_max_color_id + 1;
         m_color_id_size = compute_nb_bits(m_border_color_id);
 
+	// Alocate array to store for each color the corresponding index in color kind
+	assert(m_border_color_id);
+	m_color_id2kind_index = new unsigned int[m_border_color_id + 1];
+	for(unsigned int l_index = 0;
+	    l_index <= m_border_color_id;
+	    ++l_index
+	    )
+	  {
+	    m_color_id2kind_index[l_index] = 0;
+	  }
+
 	assert(l_center_colors.size() == l_border2center_colors.size());
 	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CORNER] = l_corner_colors.size();
 	m_nb_color_kinds[(unsigned int)emp_types::t_kind::BORDER] = l_border_colors.size();
 	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CENTER] = l_border2center_colors.size();
 
+
 	m_color_kind = new emp_types::t_kind[m_border_color_id];
+
+
+	    for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER;
+		l_kind_index <= (unsigned int) emp_types::t_kind::CORNER;
+		++l_kind_index
+		)
+	      {
+		m_color_id2specific_kind_index[l_kind_index] = new unsigned int[m_border_color_id];
+	      }
+
 	for(unsigned int l_index = 0;
 	    l_index < m_border_color_id;
 	    ++l_index)
 	  {
 	    m_color_kind[l_index] = emp_types::t_kind::UNDEFINED;
+	    m_color_id2kind_index[l_index] = 0xDEAD;
+	    for(unsigned int l_kind_index = (unsigned int)emp_types::t_kind::CENTER;
+		l_kind_index <= (unsigned int) emp_types::t_kind::CORNER;
+		++l_kind_index
+		)
+	      {
+		m_color_id2specific_kind_index[l_kind_index][l_index] = 0xDEAD;
+	      }
 	  }
 
 	unsigned int l_corner_color_index = 0;
 	m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::CORNER] = new emp_types::t_color_id[l_corner_colors.size()];
 	for(auto l_iter: l_corner_colors)
 	  {
+	    m_color_id2kind_index[l_iter] = l_corner_color_index;
+	    m_color_id2specific_kind_index[(unsigned int)emp_types::t_kind::CORNER][l_iter] = l_corner_color_index;
 	    m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::CORNER][l_corner_color_index] = l_iter;
 	    m_color_kind[l_iter] = emp_types::t_kind::CORNER;
 	    ++l_corner_color_index;
@@ -516,9 +576,11 @@ namespace edge_matching_puzzle
 	for(auto l_iter: l_border_colors)
 	  {
 	    m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::BORDER][l_border_color_index] = l_iter;
+	    m_color_id2specific_kind_index[(unsigned int)emp_types::t_kind::BORDER][l_iter] = l_border_color_index;
 	    if(emp_types::t_kind::UNDEFINED == m_color_kind[l_iter])
 	      {
 		m_color_kind[l_iter] = emp_types::t_kind::BORDER;
+		m_color_id2kind_index[l_iter] = l_border_color_index;
 	      }
 	    ++l_border_color_index;
 	  }
@@ -528,12 +590,15 @@ namespace edge_matching_puzzle
 	for(auto l_iter: l_center_colors)
 	  {
 	    m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::CENTER][l_center_color_index] = l_iter;
+	    m_color_id2specific_kind_index[(unsigned int)emp_types::t_kind::CENTER][l_iter] = l_center_color_index;
 	    if(emp_types::t_kind::UNDEFINED == m_color_kind[l_iter])
 	      {
 		m_color_kind[l_iter] = emp_types::t_kind::CENTER;
+		m_color_id2kind_index[l_iter] = l_center_color_index;
 	      }
 	    ++l_center_color_index;
 	  }
+
 
 	// Compute max constraint code that can be coded with available colors
         m_max_constraint = 0;
@@ -936,7 +1001,12 @@ namespace edge_matching_puzzle
 	    l_index < m_border_color_id;
 	    ++l_index)
 	  {
-	    std::cout << "Color[" << l_index << "] : " << emp_types::kind2string(m_color_kind[l_index]) << std::endl ;
+	    std::cout << "Color[" << l_index << "] : " << emp_types::kind2string(m_color_kind[l_index]) ;
+	    if(l_index)
+	      {
+		std::cout << "[" << get_color_kind_index(l_index) << "]" ;
+	      }
+	    std::cout << std::endl ;
 	  }
 
         for(unsigned int l_kind = (unsigned int)emp_types::t_kind::CENTER;
@@ -1303,13 +1373,16 @@ namespace edge_matching_puzzle
 
 	delete[] m_binary_pieces;
         delete[] m_piece_id2kind_index;
+	delete[] m_color_id2kind_index;
         for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER;
             l_index <= (unsigned int)emp_types::t_kind::CORNER;
             ++l_index
 	    )
           {
             delete[] m_color_kind_index2color_id[l_index];
+	    delete[] m_color_id2specific_kind_index[l_index];
           }
+	delete[] m_color_id2specific_kind_index;
 	delete[] m_color_kind_index2color_id;
 	delete[] m_color_kind;
       }
@@ -1346,6 +1419,24 @@ namespace edge_matching_puzzle
       assert(p_id <= m_pieces.size());
       assert(p_id);
       return m_piece_id2kind_index[p_id - 1];
+    }
+
+    //----------------------------------------------------------------------------
+    const unsigned int emp_piece_db::get_color_kind_index(const emp_types::t_color_id & p_id)const
+    {
+      assert(p_id < m_border_color_id);
+      assert(0xDEAD != m_color_id2kind_index[p_id]);
+      return m_color_id2kind_index[p_id];
+    }
+    //----------------------------------------------------------------------------
+    const unsigned int emp_piece_db::get_color_kind_index(const emp_types::t_color_id & p_id,
+							  const emp_types::t_kind & p_kind
+							  )const
+    {
+      assert(p_id < m_border_color_id);
+      assert(emp_types::t_kind::UNDEFINED != p_kind);
+      assert(0xDEAD != m_color_id2specific_kind_index[(unsigned int)p_kind][p_id]);
+      return m_color_id2specific_kind_index[(unsigned int)p_kind][p_id];
     }
 
     //----------------------------------------------------------------------------
