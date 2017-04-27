@@ -150,7 +150,38 @@ namespace edge_matching_puzzle
     */
     inline const std::map<emp_types::t_color_id,unsigned int> & get_border2center_colors_nb(void)const;
 
+    /**
+       Type used to store list of colors
+    **/
+    typedef std::set<emp_types::t_color_id> t_color_list;
+
+    /**
+       Return All colors
+    **/
+    inline const t_color_list & get_colors(void) const;
+
+    /**
+       Return List of colors composing center of puzzle
+    **/
+    inline const t_color_list & get_center_colors(void) const;
+
+    /**
+       Return List of colors composing border of puzzle
+    **/
+    inline const t_color_list & get_border_colors(void) const;
+
+    /**
+       Return Colors of edge pieces that are related to center pieces
+    **/
+    inline const t_color_list & get_border2center_colors(void) const;
+
+    /**
+       Return Colors of corners
+    **/
+    inline const t_color_list & get_corner_colors(void) const;
+
     inline ~emp_piece_db(void);
+
   private:
     /**
        Compute nb bits needed to code the value passed as parameter
@@ -297,8 +328,35 @@ namespace edge_matching_puzzle
     std::set<emp_constraint> m_single_constraints;
     t_identical_pieces_db m_identical_pieces_db;
 
-    // Number of occurence for border2center colors
+    /**
+       Number of occurence for border2center colors
+    **/
     std::map<emp_types::t_color_id,unsigned int> m_border2center_colors_nb;
+
+    /**
+       All colors
+    **/
+    t_color_list m_colors;
+
+    /**
+       List of colors composing center of puzzle
+    **/
+    t_color_list m_center_colors;
+
+    /**
+       List of colors composing border of puzzle
+    **/
+    t_color_list m_border_colors;
+
+    /**
+       Colors of edge pieces that are related to center pieces
+    **/
+    t_color_list m_border2center_colors;
+
+    /**
+       Colors of corners
+    **/
+    t_color_list m_corner_colors;
   };
 
   //----------------------------------------------------------------------------
@@ -396,24 +454,6 @@ namespace edge_matching_puzzle
               }
           }
 
-        // Define type used to store list of colors
-        typedef std::set<emp_types::t_color_id> t_color_list;
-
-        // List of colors composing center of puzzle
-        t_color_list l_center_colors;
-
-        // All colors
-        t_color_list l_colors;
-
-        // List of colors composing border of puzzle
-        t_color_list l_border_colors;
-
-        // Colors of edge pieces that are related to center pieces
-        t_color_list l_border2center_colors;
-
-        // Colors of corners
-        t_color_list l_corner_colors;
-
         // Store for each color which pieces contains this color
         t_color2oriented_pieces l_color2pieces;
 
@@ -439,8 +479,8 @@ namespace edge_matching_puzzle
                   {
                     // Fill color lists
                     emp_types::t_color_id l_color = l_iter.get_color((emp_types::t_orientation )l_index);
-                    l_center_colors.insert(l_color);
-                    l_colors.insert(l_color);
+                    m_center_colors.insert(l_color);
+                    m_colors.insert(l_color);
 
                     // Fill database which store correspondancie from color to pieces
                     store_color2piece(l_color2pieces,l_color,emp_types::t_oriented_piece(l_iter.get_id(),(emp_types::t_orientation )l_index));
@@ -464,12 +504,12 @@ namespace edge_matching_puzzle
 		    }
                   // Fill color lists
                   std::pair<emp_types::t_color_id,emp_types::t_color_id> l_piece_border_colors = l_border->get_border_colors();
-                  l_colors.insert(l_piece_border_colors.first);
-                  l_colors.insert(l_piece_border_colors.second);
-                  l_border_colors.insert(l_piece_border_colors.first);
-                  l_border_colors.insert(l_piece_border_colors.second);
-                  l_center_colors.insert(l_border->get_center_color());
-                  l_border2center_colors.insert(l_border->get_center_color());
+                  m_colors.insert(l_piece_border_colors.first);
+                  m_colors.insert(l_piece_border_colors.second);
+                  m_border_colors.insert(l_piece_border_colors.first);
+                  m_border_colors.insert(l_piece_border_colors.second);
+                  m_center_colors.insert(l_border->get_center_color());
+                  m_border2center_colors.insert(l_border->get_center_color());
                 
                   // Fill database which store correspondancie from color to pieces
                   const std::pair<emp_types::t_orientation,emp_types::t_orientation> & l_colors_orientations = l_border->get_colors_orientations();
@@ -487,12 +527,12 @@ namespace edge_matching_puzzle
 
                   // Fill color lists
                   std::pair<emp_types::t_color_id,emp_types::t_color_id> l_piece_border_colors = l_corner->get_border_colors();
-                  l_colors.insert(l_piece_border_colors.first);
-                  l_colors.insert(l_piece_border_colors.second);
-                  l_border_colors.insert(l_piece_border_colors.first);
-                  l_border_colors.insert(l_piece_border_colors.second);
-                  l_corner_colors.insert(l_piece_border_colors.first);
-                  l_corner_colors.insert(l_piece_border_colors.second);
+                  m_colors.insert(l_piece_border_colors.first);
+                  m_colors.insert(l_piece_border_colors.second);
+                  m_border_colors.insert(l_piece_border_colors.first);
+                  m_border_colors.insert(l_piece_border_colors.second);
+                  m_corner_colors.insert(l_piece_border_colors.first);
+                  m_corner_colors.insert(l_piece_border_colors.second);
 
                   // Fill database which store correspondancie from color to pieces
                   const std::pair<emp_types::t_orientation,emp_types::t_orientation> & l_colors_orientations = l_corner->get_colors_orientations();
@@ -510,7 +550,7 @@ namespace edge_matching_puzzle
         m_dumped_piece_id_size = compute_nb_bits(l_nb_pieces);
 
         unsigned int l_max_color_id = 0;
-        for(auto l_iter: l_colors)
+        for(auto l_iter: m_colors)
           {
             if(l_iter > l_max_color_id)
               {
@@ -532,10 +572,10 @@ namespace edge_matching_puzzle
 	    m_color_id2kind_index[l_index] = 0;
 	  }
 
-	assert(l_center_colors.size() == l_border2center_colors.size());
-	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CORNER] = l_corner_colors.size();
-	m_nb_color_kinds[(unsigned int)emp_types::t_kind::BORDER] = l_border_colors.size();
-	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CENTER] = l_border2center_colors.size();
+	assert(m_center_colors.size() == m_border2center_colors.size());
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CORNER] = m_corner_colors.size();
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::BORDER] = m_border_colors.size();
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CENTER] = m_border2center_colors.size();
 
 
 	m_color_kind = new emp_types::t_kind[m_border_color_id];
@@ -565,8 +605,8 @@ namespace edge_matching_puzzle
 	  }
 
 	unsigned int l_corner_color_index = 0;
-	m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::CORNER] = new emp_types::t_color_id[l_corner_colors.size()];
-	for(auto l_iter: l_corner_colors)
+	m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::CORNER] = new emp_types::t_color_id[m_corner_colors.size()];
+	for(auto l_iter: m_corner_colors)
 	  {
 	    m_color_id2kind_index[l_iter] = l_corner_color_index;
 	    m_color_id2specific_kind_index[(unsigned int)emp_types::t_kind::CORNER][l_iter] = l_corner_color_index;
@@ -576,8 +616,8 @@ namespace edge_matching_puzzle
 	  }
 
 	unsigned int l_border_color_index = 0;
-	m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::BORDER] = new emp_types::t_color_id[l_border_colors.size()];
-	for(auto l_iter: l_border_colors)
+	m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::BORDER] = new emp_types::t_color_id[m_border_colors.size()];
+	for(auto l_iter: m_border_colors)
 	  {
 	    m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::BORDER][l_border_color_index] = l_iter;
 	    m_color_id2specific_kind_index[(unsigned int)emp_types::t_kind::BORDER][l_iter] = l_border_color_index;
@@ -590,8 +630,8 @@ namespace edge_matching_puzzle
 	  }
 
 	unsigned int l_center_color_index = 0;
-	m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::CENTER] = new emp_types::t_color_id[l_center_colors.size()];
-	for(auto l_iter: l_center_colors)
+	m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::CENTER] = new emp_types::t_color_id[m_center_colors.size()];
+	for(auto l_iter: m_center_colors)
 	  {
 	    m_color_kind_index2color_id[(unsigned int)emp_types::t_kind::CENTER][l_center_color_index] = l_iter;
 	    m_color_id2specific_kind_index[(unsigned int)emp_types::t_kind::CENTER][l_iter] = l_center_color_index;
@@ -765,7 +805,7 @@ namespace edge_matching_puzzle
         // Check color repartition on pieces
         unsigned int l_total = 0;
         bool l_error = false;
-        for(auto l_iter: l_colors)
+        for(auto l_iter: m_colors)
           {
             unsigned int l_nb = l_color2pieces.find(l_iter)->second.size();
             if(l_nb % 2) 
@@ -927,14 +967,14 @@ namespace edge_matching_puzzle
               }
           }
 
-        print_list("Colors",l_colors);
-        print_list("Center colors",l_center_colors);
-        print_list("Border colors",l_border_colors);
-        print_list("Corner colors",l_corner_colors);
-        print_list("Border to center colors",l_border2center_colors);
+        print_list("Colors",m_colors);
+        print_list("Center colors",m_center_colors);
+        print_list("Border colors",m_border_colors);
+        print_list("Corner colors",m_corner_colors);
+        print_list("Border to center colors",m_border2center_colors);
 
         std::cout << "Color repartition on pieces :" <<std::endl ;
-        for(auto l_iter: l_colors)
+        for(auto l_iter: m_colors)
           {
             unsigned int l_nb = l_color2pieces.find(l_iter)->second.size();
             std::cout << "Color = " << l_iter << " appears on " << l_nb << " pieces edge" << std::endl ;
@@ -1465,6 +1505,36 @@ namespace edge_matching_puzzle
     const std::map<emp_types::t_color_id,unsigned int> & emp_piece_db::get_border2center_colors_nb(void)const
     {
       return m_border2center_colors_nb;
+    }
+
+    //--------------------------------------------------------------------------
+    const emp_piece_db::t_color_list & emp_piece_db::get_colors(void) const
+    {
+      return m_colors;
+    }
+
+    //--------------------------------------------------------------------------
+    const emp_piece_db::t_color_list & emp_piece_db::get_center_colors(void) const
+    {
+      return m_center_colors;
+    }
+
+    //--------------------------------------------------------------------------
+    const emp_piece_db::t_color_list & emp_piece_db::get_border_colors(void) const
+    {
+      return m_border_colors;
+    }
+
+    //--------------------------------------------------------------------------
+    const emp_piece_db::t_color_list & emp_piece_db::get_border2center_colors(void) const
+    {
+      return m_border2center_colors;
+    }
+
+    //--------------------------------------------------------------------------
+    const emp_piece_db::t_color_list & emp_piece_db::get_corner_colors(void) const
+    {
+      return m_corner_colors;
     }
 }
 #endif // EMP_PIECE_DB_H
