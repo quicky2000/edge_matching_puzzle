@@ -145,6 +145,11 @@ namespace edge_matching_puzzle
 						    const unsigned int & p_index
 						    ) const;
 
+    /**
+       Return a map containing for earch center color of border pieces the number of occurence of this colors
+    */
+    inline const std::map<emp_types::t_color_id,unsigned int> & get_border2center_colors_nb(void)const;
+
     inline ~emp_piece_db(void);
   private:
     /**
@@ -291,6 +296,9 @@ namespace edge_matching_puzzle
     t_piece2constraint_db m_piece2constraint_db;
     std::set<emp_constraint> m_single_constraints;
     t_identical_pieces_db m_identical_pieces_db;
+
+    // Number of occurence for border2center colors
+    std::map<emp_types::t_color_id,unsigned int> m_border2center_colors_nb;
   };
 
   //----------------------------------------------------------------------------
@@ -409,10 +417,6 @@ namespace edge_matching_puzzle
         // Store for each color which pieces contains this color
         t_color2oriented_pieces l_color2pieces;
 
- 
-	// Number of occurence for border colors
-	std::map<emp_types::t_color_id,unsigned int> l_border2center_colors_nb;
-
         // Examining pieces:
         // _ Fill color lists
         // _ Fill database which store correspondancie from color to pieces
@@ -449,10 +453,10 @@ namespace edge_matching_puzzle
 		  m_piece_id2kind_index[l_iter.get_id() - 1] = l_border_index;
 		  ++l_border_index;
 
-		  std::map<emp_types::t_color_id,unsigned int>::iterator l_border_color_counter_iter = l_border2center_colors_nb.find(l_border->get_center_color());
-		  if(l_border2center_colors_nb.end() == l_border_color_counter_iter)
+		  std::map<emp_types::t_color_id,unsigned int>::iterator l_border_color_counter_iter = m_border2center_colors_nb.find(l_border->get_center_color());
+		  if(m_border2center_colors_nb.end() == l_border_color_counter_iter)
 		    {
-		      l_border2center_colors_nb.insert(std::map<emp_types::t_color_id,unsigned int>::value_type(l_border->get_center_color(),1));
+		      m_border2center_colors_nb.insert(std::map<emp_types::t_color_id,unsigned int>::value_type(l_border->get_center_color(),1));
 		    }
 		  else
 		    {
@@ -1027,7 +1031,7 @@ namespace edge_matching_puzzle
 	std::cout << "Border2center colors occurences : " << std::endl ;
 	unsigned int l_remaining = m_nb_pieces[(unsigned int)emp_types::t_kind::BORDER];
 	uint64_t l_total_combi = 1;
-	for(auto l_iter: l_border2center_colors_nb)
+	for(auto l_iter: m_border2center_colors_nb)
 	  {
 	    uint64_t l_numerator = l_remaining;
 	    uint64_t l_denominator = 1;
@@ -1455,6 +1459,12 @@ namespace edge_matching_puzzle
       assert(p_kind < emp_types::t_kind::UNDEFINED);
       assert(p_index < m_nb_color_kinds[(unsigned int)p_kind]);
       return m_color_kind_index2color_id[(unsigned int)p_kind][p_index];
+    }
+
+    //----------------------------------------------------------------------------
+    const std::map<emp_types::t_color_id,unsigned int> & emp_piece_db::get_border2center_colors_nb(void)const
+    {
+      return m_border2center_colors_nb;
     }
 }
 #endif // EMP_PIECE_DB_H
