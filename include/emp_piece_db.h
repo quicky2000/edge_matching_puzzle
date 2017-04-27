@@ -109,6 +109,11 @@ namespace edge_matching_puzzle
     inline const emp_piece_corner & get_corner(const unsigned int & p_index)const;
 
     /**
+       Get Borner by index
+    **/
+    inline const emp_piece_border & get_border(const unsigned int & p_index)const;
+
+    /**
        Get pieces identical to a given piece
     **/
     inline const std::set<emp_types::t_piece_id> * const get_identical_pieces(const emp_types::t_piece_id & p_id)const;
@@ -1452,11 +1457,20 @@ namespace edge_matching_puzzle
 
     //----------------------------------------------------------------------------
     const emp_piece_corner & emp_piece_db::get_corner(const unsigned int & p_index)const
-      {
-        assert (p_index < 4);
-        assert(m_corners[p_index]);
-        return *(m_corners[p_index]);
-      }
+    {
+      assert (p_index < 4);
+      assert(m_corners[p_index]);
+      return *(m_corners[p_index]);
+    }
+
+    //----------------------------------------------------------------------------
+    const emp_piece_border & emp_piece_db::get_border(const unsigned int & p_index)const
+    {
+      assert(p_index < m_nb_pieces[(unsigned int)emp_types::t_kind::BORDER]);
+      assert(m_border_pieces[p_index]);
+      return *(m_border_pieces[p_index]);
+    }
+
     //----------------------------------------------------------------------------
     const unsigned int emp_piece_db::get_kind_index(const emp_types::t_piece_id & p_id)const
     {
