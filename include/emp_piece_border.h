@@ -36,6 +36,7 @@ namespace edge_matching_puzzle
     inline const std::pair<emp_types::t_orientation,emp_types::t_orientation> & get_colors_orientations(void)const;
     inline const emp_types::t_color_id & get_center_color(void)const;
     inline const emp_types::t_orientation get_center_orientation(void)const;
+    inline const emp_types::t_orientation get_border_orientation(void)const;
   private:
     inline void init(void);
     emp_types::t_orientation m_border_orientation;
@@ -95,6 +96,12 @@ namespace edge_matching_puzzle
       const emp_types::t_orientation emp_piece_border::get_center_orientation(void)const
         {
           return m_center_orientation;
+        }
+
+      //----------------------------------------------------------------------------
+      const emp_types::t_orientation emp_piece_border::get_border_orientation(void)const
+        {
+          return m_border_orientation;
         }
 
       //----------------------------------------------------------------------------
