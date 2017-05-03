@@ -24,6 +24,7 @@
 #include "emp_piece_db.h"
 #include "emp_FSM.h"
 
+#include "feature_border_exploration.h"
 #include "feature_display_all.h"
 #include "feature_display_max.h"
 #include "feature_display_solutions.h"
@@ -138,6 +139,13 @@ int main(int argc,char ** argv)
       else if("compute_stats" == l_feature_name)
         {
           l_feature = new feature_compute_stats(l_piece_db,l_info,l_gui);
+        }
+      else if("border_exploration" == l_feature_name)
+        {
+          l_feature = new feature_border_exploration(l_piece_db,
+						     l_info,
+						     l_initial_situation.get_value<std::string>()
+						     );
         }
       else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
 	{
