@@ -29,7 +29,8 @@
 #include <chrono>
 #include <unistd.h>
 
-#define DISPLAY_SITUATION_STRING
+//#define DISPLAY_SITUATION_STRING
+//#define DISPLAY_ALL_SOLUTIONS
 
 namespace edge_matching_puzzle
 {
@@ -107,11 +108,6 @@ namespace edge_matching_puzzle
 	  std::map<unsigned int, unsigned int>::const_iterator l_reorganised_iter = p_reorganised_colors.find(l_count_iter.first);
 	  assert(p_B2C_color_count.end() != l_reorganised_iter);
 	  l_symbols.push_back(combinatorics::symbol(l_reorganised_iter->second,l_count_iter.second));
-	}
-
-      for(auto l_iter:l_symbols)
-	{
-	  std::cout << l_iter.get_index() << " : " << l_iter.get_number() << std::endl;
 	}
 
       // Create enumerator
@@ -233,9 +229,13 @@ namespace edge_matching_puzzle
       bool l_continu = true;
       octet_array l_initial_constraint;
 
+#ifndef DISPLAY_ALL_SOLUTIONS
       std::atomic<bool> l_display_solution(false);
       std::atomic<bool> l_stop_thread(false);
       std::thread l_periodic_thread(periodic_display,std::ref(l_stop_thread),std::ref(l_display_solution));
+#else // DISPLAY_ALL_SOLUTIONS
+      bool l_display_solution = true;
+#endif // DISPLAY_ALL_SOLUTIONS
       if(m_enumerator->get_word_size() != 56)
 	{
 	  throw quicky_exception::quicky_logic_exception("Algorithm hardcoded for Eternity2 !", __LINE__, __FILE__);
@@ -291,22 +291,19 @@ namespace edge_matching_puzzle
 					   );
 		      std::cout << l_situation_string << std::endl;
 #endif // DISPLAY_SITUATION_STRING
+#ifndef DISPLAY_ALL_SOLUTIONS
 		      l_display_solution = false;
-		    }
-		  for(unsigned int l_index = 0;
-		      l_index < 60;
-		      ++l_index
-		      )
-		    {
-		      l_initial_constraint.set_octet(l_index,0);
+#endif // DISPLAY_ALL_SOLUTIONS
 		    }
 		}
 	    }
 	}
       m_enumerator->display_word();
+#ifndef DISPLAY_ALL_SOLUTIONS
       // Stop periodic thread
       l_stop_thread = true;
       l_periodic_thread.join();
+#endif // DISPLAY_ALL_SOLUTIONS
     }
 
     //------------------------------------------------------------------------------
