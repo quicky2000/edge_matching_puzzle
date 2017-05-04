@@ -55,6 +55,7 @@ namespace edge_matching_puzzle
     light_border_pieces_db m_border_pieces;
     combinatorics::enumerator * m_enumerator;
     unsigned int * m_reference_word;
+    unsigned int m_translation_rule[56];
   };
 
   //-----------------------------------------------------------------------------
@@ -92,7 +93,12 @@ namespace edge_matching_puzzle
       std::cout << "=================================" << std::endl ;
 #endif // INSTRUMENT_BORDER_EXPLORATION
 
-
+      for(unsigned int l_index = 0;
+	  l_index < 56;
+	  ++l_index)
+	{
+	  m_translation_rule[l_index] = (1 + l_index + l_index / ( 56 /4 ));
+	}
 
       // Iterate on reorganised colors to count their number and create corresponding symbols
       std::vector<combinatorics::symbol> l_symbols;
@@ -169,9 +175,9 @@ namespace edge_matching_puzzle
       // Create word representing a known solution
       if("" != p_situation_string)
 	{
-	  octet_array l_solution_example;
+	  octet_array l_example_constraint;
 	  extract_initial_constraint(p_situation_string,
-				     l_solution_example,
+				     l_example_constraint,
 				     m_border_pieces
 				     );
 	  unsigned int * l_solution_word = new unsigned int[m_enumerator->get_word_size()];
@@ -180,7 +186,7 @@ namespace edge_matching_puzzle
 	      ++l_index)
 	    {
 	      //	  std::cout << l_solution_example.get_octet((1 + l_index + l_index / ( 56 /4 ))) << std::endl;
-	      l_solution_word[l_index] = l_solution_example.get_octet((1 + l_index + l_index / ( 56 /4 )));
+	      l_solution_word[l_index] = l_example_constraint.get_octet((1 + l_index + l_index / ( 56 /4 )));
 	    }
 	  combinatorics::enumerator l_enumerator(l_symbols);
 	  l_enumerator.set_word(l_solution_word,l_enumerator.get_word_size());
@@ -189,8 +195,10 @@ namespace edge_matching_puzzle
 	  std::cout << "------------------------------------------------" << std::endl;
 	  l_enumerator.display_word();
 	  delete[] l_solution_word;
+	  octet_array l_solution_example;
 	  border_backtracker_kernel(m_border_pieces,
 				    m_border_constraints,
+				    l_example_constraint,
 				    l_solution_example
 				    );
 	  std::cout << "==> Corner = " << l_solution_example.get_octet(0) << std::endl ;
@@ -237,22 +245,24 @@ namespace edge_matching_puzzle
 	  l_continu = m_enumerator->compare_word(m_reference_word) < 0;
 	  if(l_continu)
 	    {
-	      for(unsigned int l_index = 0;
+               for(unsigned int l_index = m_enumerator->get_min_index();
 		  l_index < 56;
 		  ++l_index
 		  )
 		{
-		  l_initial_constraint.set_octet((1 + l_index + l_index / ( 56 / 4 )),
+		  l_initial_constraint.set_octet(m_translation_rule[l_index],
 						 m_enumerator->get_word_item(l_index)
 						 );
 		}
+	      octet_array l_solution;
 	      border_backtracker_kernel(m_border_pieces,
 					m_border_constraints,
-					l_initial_constraint
+	                                l_initial_constraint,
+                                        l_solution
 					);
-	      if(!l_initial_constraint.get_octet(0))
+	      if(!l_solution.get_octet(0))
 		{
-		  unsigned int l_max_index = l_initial_constraint.get_octet(59);
+		  unsigned int l_max_index = l_solution.get_octet(59);
 		  //	      std::cout << "Max index in border = " << l_max_index << std::endl ;
 		  // Max index should never be 0 as there are no constraints on first corner
 		  assert(l_max_index);
@@ -263,7 +273,7 @@ namespace edge_matching_puzzle
 		  // is not valid
 		  m_enumerator->invalidate_root(1 + l_max_index);
 		  // Reset Max
-		  l_initial_constraint.set_octet(59,0);
+		  l_solution.set_octet(59,0);
 		}
 	      else
 		{
@@ -276,7 +286,7 @@ namespace edge_matching_puzzle
 #ifdef DISPLAY_SITUATION_STRING
 		      std::string l_situation_string;
 		      constraint_to_string(l_situation_string,
-					   l_initial_constraint,
+					   l_solution,
 					   p_border_edges
 					   );
 		      std::cout << l_situation_string << std::endl;

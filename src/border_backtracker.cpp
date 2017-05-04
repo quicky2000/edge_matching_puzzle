@@ -30,18 +30,18 @@ namespace edge_matching_puzzle
   //------------------------------------------------------------------------------
   void border_backtracker_kernel(const light_border_pieces_db & p_border_pieces,
 				 border_color_constraint  (&p_border_constraints)[23],
-				 octet_array & p_initial_constraint
+				 const octet_array & p_initial_constraint,
+				 octet_array & p_solution
 				 )
   {
     unsigned int l_index = 0;
     unsigned int l_max_index = 0;
     border_color_constraint l_available_pieces(true);
-    octet_array l_solution;
     bool l_ended = false;
     do
       {
 	unsigned int l_previous_index = l_index ? l_index - 1 : 59;
-	unsigned int l_piece_id = l_solution.get_octet(l_previous_index);
+	unsigned int l_piece_id = p_solution.get_octet(l_previous_index);
 	unsigned int l_color =  l_piece_id ? p_border_pieces.get_right(l_piece_id - 1) : 0;
 	border_color_constraint l_available_transitions = p_border_constraints[l_color];
 	l_available_transitions & p_border_constraints[p_initial_constraint.get_octet(l_index)];
@@ -49,7 +49,7 @@ namespace edge_matching_puzzle
 	uint64_t l_corner_mask = (0 == l_index || 15 == l_index || 30 == l_index || 45 == l_index) ? 0xF : UINT64_MAX;
 	l_available_transitions & l_corner_mask;
 	l_available_transitions & l_available_pieces;
-	l_available_transitions & (~(( ((uint64_t)1) << l_solution.get_octet(l_index)) - 1));
+	l_available_transitions & (~(( ((uint64_t)1) << p_solution.get_octet(l_index)) - 1));
 
 	int l_ffs = l_available_transitions.ffs();
 
@@ -59,20 +59,18 @@ namespace edge_matching_puzzle
 
 	// Remove the piece from list of available pieces if a transition was
 	// possible or restablish it to prepare come back to previous state
-	unsigned int l_toggled_index = l_ffs ? l_ffs : l_solution.get_octet(l_previous_index);
+	unsigned int l_toggled_index = l_ffs ? l_ffs : p_solution.get_octet(l_previous_index);
 	l_available_pieces.toggle_bit(l_toggled_index - 1,true);
 
 	// Prepare for next pieces
-	l_solution.set_octet(l_index, l_ffs);
+	p_solution.set_octet(l_index, l_ffs);
 	l_index = l_ffs ? l_next_index : l_previous_index;
 
 	l_max_index = ( l_index > l_max_index  && !l_ended ) ? l_index : l_max_index;
  
       }
     while(!l_ended);
-    l_solution.set_octet(59,l_solution.get_octet(0) ? l_solution.get_octet(59) : l_max_index);
-
-    p_initial_constraint = l_solution;
+    p_solution.set_octet(59,p_solution.get_octet(0) ? p_solution.get_octet(59) : l_max_index);
   }
 
   //------------------------------------------------------------------------------

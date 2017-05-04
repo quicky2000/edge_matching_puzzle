@@ -27,7 +27,8 @@ namespace edge_matching_puzzle
 
   void border_backtracker_kernel(const light_border_pieces_db & p_border_pieces,
 				 border_color_constraint  (&p_border_constraints)[23],
-				 octet_array & p_initial_constraint
+				 const octet_array & p_initial_constraint,
+				 octet_array & p_solution
 				 );
 
   void extract_initial_constraint(const std::string & p_situation_string,
