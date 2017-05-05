@@ -52,6 +52,16 @@ namespace edge_matching_puzzle
 					std::atomic<bool> & p_display
 					);
 
+    inline void extract_initial_constraint(const std::string & p_situation_string,
+					   octet_array & p_initial_constraint,
+					   const light_border_pieces_db & p_border_pieces
+					   );
+
+    inline void constraint_to_string(std::string & p_result,
+				     const octet_array & p_situation,
+				     const unsigned int (&p_border_edges)[60]
+				     );
+
     border_color_constraint  m_border_constraints[23];
     light_border_pieces_db m_border_pieces;
     combinatorics::enumerator * m_enumerator;
@@ -319,6 +329,119 @@ namespace edge_matching_puzzle
 	  while(p_display)
 	    {
 	      usleep(1);
+	    }
+	}
+    }
+
+    //------------------------------------------------------------------------------
+    void border_exploration::extract_initial_constraint(const std::string & p_situation_string,
+							octet_array & p_initial_constraint,
+							const light_border_pieces_db & p_border_pieces
+							)
+    {
+      assert(256 * 4 == p_situation_string.size());
+      for(unsigned int l_situation_index = 0 ;
+	  l_situation_index < 256 ;
+	  ++l_situation_index
+	  )
+	{
+	  std::string l_piece_id_str = p_situation_string.substr(l_situation_index * 4,3);
+	  if("---" != l_piece_id_str)
+	    {
+	      unsigned int l_piece_id = std::stoi(l_piece_id_str);
+	      unsigned int l_constraint_index= 0;
+	      bool l_meaningful = true;
+	      if(l_situation_index < 16)
+		{
+		  l_constraint_index = l_situation_index;
+		}
+	      else if(15 == l_situation_index % 16)
+		{
+		  l_constraint_index = 15 + (l_situation_index / 16);
+		}
+	      else if(15 == l_situation_index / 16)
+		{
+		  l_constraint_index = 255 - l_situation_index + 30;
+		}
+	      else if(0 == l_situation_index % 16)
+		{
+		  l_constraint_index = 45 - (l_situation_index / 16 ) + 15;
+		}
+	      else
+		{
+		  l_meaningful = false;
+		}
+	      if(l_meaningful)
+		{
+		  p_initial_constraint.set_octet(l_constraint_index, p_border_pieces.get_center(l_piece_id - 1));
+		}
+	    }
+	}
+    }
+
+    //------------------------------------------------------------------------------
+    void border_exploration::constraint_to_string(std::string & p_result,
+						  const octet_array & p_situation,
+						  const unsigned int (&p_border_edges)[60]
+						  )
+    {
+      p_result = "";
+      char l_orientation2string[4] = {'N', 'E', 'S', 'W'};
+      for(unsigned int l_y = 0;
+	  l_y < 16;
+	  ++l_y
+	  )
+	{
+	  for(unsigned int l_x = 0;
+	      l_x < 16;
+	      ++l_x
+	      )
+	    {
+	      std::stringstream l_stream;
+	      if(0 == l_y && 0 == l_x)
+		{
+		  l_stream << std::setw(3) << p_situation.get_octet(0) << l_orientation2string[(p_border_edges[p_situation.get_octet(0) - 1] + 1) % 4];
+		  p_result += l_stream.str();
+		}
+	      else if(0 == l_y && 15 == l_x)
+		{
+		  l_stream << std::setw(3) << p_situation.get_octet(15) << l_orientation2string[p_border_edges[p_situation.get_octet(15) - 1]];
+		  p_result += l_stream.str();
+		}
+	      else if(15 == l_y && 15 == l_x)
+		{
+		  l_stream << std::setw(3) << p_situation.get_octet(30) << l_orientation2string[(p_border_edges[p_situation.get_octet(30) - 1] + 3) % 4];
+		  p_result += l_stream.str();
+		}
+	      else if(15 == l_y && 0 == l_x)
+		{
+		  l_stream << std::setw(3) << p_situation.get_octet(45) << l_orientation2string[(p_border_edges[p_situation.get_octet(45) - 1] + 2) % 4];
+		  p_result += l_stream.str();
+		}
+	      else if(0 == l_y)
+		{
+		  l_stream << std::setw(3) << p_situation.get_octet(l_x) << l_orientation2string[p_border_edges[p_situation.get_octet(l_x) - 1]];
+		  p_result += l_stream.str();
+		}
+	      else if(15 == l_x)
+		{
+		  l_stream << std::setw(3) << p_situation.get_octet(15 + l_y) << l_orientation2string[(p_border_edges[p_situation.get_octet(l_x) - 1] + 3) % 4];
+		  p_result += l_stream.str();
+		}
+	      else if(15 == l_y)
+		{
+		  l_stream << std::setw(3) << p_situation.get_octet(30 - l_x + 15) << l_orientation2string[(p_border_edges[p_situation.get_octet(l_x) - 1] + 2) % 4];
+		  p_result += l_stream.str();
+		}
+	      else if(0 == l_x)
+		{
+		  l_stream << std::setw(3) << p_situation.get_octet(45 - l_y + 15) << l_orientation2string[(p_border_edges[p_situation.get_octet(l_x) - 1] + 1) % 4];
+		  p_result += l_stream.str();
+		}
+	      else
+		{
+		  p_result += "----";
+		}
 	    }
 	}
     }
