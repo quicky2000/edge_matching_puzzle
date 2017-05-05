@@ -41,7 +41,7 @@ namespace edge_matching_puzzle
   public:
     inline border_exploration(const std::map<unsigned int, unsigned int> & p_B2C_color_count,
 			      const std::map<unsigned int, unsigned int> & p_reorganised_colors,
-			      border_color_constraint  (&p_border_constraints)[23],
+			      const border_color_constraint  (&p_border_constraints)[23],
 			      const light_border_pieces_db & p_border_pieces,
 			      const std::string & p_situation_string
 			      );
@@ -55,12 +55,12 @@ namespace edge_matching_puzzle
     inline void extract_initial_constraint(const std::string & p_situation_string,
 					   octet_array & p_initial_constraint,
 					   const light_border_pieces_db & p_border_pieces
-					   );
+					   )const;
 
     inline void constraint_to_string(std::string & p_result,
 				     const octet_array & p_situation,
 				     const unsigned int (&p_border_edges)[60]
-				     );
+				     )const;
 
     border_color_constraint  m_border_constraints[23];
     light_border_pieces_db m_border_pieces;
@@ -72,7 +72,7 @@ namespace edge_matching_puzzle
   //-----------------------------------------------------------------------------
   border_exploration::border_exploration(const std::map<unsigned int, unsigned int> & p_B2C_color_count,
 					 const std::map<unsigned int, unsigned int> & p_reorganised_colors,
-					 border_color_constraint  (&p_border_constraints)[23],
+					 const border_color_constraint  (&p_border_constraints)[23],
 					 const light_border_pieces_db & p_border_pieces,
 					 const std::string & p_situation_string
 					 ):
@@ -339,7 +339,7 @@ namespace edge_matching_puzzle
     void border_exploration::extract_initial_constraint(const std::string & p_situation_string,
 							octet_array & p_initial_constraint,
 							const light_border_pieces_db & p_border_pieces
-							)
+							)const
     {
       assert(256 * 4 == p_situation_string.size());
       for(unsigned int l_situation_index = 0 ;
@@ -385,7 +385,7 @@ namespace edge_matching_puzzle
     void border_exploration::constraint_to_string(std::string & p_result,
 						  const octet_array & p_situation,
 						  const unsigned int (&p_border_edges)[60]
-						  )
+						  )const
     {
       p_result = "";
       char l_orientation2string[4] = {'N', 'E', 'S', 'W'};

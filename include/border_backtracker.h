@@ -29,7 +29,7 @@ namespace edge_matching_puzzle
   {
   public:
     void run(const light_border_pieces_db & p_border_pieces,
-	     border_color_constraint  (&p_border_constraints)[23],
+	     const border_color_constraint  (&p_border_constraints)[23],
 	     const octet_array & p_initial_constraint,
 	     octet_array & p_solution
 	     );
