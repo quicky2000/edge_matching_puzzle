@@ -63,6 +63,7 @@ namespace edge_matching_puzzle
 	m_gui.display(l_situation);
 	m_gui.refresh();
 	std::cout << "Solution " << i << std::endl;
+	std::cout << " ==> \"" << l_situation.to_string() << "\"" << std::endl;
 	sleep(1);
       }
   }
