@@ -25,21 +25,16 @@ namespace edge_matching_puzzle
   class border_color_constraint;
   class octet_array;
 
-  void border_backtracker_kernel(const light_border_pieces_db & p_border_pieces,
-				 border_color_constraint  (&p_border_constraints)[23],
-				 const octet_array & p_initial_constraint,
-				 octet_array & p_solution
-				 );
-
-  void extract_initial_constraint(const std::string & p_situation_string,
-				  octet_array & p_initial_constraint,
-				  const light_border_pieces_db & p_border_pieces
-				  );
-
-  void constraint_to_string(std::string & p_result,
-			    const octet_array & p_situation,
-			    const unsigned int (&p_border_edges)[60]
-			    );
+  class border_backtracker
+  {
+  public:
+    void run(const light_border_pieces_db & p_border_pieces,
+	     border_color_constraint  (&p_border_constraints)[23],
+	     const octet_array & p_initial_constraint,
+	     octet_array & p_solution
+	     );
+  private:
+  };
 }
 #endif // _BORDER_BACK_TRACKER_H_
 // EOF

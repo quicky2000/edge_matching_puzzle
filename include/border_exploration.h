@@ -202,11 +202,12 @@ namespace edge_matching_puzzle
 	  l_enumerator.display_word();
 	  delete[] l_solution_word;
 	  octet_array l_solution_example;
-	  border_backtracker_kernel(m_border_pieces,
-				    m_border_constraints,
-				    l_example_constraint,
-				    l_solution_example
-				    );
+	  border_backtracker l_border_backtracker;
+	  l_border_backtracker.run(m_border_pieces,
+				   m_border_constraints,
+				   l_example_constraint,
+				   l_solution_example
+				   );
 	  std::cout << "==> Corner = " << l_solution_example.get_octet(0) << std::endl ;
 	  std::cout << "Max = " << l_solution_example.get_octet(59) << std::endl ;
 	}
@@ -250,6 +251,7 @@ namespace edge_matching_puzzle
 	{
 	  throw quicky_exception::quicky_logic_exception("Algorithm hardcoded for Eternity2 !", __LINE__, __FILE__);
 	}
+      border_backtracker l_border_backtracker;
       while(l_continu && m_enumerator->generate())
 	{
 	  l_continu = m_enumerator->compare_word(m_reference_word) < 0;
@@ -265,11 +267,11 @@ namespace edge_matching_puzzle
 						 );
 		}
 	      octet_array l_solution;
-	      border_backtracker_kernel(m_border_pieces,
-					m_border_constraints,
-	                                l_initial_constraint,
-                                        l_solution
-					);
+	      l_border_backtracker.run(m_border_pieces,
+				       m_border_constraints,
+				       l_initial_constraint,
+				       l_solution
+				       );
 	      if(!l_solution.get_octet(0))
 		{
 		  unsigned int l_max_index = l_solution.get_octet(59);

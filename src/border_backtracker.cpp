@@ -28,11 +28,11 @@
 namespace edge_matching_puzzle
 {
   //------------------------------------------------------------------------------
-  void border_backtracker_kernel(const light_border_pieces_db & p_border_pieces,
-				 border_color_constraint  (&p_border_constraints)[23],
-				 const octet_array & p_initial_constraint,
-				 octet_array & p_solution
-				 )
+  void border_backtracker::run(const light_border_pieces_db & p_border_pieces,
+			       border_color_constraint  (&p_border_constraints)[23],
+			       const octet_array & p_initial_constraint,
+			       octet_array & p_solution
+			       )
   {
     unsigned int l_index = 0;
     unsigned int l_max_index = 0;
