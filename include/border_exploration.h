@@ -242,13 +242,11 @@ namespace edge_matching_puzzle
 						 m_enumerator->get_word_item(l_index)
 						 );
 		}
-	      octet_array l_solution;
 	      l_border_backtracker.run(m_border_pieces,
 				       m_border_constraints,
-				       l_initial_constraint,
-				       l_solution
+				       l_initial_constraint
 				       );
-	      if(!l_solution.get_octet(0))
+	      if(!l_border_backtracker.get_situation().get_octet(0))
 		{
 		  unsigned int l_max_index = l_border_backtracker.get_max_index();
 
@@ -277,7 +275,7 @@ namespace edge_matching_puzzle
 #ifdef DISPLAY_SITUATION_STRING
 		      std::string l_situation_string;
 		      constraint_to_string(l_situation_string,
-					   l_solution,
+					   l_border_backtracker.get_situation(),
 					   p_border_edges
 					   );
 		      std::cout << l_situation_string << std::endl;
