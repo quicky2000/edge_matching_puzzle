@@ -35,7 +35,8 @@ namespace edge_matching_puzzle
     inline void run(const light_border_pieces_db & p_border_pieces,
 		    const border_color_constraint  (&p_border_constraints)[23],
 		    const octet_array & p_initial_constraint,
-		    octet_array & p_solution
+		    octet_array & p_solution,
+		    unsigned int p_start_index=0
 		    );
   private:
     inline void save_best_solution(const unsigned int & p_max_index,
@@ -112,10 +113,11 @@ namespace edge_matching_puzzle
   void sequential_border_backtracker::run(const light_border_pieces_db & p_border_pieces,
 					  const border_color_constraint  (&p_border_constraints)[23],
 					  const octet_array & p_initial_constraint,
-					  octet_array & p_solution
+					  octet_array & p_solution,
+					  unsigned int p_start_index
 					  )
   {
-    unsigned int l_index = 0;
+    unsigned int l_index = p_start_index;
     unsigned int l_max_index = 0;
     border_color_constraint l_available_pieces(true);
     m_min_best_index = 0;
