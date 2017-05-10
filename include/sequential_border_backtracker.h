@@ -40,6 +40,9 @@ namespace edge_matching_puzzle
 		    );
 
     inline unsigned int get_max_index(void)const;
+
+    inline void restore_best_until(unsigned int p_index);
+
   private:
     inline void save_best_solution(const octet_array & p_solution);
 
@@ -105,6 +108,17 @@ namespace edge_matching_puzzle
       }
     std::cout << std::endl;
 #endif // DEBUG
+  }
+
+  //----------------------------------------------------------------------------
+  void sequential_border_backtracker::restore_best_until(unsigned int p_index)
+  {
+    unsigned int l_index = 0;
+    while(l_index < p_index && m_corresponding_max_index[l_index] <= p_index)
+      {
+	m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
+	++l_index;
+      }
   }
 
   //------------------------------------------------------------------------------
