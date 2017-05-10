@@ -30,7 +30,7 @@
 #include <unistd.h>
 
 //#define DISPLAY_SITUATION_STRING
-//#define DISPLAY_ALL_SOLUTIONS
+#define DISPLAY_ALL_SOLUTIONS
 
 namespace edge_matching_puzzle
 {
@@ -223,9 +223,15 @@ namespace edge_matching_puzzle
       border_backtracker l_border_backtracker;
       while(l_continu && m_enumerator->generate())
 	{
-	  l_continu = m_enumerator->compare_word(m_reference_word) < 0;
+	  l_continu = m_enumerator->compare_word(m_reference_word) < 0 && 1000 >= m_enumerator->get_count();
 	  if(l_continu)
 	    {
+	      std::cout << "-------------------------------------------------------------------" << std::endl;
+	      std::cout << "Candidate : " ;
+	      m_enumerator->display_word();
+	      std::cout << std::endl ;
+	      std::cout << "Min modified index in word : " << m_enumerator->get_min_index() << std::endl;
+
                for(unsigned int l_index = m_enumerator->get_min_index();
 		  l_index < 56;
 		  ++l_index
@@ -244,11 +250,16 @@ namespace edge_matching_puzzle
 	      if(!l_solution.get_octet(0))
 		{
 		  unsigned int l_max_index = l_solution.get_octet(59);
-		  //	      std::cout << "Max index in border = " << l_max_index << std::endl ;
+
+		  std::cout << "==> No solution found" << std::endl;
+		  std::cout << "Max index in border = " << l_max_index << std::endl ;
+
 		  // Max index should never be 0 as there are no constraints on first corner
 		  assert(l_max_index);
 		  l_max_index = l_max_index - 1 - l_max_index / 15;
-		  //	      std::cout << "Max index in word = " << l_max_index << std::endl ;
+
+		  std::cout << "Max index in word = " << l_max_index << std::endl ;
+
 		  // We invalide l_max_index + 1 because index start at 0 so if
 		  // max_index is I is valid it means that range [0:I] of size I + 1
 		  // is not valid
@@ -258,7 +269,7 @@ namespace edge_matching_puzzle
 		}
 	      else
 		{
-		  //	      std::cout << "==> Corner = " << l_initial_constraint.get_octet(0) << std::endl ;
+		  std::cout << "==> Solution found" << std::endl ;
 		  ++l_nb_solution;
 		  if(l_display_solution)
 		    {
