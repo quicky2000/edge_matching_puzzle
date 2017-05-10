@@ -250,7 +250,7 @@ namespace edge_matching_puzzle
 				       );
 	      if(!l_solution.get_octet(0))
 		{
-		  unsigned int l_max_index = l_solution.get_octet(59);
+		  unsigned int l_max_index = l_border_backtracker.get_max_index();
 
 		  std::cout << "==> No solution found" << std::endl;
 		  std::cout << "Max index in border = " << l_max_index << std::endl ;
@@ -265,8 +265,6 @@ namespace edge_matching_puzzle
 		  // max_index is I is valid it means that range [0:I] of size I + 1
 		  // is not valid
 		  m_enumerator->invalidate_root(1 + l_max_index);
-		  // Reset Max
-		  l_solution.set_octet(59,0);
 		}
 	      else
 		{

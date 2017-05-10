@@ -38,11 +38,17 @@ namespace edge_matching_puzzle
 		    octet_array & p_solution,
 		    unsigned int p_start_index=0
 		    );
+
+    inline unsigned int get_max_index(void)const;
   private:
-    inline void save_best_solution(const unsigned int & p_max_index,
-				   const octet_array & p_solution,
+    inline void save_best_solution(const octet_array & p_solution,
 				   const border_color_constraint & p_available_pieces
 				   );
+
+    /**
+       Store max reached index
+    **/
+    unsigned int m_max_index;
 
     /**
        Store minimum changed index from last best solution save
@@ -66,27 +72,26 @@ namespace edge_matching_puzzle
   };
 
   //----------------------------------------------------------------------------
-  void sequential_border_backtracker::save_best_solution(const unsigned int & p_max_index,
-					      const octet_array & p_solution,
-					      const border_color_constraint & p_available_pieces
-					      )
+  void sequential_border_backtracker::save_best_solution(const octet_array & p_solution,
+							 const border_color_constraint & p_available_pieces
+							 )
   {
 #ifdef DEBUG
-    std::cout << "Save best solution [" << m_min_best_index << "," << p_max_index << "[" << std::endl;
+    std::cout << "Save best solution [" << m_min_best_index << "," << m_max_index << "[" << std::endl;
 #endif // DEBUG
     m_best_available_pieces = p_available_pieces;
-    m_corresponding_max_index[m_min_best_index] = p_max_index;
+    m_corresponding_max_index[m_min_best_index] = m_max_index;
     for(unsigned int l_index = m_min_best_index;
-	l_index < p_max_index;
+	l_index < m_max_index;
 	++l_index
 	)
       {
 	m_best_solution.set_octet(l_index,p_solution.get_octet(l_index));
       }
-    m_min_best_index = p_max_index;
+    m_min_best_index = m_max_index;
 #ifdef DEBUG
     for(unsigned int l_index = 0;
-	l_index < p_max_index;
+	l_index < m_max_index;
 	++l_index
 	)
       {
@@ -98,6 +103,7 @@ namespace edge_matching_puzzle
 
   //------------------------------------------------------------------------------
   sequential_border_backtracker::sequential_border_backtracker(void):
+    m_max_index(0),
     m_min_best_index(0)
   {
     for(unsigned int l_index =0;
@@ -118,7 +124,7 @@ namespace edge_matching_puzzle
 					  )
   {
     unsigned int l_index = p_start_index;
-    unsigned int l_max_index = 0;
+    m_max_index = 0;
     border_color_constraint l_available_pieces(true);
     m_min_best_index = 0;
     bool l_ended = false;
@@ -150,7 +156,7 @@ namespace edge_matching_puzzle
 	p_solution.set_octet(l_index, l_ffs);
 	l_index = l_ffs ? l_next_index : l_previous_index;
 
-	if(l_index > l_max_index  && !l_ended)
+	if(l_index > m_max_index  && !l_ended)
 	  {
 #ifdef DEBUG
 	    std::cout << "New max best index = " << l_index << std::endl;
@@ -163,9 +169,8 @@ namespace edge_matching_puzzle
 	      }
 	    std::cout << std::endl;
 #endif // DEBUG
-	    l_max_index = l_index;
-	    save_best_solution(l_max_index,
-			       p_solution,
+	    m_max_index = l_index;
+	    save_best_solution(p_solution,
 			       l_available_pieces
 			       );
 	  }
@@ -178,12 +183,11 @@ namespace edge_matching_puzzle
 	  }
       }
     while(!l_ended);
-    p_solution.set_octet(59,p_solution.get_octet(0) ? p_solution.get_octet(59) : l_max_index);
 #ifdef DEBUG
     std::cout << "========================================================" << std::endl;
-    std::cout << "Best solution : [0," << l_max_index << "[" << std::endl;
+    std::cout << "Best solution : [0," << m_max_index << "[" << std::endl;
     for(unsigned int l_index = 0;
-	l_index < l_max_index;
+	l_index < m_max_index;
 	++l_index)
       {
 	std::cout << m_best_solution.get_octet(l_index) << " ";
@@ -192,7 +196,11 @@ namespace edge_matching_puzzle
 #endif // DEBUG
   }
 
-
+  //------------------------------------------------------------------------------
+  unsigned int sequential_border_backtracker::get_max_index(void)const
+  {
+    return m_max_index;
+  }
 }
 #endif // _SEQUENTIAL_BORDER_BACKTRACKER_H_
 // EOF
