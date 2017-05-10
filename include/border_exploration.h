@@ -21,6 +21,7 @@
 #include "octet_array.h"
 #include "light_border_pieces_db.h"
 #include "border_color_constraint.h"
+#include "sequential_border_backtracker.h"
 #include "border_backtracker.h"
 #include "emp_types.h"
 #include <map>
@@ -220,7 +221,7 @@ namespace edge_matching_puzzle
 	{
 	  throw quicky_exception::quicky_logic_exception("Algorithm hardcoded for Eternity2 !", __LINE__, __FILE__);
 	}
-      border_backtracker l_border_backtracker;
+      sequential_border_backtracker l_border_backtracker;
       while(l_continu && m_enumerator->generate())
 	{
 	  l_continu = m_enumerator->compare_word(m_reference_word) < 0 && 1000 >= m_enumerator->get_count();
