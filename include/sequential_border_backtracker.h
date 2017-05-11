@@ -43,6 +43,12 @@ namespace edge_matching_puzzle
     inline void restore_best_until(unsigned int p_index);
 
     /**
+       Keep only a part of best solution by releasing unneeded pieces
+       @param size to keep
+     **/
+    inline void shortcut_best(unsigned int p_size);
+
+    /**
        Return current situation
        It should be empty if no solution has been found or contains the solution
        in contrary case
@@ -125,6 +131,22 @@ namespace edge_matching_puzzle
 	m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
 	++l_index;
       }
+  }
+
+  //----------------------------------------------------------------------------
+  void sequential_border_backtracker::shortcut_best(unsigned int p_size)
+  {
+    assert(true);
+    // Make available pieces of best solution that are not reused
+    for(unsigned int l_index = p_size;
+	l_index < m_max_index;
+	++l_index
+	)
+      {
+	m_available_pieces.toggle_bit(m_best_solution.get_octet(l_index) - 1,true);
+      }
+    m_min_best_index = p_size;
+    m_max_index = p_size;
   }
 
   //------------------------------------------------------------------------------
