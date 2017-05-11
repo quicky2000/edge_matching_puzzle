@@ -40,7 +40,7 @@ namespace edge_matching_puzzle
 
     inline unsigned int get_max_index(void)const;
 
-    inline void restore_best_until(unsigned int p_index);
+    inline void restore_best(unsigned int p_size);
 
     /**
        Keep only a part of best solution by releasing unneeded pieces
@@ -123,13 +123,29 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  void sequential_border_backtracker::restore_best_until(unsigned int p_index)
+  void sequential_border_backtracker::restore_best(unsigned int p_size)
   {
-    unsigned int l_index = 0;
-    while(l_index < p_index && m_corresponding_max_index[l_index] <= p_index)
+    m_available_pieces = m_best_available_pieces;
+    if(p_size == m_max_index)
       {
-	m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
-	++l_index;
+	for(unsigned int l_index = 0;
+	    l_index < m_max_index;
+	    ++l_index
+	    )
+	  {
+	    m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
+	  }
+	m_min_best_index = p_size;
+      }
+    else
+      {
+	unsigned int l_index = 0;
+	while(l_index < p_size && m_corresponding_max_index[l_index] <= p_size)
+	  {
+	    m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
+	    ++l_index;
+	  }
+	shortcut_best(l_index);
       }
   }
 
