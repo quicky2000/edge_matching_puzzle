@@ -232,6 +232,7 @@ namespace edge_matching_puzzle
 	  throw quicky_exception::quicky_logic_exception("Algorithm hardcoded for Eternity2 !", __LINE__, __FILE__);
 	}
       sequential_border_backtracker l_border_backtracker;
+      bool l_solution_found = true;
       while(l_continu && m_enumerator->generate())
 	{
 	  l_continu = m_enumerator->compare_word(m_reference_word) < 0 && 1000 >= m_enumerator->get_count();
@@ -243,7 +244,7 @@ namespace edge_matching_puzzle
 	      std::cout << std::endl ;
 	      std::cout << "Min modified index in word : " << m_enumerator->get_min_index() << std::endl;
 
-               for(unsigned int l_index = m_enumerator->get_min_index();
+	      for(unsigned int l_index = m_enumerator->get_min_index();
 		  l_index < 56;
 		  ++l_index
 		  )
@@ -256,7 +257,8 @@ namespace edge_matching_puzzle
 				       m_border_constraints,
 				       l_initial_constraint
 				       );
-	      if(!l_border_backtracker.get_situation().get_octet(0))
+	      l_solution_found = l_border_backtracker.get_situation().get_octet(0);
+	      if(!l_solution_found)
 		{
 		  unsigned int l_max_index = l_border_backtracker.get_max_index();
 
