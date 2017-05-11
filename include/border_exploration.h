@@ -70,6 +70,7 @@ namespace edge_matching_puzzle
     combinatorics::enumerator * m_enumerator;
     unsigned int * m_reference_word;
     unsigned int m_translation_rule[56];
+    unsigned int m_revert_translation_rule[60];
     std::vector<combinatorics::symbol> m_symbols;
   };
 
@@ -112,7 +113,16 @@ namespace edge_matching_puzzle
 	  l_index < 56;
 	  ++l_index)
 	{
-	  m_translation_rule[l_index] = (1 + l_index + l_index / ( 56 /4 ));
+	  m_translation_rule[l_index] = (1 + l_index + l_index / ( 56 / 4 ));
+	}
+
+      m_revert_translation_rule[0] = 0;
+      for(unsigned int l_index = 1;
+	  l_index < 60;
+	  ++l_index
+	  )
+	{
+	  m_revert_translation_rule[l_index] = l_index - 1 - l_index / 15;
 	}
 
       // Iterate on reorganised colors to count their number and create corresponding symbols
@@ -255,7 +265,7 @@ namespace edge_matching_puzzle
 
 		  // Max index should never be 0 as there are no constraints on first corner
 		  assert(l_max_index);
-		  l_max_index = l_max_index - 1 - l_max_index / 15;
+		  l_max_index = m_revert_translation_rule[l_max_index];
 
 		  std::cout << "Max index in word = " << l_max_index << std::endl ;
 
