@@ -261,7 +261,7 @@ namespace edge_matching_puzzle
 		{
 		  l_border_backtracker.restore_best(m_translation_rule[m_enumerator->get_min_index()]);
 		}
-	      else
+	      else if(m_enumerator->get_min_index() < l_border_backtracker.get_max_index())
 		{
 		  l_border_backtracker.shortcut_best(m_translation_rule[m_enumerator->get_min_index()]);
 		}
