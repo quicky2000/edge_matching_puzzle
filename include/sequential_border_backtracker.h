@@ -242,7 +242,7 @@ namespace edge_matching_puzzle
 	    m_max_index = l_index;
 	    save_best_solution();
 	  }
-	else if(l_index < m_min_best_index)
+	if(l_index < m_min_best_index)
 	  {
 #ifdef DEBUG
 	    std::cout << "New min best index = " << l_index << std::endl;
