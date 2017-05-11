@@ -253,6 +253,18 @@ namespace edge_matching_puzzle
 						 m_enumerator->get_word_item(l_index)
 						 );
 		}
+
+	      // In case no solution has been found for previous word it means
+	      // that border backtracker internal situation is full of zero so
+	      // we restore it from best solution
+	      if(!l_solution_found)
+		{
+		  l_border_backtracker.restore_best(m_translation_rule[m_enumerator->get_min_index()]);
+		}
+	      else
+		{
+		  l_border_backtracker.shortcut_best(m_translation_rule[m_enumerator->get_min_index()]);
+		}
 	      l_border_backtracker.run(m_border_pieces,
 				       m_border_constraints,
 				       l_initial_constraint
