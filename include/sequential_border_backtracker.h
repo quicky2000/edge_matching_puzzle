@@ -229,29 +229,18 @@ namespace edge_matching_puzzle
 
 	// Prepare for next pieces
 	m_situation.set_octet(l_index, l_ffs);
-	l_index = l_ffs ? l_next_index : l_previous_index;
 
-	if(l_index > m_max_index  && !l_ended)
+
+	if(l_ffs && l_index + 1 > m_max_index)
 	  {
-#ifdef DEBUG
-	    std::cout << "New max best index = " << l_index << std::endl;
-	    for(unsigned int l_display_index = 0;
-		l_display_index < l_index;
-		++l_display_index
-		)
-	      {
-		std::cout << m_situation.get_octet(l_display_index) << " " ;
-	      }
-	    std::cout << std::endl;
-#endif // DEBUG
-	    m_max_index = l_index;
+	    m_max_index = l_index + 1;
 	    save_best_solution();
 	  }
-	if(l_index < m_min_best_index)
+
+	l_index = l_ffs ? l_next_index : l_previous_index;
+
+	if(l_index < m_min_best_index && !l_ended)
 	  {
-#ifdef DEBUG
-	    std::cout << "New min best index = " << l_index << std::endl;
-#endif // DEBUG
 	    m_min_best_index = l_index;
 	  }
       }
