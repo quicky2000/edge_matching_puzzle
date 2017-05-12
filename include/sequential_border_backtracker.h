@@ -139,30 +139,35 @@ namespace edge_matching_puzzle
       }
     else
       {
-	unsigned int l_index = 0;
-	while(l_index < p_size && m_corresponding_max_index[l_index] <= p_size)
-	  {
-	    m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
-	    ++l_index;
-	  }
-	shortcut_best(l_index);
+	shortcut_best(p_size);
       }
   }
 
   //----------------------------------------------------------------------------
   void sequential_border_backtracker::shortcut_best(unsigned int p_size)
   {
-    assert(true);
+    // Ensure that best solution top index are still the same compared to
+    // those needed to reach level defined by p_size
+    unsigned int l_index = 0;
+    while(l_index < p_size && m_corresponding_max_index[l_index] <= p_size)
+      {
+	m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
+	++l_index;
+      }
+    unsigned int l_real_size = l_index;
+
     // Make available pieces of best solution that are not reused
-    for(unsigned int l_index = p_size;
+    for(unsigned int l_index = l_real_size;
 	l_index < m_max_index;
 	++l_index
 	)
       {
 	m_available_pieces.toggle_bit(m_best_solution.get_octet(l_index) - 1,true);
       }
-    m_min_best_index = p_size;
-    m_max_index = p_size;
+    // Restablished part of best solution become the new best solution
+    m_min_best_index = l_real_size;
+    m_max_index = l_real_size;
+    m_best_available_pieces = m_available_pieces;
   }
 
   //------------------------------------------------------------------------------
