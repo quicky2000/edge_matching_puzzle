@@ -40,13 +40,18 @@ namespace edge_matching_puzzle
 
     inline unsigned int get_max_index(void)const;
 
+    /**
+       Restore current situation with best solution
+       @param size of best solution part to restore
+     **/
     inline void restore_best(unsigned int p_size);
 
     /**
        Keep only a part of best solution by releasing unneeded pieces
        @param size to keep
+       @param indicate to restore lower part of best solution
      **/
-    inline void shortcut_best(unsigned int p_size);
+    inline void shortcut_best(unsigned int p_size, bool p_restore = false);
 
     /**
        Return current situation
@@ -139,20 +144,30 @@ namespace edge_matching_puzzle
       }
     else
       {
-	shortcut_best(p_size);
+	shortcut_best(p_size, true);
       }
   }
 
   //----------------------------------------------------------------------------
-  void sequential_border_backtracker::shortcut_best(unsigned int p_size)
+  void sequential_border_backtracker::shortcut_best(unsigned int p_size, bool p_restore)
   {
     // Ensure that best solution top index are still the same compared to
     // those needed to reach level defined by p_size
     unsigned int l_index = 0;
-    while(l_index < p_size && m_corresponding_max_index[l_index] <= p_size)
+    if(p_restore)
       {
-	m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
-	++l_index;
+	while(l_index < p_size && m_corresponding_max_index[l_index] <= p_size)
+	  {
+	    m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
+	    ++l_index;
+	  }
+      }
+    else
+      {
+	while(l_index < p_size && m_corresponding_max_index[l_index] <= p_size)
+	  {
+	    ++l_index;
+	  }
       }
     unsigned int l_real_size = l_index;
 
