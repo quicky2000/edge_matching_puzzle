@@ -192,10 +192,8 @@ namespace edge_matching_puzzle
 					  unsigned int p_start_index
 					  )
   {
-    unsigned int l_index = p_start_index;
-    m_max_index = 0;
-    m_min_best_index = 0;
-    m_available_pieces = border_color_constraint(true);
+    unsigned int l_index = m_min_best_index;
+
     bool l_ended = false;
     // Reset last piece as border is a ring
     m_situation.set_octet(59,0);
