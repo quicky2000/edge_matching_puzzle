@@ -220,6 +220,21 @@ namespace edge_matching_puzzle
       bool l_continu = true;
       octet_array l_initial_constraint;
 
+#if RESTART_FROM_KNOWN_STATE
+      l_nb_solution = ;
+      m_enumerator->set_count();
+      m_enumerator->set_word("");
+      for(unsigned int l_index = 0;
+	  l_index < 56;
+	  ++l_index
+	  )
+	{
+	  l_initial_constraint.set_octet(m_translation_rule[l_index],
+					 m_enumerator->get_word_item(l_index)
+					 );
+	}
+#endif // RESTART_FROM_KNOWN_STATE
+
 #ifndef DISPLAY_ALL_SOLUTIONS
       std::atomic<bool> l_display_solution(false);
       std::atomic<bool> l_stop_thread(false);
