@@ -107,7 +107,13 @@ namespace edge_matching_puzzle
     /**
        Store for which max index this index has been touched
     **/
+#ifdef RANGE_VECTOR_IMPLEMENTATION
     std::vector<std::pair<unsigned int,unsigned int> > m_ranges;
+#else // RANGE_VECTOR_IMPLEMENTATION
+    unsigned int m_range_size;
+    std::pair<unsigned int,unsigned int> m_ranges[60];
+#endif // RANGE_VECTOR_IMPLEMENTATION
+
   };
 
   //----------------------------------------------------------------------------
@@ -116,6 +122,7 @@ namespace edge_matching_puzzle
 #ifdef DEBUG
     std::cout << "Save best solution [" << m_min_best_index << "," << m_max_index << "[" << std::endl;
 #endif // DEBUG
+#ifdef RANGE_VECTOR_IMPLEMENTATION
     while(m_ranges.size() && m_min_best_index <= m_ranges.back().first)
       {
 	m_ranges.pop_back();
@@ -127,6 +134,19 @@ namespace edge_matching_puzzle
 	m_ranges.push_back(std::pair<unsigned int,unsigned int>(l_previous_min,m_min_best_index));
       }
     m_ranges.push_back(std::pair<unsigned int,unsigned int>(m_min_best_index,m_max_index));
+#else // RANGE_VECTOR_IMPLEMENTATION
+    while(m_range_size && m_min_best_index <= m_ranges[m_range_size].first)
+      {
+	--m_range_size;
+      }
+    if(m_range_size)
+      {
+	m_ranges[m_range_size].second = m_min_best_index;
+      }
+    ++m_range_size;
+    m_ranges[m_range_size].first = m_min_best_index;
+    m_ranges[m_range_size].second = m_max_index;
+#endif // RANGE_VECTOR_IMPLEMENTATION
 
     m_best_available_pieces = m_available_pieces;
     for(unsigned int l_index = m_min_best_index;
@@ -204,6 +224,7 @@ namespace edge_matching_puzzle
     m_max_index(0),
     m_min_best_index(0),
     m_available_pieces(true)
+      ,m_range_size(0)
   {
   }
 
@@ -309,11 +330,19 @@ namespace edge_matching_puzzle
   //------------------------------------------------------------------------------
   unsigned int sequential_border_backtracker::compute_root_size(unsigned int p_size)
   {
+#ifdef RANGE_VECTOR_IMPLEMENTATION
     while(m_ranges.back().second > p_size)
       {
 	m_ranges.pop_back();
       }
     return m_ranges.back().second;
+#else // RANGE_VECTOR_IMPLEMENTATION
+    while(m_ranges[m_range_size].second > p_size)
+      {
+	--m_range_size;
+      }
+    return m_ranges[m_range_size].second;
+#endif // RANGE_VECTOR_IMPLEMENTATION
   }
 }
 #endif // _SEQUENTIAL_BORDER_BACKTRACKER_H_
