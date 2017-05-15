@@ -177,6 +177,17 @@ namespace edge_matching_puzzle
       }
     while(!l_ended);
     p_solution.set_octet(59,p_solution.get_octet(0) ? p_solution.get_octet(59) : l_max_index);
+#ifdef DEBUG
+    std::cout << "========================================================" << std::endl;
+    std::cout << "Best solution : [0," << l_max_index << "[" << std::endl;
+    for(unsigned int l_index = 0;
+	l_index < l_max_index;
+	++l_index)
+      {
+	std::cout << m_best_solution.get_octet(l_index) << " ";
+      }
+    std::cout << std::endl;
+#endif // DEBUG
   }
 
 
