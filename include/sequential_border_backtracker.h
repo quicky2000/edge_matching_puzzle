@@ -22,6 +22,8 @@
 #include "octet_array.h"
 #include <iostream>
 
+//#define DEBUG
+
 namespace edge_matching_puzzle
 {
   /**
@@ -213,6 +215,7 @@ namespace edge_matching_puzzle
     // Reset last piece as border is a ring
     m_situation.set_octet(59,0);
     int l_ffs = 1;
+    bool l_best_to_save = false;
     do
       {
 	unsigned int l_previous_index = l_index ? l_index - 1 : 59;
@@ -227,9 +230,22 @@ namespace edge_matching_puzzle
 	if(!l_ffs)
 	  {
 	    l_available_transitions & (~(( ((uint64_t)1) << m_situation.get_octet(l_index)) - 1));
+	    if(l_index < m_min_best_index)
+	      {
+		m_min_best_index = l_index;
+	      }
 	  }
 
 	l_ffs = l_available_transitions.ffs();
+
+	if(!l_ffs)
+	  {
+	    if(l_best_to_save)
+	      {
+		l_best_to_save = false;
+		save_best_solution();
+	      }
+	  }
 
 	// Detect the end in case we have found no solution ( index 0 and no candidate)
 	// or in case we are at the end ( next_index = 0 and there is one candidate)
@@ -247,15 +263,17 @@ namespace edge_matching_puzzle
 	if(l_ffs && l_index + 1 > m_max_index)
 	  {
 	    m_max_index = l_index + 1;
-	    save_best_solution();
+	    if(!l_ended)
+	      {
+		l_best_to_save = true;
+	      }
+	    else
+	      {
+		save_best_solution();
+	      }
 	  }
 
 	l_index = l_ffs ? l_next_index : l_previous_index;
-
-	if(l_index < m_min_best_index && !l_ended)
-	  {
-	    m_min_best_index = l_index;
-	  }
       }
     while(!l_ended);
 #ifdef DEBUG
