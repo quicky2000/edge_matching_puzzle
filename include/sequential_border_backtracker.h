@@ -21,6 +21,7 @@
 #include "border_color_constraint.h"
 #include "octet_array.h"
 #include <iostream>
+#include <vector>
 
 //#define DEBUG
 
@@ -66,6 +67,14 @@ namespace edge_matching_puzzle
     inline void save_best_solution(void);
 
     /**
+       Compute size of common part between new word to examine and previous best
+       solution
+       @param unchanged size of new word
+       @return size of reusable part in best solution
+    **/
+    inline unsigned int compute_root_size(unsigned int p_size);
+
+    /**
        Store max reached index
     **/
     unsigned int m_max_index;
@@ -98,7 +107,7 @@ namespace edge_matching_puzzle
     /**
        Store for which max index this index has been touched
     **/
-    unsigned int m_corresponding_max_index[60];
+    std::vector<std::pair<unsigned int,unsigned int> > m_ranges;
   };
 
   //----------------------------------------------------------------------------
@@ -107,8 +116,19 @@ namespace edge_matching_puzzle
 #ifdef DEBUG
     std::cout << "Save best solution [" << m_min_best_index << "," << m_max_index << "[" << std::endl;
 #endif // DEBUG
+    while(m_ranges.size() && m_min_best_index <= m_ranges.back().first)
+      {
+	m_ranges.pop_back();
+      }
+    if(m_ranges.size())
+      {
+	unsigned int l_previous_min = m_ranges.back().first;
+	m_ranges.pop_back();
+	m_ranges.push_back(std::pair<unsigned int,unsigned int>(l_previous_min,m_min_best_index));
+      }
+    m_ranges.push_back(std::pair<unsigned int,unsigned int>(m_min_best_index,m_max_index));
+
     m_best_available_pieces = m_available_pieces;
-    m_corresponding_max_index[m_min_best_index] = m_max_index;
     for(unsigned int l_index = m_min_best_index;
 	l_index < m_max_index;
 	++l_index
@@ -155,24 +175,16 @@ namespace edge_matching_puzzle
   {
     // Ensure that best solution top index are still the same compared to
     // those needed to reach level defined by p_size
-    unsigned int l_index = 0;
+    unsigned int l_real_size = compute_root_size(p_size);
     if(p_restore)
       {
-	while(l_index < p_size && m_corresponding_max_index[l_index] <= p_size)
+	for(unsigned int l_index = 0;
+	    l_index < l_real_size;
+	    ++l_index)
 	  {
 	    m_situation.set_octet(l_index, m_best_solution.get_octet(l_index));
-	    ++l_index;
 	  }
       }
-    else
-      {
-	while(l_index < p_size && m_corresponding_max_index[l_index] <= p_size)
-	  {
-	    ++l_index;
-	  }
-      }
-    unsigned int l_real_size = l_index;
-
     // Make available pieces of best solution that are not reused
     for(unsigned int l_index = l_real_size;
 	l_index < m_max_index;
@@ -193,13 +205,6 @@ namespace edge_matching_puzzle
     m_min_best_index(0),
     m_available_pieces(true)
   {
-    for(unsigned int l_index =0;
-	l_index < 60;
-	++l_index
-	)
-      {
-	m_corresponding_max_index[l_index] = 0;
-      }
   }
 
   //------------------------------------------------------------------------------
@@ -301,6 +306,15 @@ namespace edge_matching_puzzle
     return m_situation;
   }
 
+  //------------------------------------------------------------------------------
+  unsigned int sequential_border_backtracker::compute_root_size(unsigned int p_size)
+  {
+    while(m_ranges.back().second > p_size)
+      {
+	m_ranges.pop_back();
+      }
+    return m_ranges.back().second;
+  }
 }
 #endif // _SEQUENTIAL_BORDER_BACKTRACKER_H_
 // EOF
