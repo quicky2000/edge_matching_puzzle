@@ -38,9 +38,13 @@ namespace edge_matching_puzzle
 			  );
     inline uint32_t get_octet(unsigned int p_index) const;
   private:
+#ifdef COMPACT_IMPLEMENTATION
     uint32_t m_octets[15];
+#else
+    uint8_t m_octets[60];
+#endif // COMPACT_IMPLEMENTATION
 };
-
+#ifdef COMPACT_IMPLEMENTATION
   //------------------------------------------------------------------------------
   octet_array::octet_array(void):
     m_octets{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -63,6 +67,34 @@ namespace edge_matching_puzzle
       assert(p_index < 60);
       return ((m_octets[p_index >> 2]) >> (8 * (p_index & 0x3))) & 0xFF;
     }
+#else // COMPACT_IMPLEMENTATION
+
+  //------------------------------------------------------------------------------
+  octet_array::octet_array(void):
+    m_octets{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+	    }
+    {
+    }
+
+    //------------------------------------------------------------------------------
+    void octet_array::set_octet(unsigned int p_index,
+				uint32_t p_color_id
+				)
+    {
+      assert(p_index < 60);
+      m_octets[p_index] = (uint8_t)p_color_id;
+    }
+
+    //------------------------------------------------------------------------------
+    uint32_t octet_array::get_octet(unsigned int p_index) const
+    {
+      assert(p_index < 60);
+      return m_octets[p_index];
+    }
+#endif // COMPACT_IMPLEMENTATION
 }
 #endif // _OCTET_ARRAY_H_
 // EOF
