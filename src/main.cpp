@@ -25,6 +25,7 @@
 #include "emp_FSM.h"
 
 #include "feature_border_exploration.h"
+#include "feature_simplex.h"
 #include "feature_display_all.h"
 #include "feature_display_max.h"
 #include "feature_display_solutions.h"
@@ -146,6 +147,13 @@ int main(int argc,char ** argv)
 						     l_info,
 						     l_initial_situation.get_value<std::string>()
 						     );
+        }
+      else if("simplex" == l_feature_name)
+        {
+          l_feature = new feature_simplex(l_piece_db,
+					  l_info,
+					  l_initial_situation.get_value<std::string>()
+					  );
         }
       else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
 	{

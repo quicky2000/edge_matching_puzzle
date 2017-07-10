@@ -47,6 +47,7 @@ set(MY_SOURCE_FILES
     include/feature_dump_solutions.h
     include/feature_dump_summary.h
     include/feature_if.h
+    include/feature_simplex.h
     include/light_border_pieces_db.h
     include/octet_array.h
     include/precomputed_constraint.h
