@@ -47,6 +47,9 @@ namespace edge_matching_puzzle
     inline unsigned int compute_combination(const emp_types::t_kind & p_kind1,
 					    const emp_types::t_kind & p_kind2
 					    );
+
+    inline void determine_simplex_parameters(const emp_piece_db & p_db);
+
     const emp_piece_db & m_db;
     const emp_FSM_info & m_info;
   };
@@ -58,6 +61,12 @@ namespace edge_matching_puzzle
 				   ):
     m_db(p_db),
     m_info(p_info)
+  {
+    determine_simplex_parameters(p_db);
+  }
+
+  //----------------------------------------------------------------------------
+  void feature_simplex::determine_simplex_parameters(const emp_piece_db & p_db)
   {
     // Compute simplex variable number
     // Corner and border pieces can have only one orientation per position
