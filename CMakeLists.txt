@@ -53,6 +53,7 @@ set(MY_SOURCE_FILES
     include/precomputed_constraint.h
     include/precomputed_transition_info.h
     include/sequential_border_backtracker.h
+    include/simplex_variable.h
     src/border_backtracker.cpp
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp

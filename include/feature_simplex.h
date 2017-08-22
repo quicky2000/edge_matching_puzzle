@@ -23,7 +23,9 @@
 #include "emp_piece_db.h"
 #include "emp_FSM_info.h"
 #include "emp_FSM_situation.h"
+#include "simplex_variable.h"
 #include <string>
+#include <vector>
 
 namespace edge_matching_puzzle
 {
@@ -51,6 +53,16 @@ namespace edge_matching_puzzle
 
     inline void determine_simplex_parameters(const emp_piece_db & p_db);
 
+    /**
+       Compute index related to position X,Y
+       @param X position
+       @param Y position
+       @return index related to position
+    */
+    inline unsigned int get_position_index(const unsigned int & p_x,
+					   const unsigned int & p_y
+					   ) const;
+
     const emp_piece_db & m_db;
     const emp_FSM_info & m_info;
     emp_FSM_situation m_situation;
@@ -58,6 +70,7 @@ namespace edge_matching_puzzle
     emp_types::bitfield m_available_borders;
     emp_types::bitfield m_available_centers;
     emp_types::bitfield * const m_available_pieces[3];
+    std::vector<simplex_variable*> m_simplex_variables;
   };
  
   //----------------------------------------------------------------------------
@@ -104,6 +117,15 @@ namespace edge_matching_puzzle
     emp_types::bitfield l_matching_centers(4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER));
 
     emp_types::bitfield * const l_matching_pieces[3] = {&l_matching_centers,&l_matching_borders,&l_matching_corners};
+
+    // Store all simplex variables related to a position index
+    // Position index = width * Y + X)
+    std::vector<simplex_variable*> * l_position_variables = new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()];
+
+    // Store all simplex variables related to a piece id
+    // index 0 correspond to piece id 1)
+    std::vector<simplex_variable*> * l_piece_id_variables = new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()];
+
     // Determine for each position which piece match constraints
     for(unsigned int l_y = 0;
 	l_y < m_info.get_height();
@@ -207,15 +229,30 @@ namespace edge_matching_puzzle
 		    unsigned int l_truncated_piece = l_piece >> (4 * p_db.get_color_id_size());
 		    emp_types::t_orientation l_orientation = (emp_types::t_orientation)(l_truncated_piece & 0x3);
 		    unsigned int l_piece_id = 1 + (l_truncated_piece >> 2);
-		    std::cout << "Piece Id " << l_piece_id << std::endl;
-		    std::cout << "Orientation " << emp_types::orientation2string(l_orientation) << std::endl;
+		    simplex_variable * l_variable = new simplex_variable(m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
+		    m_simplex_variables.push_back(l_variable);
+		    l_position_variables[get_position_index(l_x, l_y)].push_back(l_variable);
+		    l_piece_id_variables[l_piece_id - 1].push_back(l_variable);
+		    std::cout << *l_variable << std::endl;
 		  }
 	      }
 	  }
       }
-
+    std::cout << m_simplex_variables.size() << std::endl;
+    delete[] l_position_variables;
+    delete[] l_piece_id_variables;
     determine_simplex_parameters(p_db);
   }
+
+  //----------------------------------------------------------------------------
+  unsigned int feature_simplex::get_position_index(const unsigned int & p_x,
+						   const unsigned int & p_y
+						   )const
+    {
+      assert(p_x < m_info.get_width());
+      assert(p_y < m_info.get_height());
+      return m_info.get_width() * p_y + p_x;
+    }
 
   //----------------------------------------------------------------------------
   void feature_simplex::determine_simplex_parameters(const emp_piece_db & p_db)
@@ -309,6 +346,10 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   feature_simplex::~feature_simplex(void)
   {
+    for(auto l_iter: m_simplex_variables)
+      {
+	delete l_iter;
+      }
   }
  }
 #endif // FEATURE_SIMPLEX_H
