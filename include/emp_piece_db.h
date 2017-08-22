@@ -124,6 +124,12 @@ namespace edge_matching_puzzle
     inline const unsigned int get_kind_index(const emp_types::t_piece_id & p_id)const;
 
     /**
+       Indicate if a method has a color_kind_index ( ie is used)
+       @return true if there is a corresponding color_kind_index
+     */
+    inline bool has_color_kind_index(const emp_types::t_color_id & p_id)const;
+
+    /**
        Return index of color in its kind category knowing that category is the more specific one,
        for example is color is both on corner and border method with return color index in corner kind
     **/
@@ -1050,10 +1056,14 @@ namespace edge_matching_puzzle
 	    l_index < m_border_color_id;
 	    ++l_index)
 	  {
-	    std::cout << "Color[" << l_index << "] : " << emp_types::kind2string(m_color_kind[l_index]) ;
-	    if(l_index)
+	    emp_types::t_kind l_kind = m_color_kind[l_index];
+	    std::cout << "Color[" << l_index << "] : " << emp_types::kind2string(l_kind) ;
+	    if( emp_types::t_kind::UNDEFINED != l_kind)
 	      {
-		std::cout << "[" << get_color_kind_index(l_index) << "]" ;
+		if(l_index)
+		  {
+		    std::cout << "[" << get_color_kind_index(l_index) << "]" ;
+		  }
 	      }
 	    std::cout << std::endl ;
 	  }
@@ -1477,6 +1487,13 @@ namespace edge_matching_puzzle
       assert(p_id <= m_pieces.size());
       assert(p_id);
       return m_piece_id2kind_index[p_id - 1];
+    }
+
+    //----------------------------------------------------------------------------
+    bool emp_piece_db::has_color_kind_index(const emp_types::t_color_id & p_id)const
+    {
+      assert(p_id < m_border_color_id);
+      return (0xDEAD != m_color_id2kind_index[p_id]);
     }
 
     //----------------------------------------------------------------------------
