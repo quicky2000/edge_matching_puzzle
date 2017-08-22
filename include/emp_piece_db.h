@@ -583,10 +583,19 @@ namespace edge_matching_puzzle
 	    m_color_id2kind_index[l_index] = 0;
 	  }
 
-	assert(m_center_colors.size() == m_border2center_colors.size());
+	assert(m_center_colors.size() >= m_border2center_colors.size());
+
+	// Ensure that each border2center color is also in center colors
+	for(auto l_iter_color: m_border2center_colors)
+	  {
+	    if(m_center_colors.end() == m_center_colors.find(l_iter_color))
+	      {
+		throw quicky_exception::quicky_logic_exception("Border2center color " + std::to_string(l_iter_color) + " is not in center colors",__LINE__,__FILE__);
+	      }
+	  }
 	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CORNER] = m_corner_colors.size();
 	m_nb_color_kinds[(unsigned int)emp_types::t_kind::BORDER] = m_border_colors.size();
-	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CENTER] = m_border2center_colors.size();
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CENTER] = m_center_colors.size();
 
 
 	m_color_kind = new emp_types::t_kind[m_border_color_id];
