@@ -63,6 +63,19 @@ namespace edge_matching_puzzle
 					   const unsigned int & p_y
 					   ) const;
 
+    /**
+       Compute the number of equations for a couple of positions
+       There is an equation for each couple of variables where variable.piece_id
+       from p_variable_pos1 is different from variable.piece_id from
+       p_variable_pos2
+       @param list of variables for position 1
+       @param list of variables for position 2
+       @return number of equations
+     */
+    static inline uint64_t get_nb_equations(const std::vector<simplex_variable*> & p_variables_pos1,
+					    const std::vector<simplex_variable*> & p_variables_pos2
+					    );
+
     const emp_piece_db & m_db;
     const emp_FSM_info & m_info;
     emp_FSM_situation m_situation;
@@ -233,12 +246,43 @@ namespace edge_matching_puzzle
 		    m_simplex_variables.push_back(l_variable);
 		    l_position_variables[get_position_index(l_x, l_y)].push_back(l_variable);
 		    l_piece_id_variables[l_piece_id - 1].push_back(l_variable);
-		    std::cout << *l_variable << std::endl;
 		  }
 	      }
 	  }
       }
+
+    // Compute equation number
+    // Width * Height because one equation per variable to state that each piece can only have one position/orientation
+    // Width * Height because one position can only have piece/orientation
+    uint64_t l_nb_equation = 2 * m_info.get_height() * m_info.get_width();
+
+    for(unsigned int l_y = 0;
+	l_y < m_info.get_height();
+	++l_y
+	)
+      {
+	for(unsigned int l_x = 0;
+	    l_x < m_info.get_width();
+	    ++l_x
+	    )
+	  {
+	    //	    std::cout << "Compute equation numbers at (" << l_x << "," << l_y << ")" << std::endl;
+	    if(l_x < m_info.get_width() - 1)
+	      {
+		l_nb_equation += get_nb_equations(l_position_variables[get_position_index(l_x, l_y)],
+						  l_position_variables[get_position_index(l_x + 1, l_y)]
+						  );
+	      }
+	    if(l_y < m_info.get_height() - 1)
+	      {
+		l_nb_equation += get_nb_equations(l_position_variables[get_position_index(l_x, l_y)],
+						  l_position_variables[get_position_index(l_x, l_y + 1)]
+						  );
+	      }
+	  }
+      }
     std::cout << m_simplex_variables.size() << std::endl;
+    std::cout << l_nb_equation << std::endl;
     delete[] l_position_variables;
     delete[] l_piece_id_variables;
     determine_simplex_parameters(p_db);
@@ -252,6 +296,25 @@ namespace edge_matching_puzzle
       assert(p_x < m_info.get_width());
       assert(p_y < m_info.get_height());
       return m_info.get_width() * p_y + p_x;
+    }
+
+  //----------------------------------------------------------------------------
+  uint64_t feature_simplex::get_nb_equations(const std::vector<simplex_variable*> & p_variables_pos1,
+					     const std::vector<simplex_variable*> & p_variables_pos2
+					     )
+    {
+      unsigned int l_result = 0;
+      for(auto l_iter_pos1: p_variables_pos1)
+	{
+	  for(auto l_iter_pos2: p_variables_pos2)
+	    {
+	      if(l_iter_pos1->get_piece_id() != l_iter_pos2->get_piece_id())
+		{
+		  ++l_result;
+		}
+	    }
+	}
+      return l_result;
     }
 
   //----------------------------------------------------------------------------
@@ -278,7 +341,6 @@ namespace edge_matching_puzzle
 	    )
 	  {
 	    emp_types::kind l_kind = get_position_kind(l_x,l_y);
-	    std::cout << "Pos[" << l_x << "," << l_y << "] = " << emp_types::kind2string(l_kind) << " | " << get_nb_piece_possibility(l_kind) << std::endl;
 	    if(l_x < m_info.get_width() - 1)
 	      {
 		emp_types::kind l_kind_bis = get_position_kind(l_x + 1,l_y);
