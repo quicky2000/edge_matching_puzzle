@@ -42,6 +42,12 @@ namespace edge_matching_puzzle
     // End of virtual methods inherited from feature_if
     inline ~feature_simplex(void);
   private:
+    inline void add_equations(const std::vector<simplex_variable*> & p_variables_pos1,
+			      const std::vector<simplex_variable*> & p_variables_pos2,
+			      unsigned int & p_equation_index,
+			      bool p_horizontal
+			      );
+
     inline unsigned int get_nb_piece_possibility(const emp_types::t_kind & p_kind,
 						 bool p_minor = false
 						 );
@@ -337,7 +343,6 @@ namespace edge_matching_puzzle
 	    ++l_equation_index;
 	  }
       }
-    delete[] l_position_variables;
 
     // Create piece equations
     for(unsigned int l_index = 0;
@@ -366,6 +371,37 @@ namespace edge_matching_puzzle
 
     delete[] l_piece_id_variables;
 
+    for(unsigned int l_y = 0;
+	l_y < m_info.get_height();
+	++l_y
+	)
+      {
+	for(unsigned int l_x = 0;
+	    l_x < m_info.get_width();
+	    ++l_x
+	    )
+	  {
+	    if(l_x < m_info.get_width() - 1)
+	      {
+		add_equations(l_position_variables[get_position_index(l_x, l_y)],
+			      l_position_variables[get_position_index(l_x + 1, l_y)],
+			      l_equation_index,
+			      true
+			      );
+	      }
+	    if(l_y < m_info.get_height() - 1)
+	      {
+		add_equations(l_position_variables[get_position_index(l_x, l_y)],
+			      l_position_variables[get_position_index(l_x, l_y + 1)],
+			      l_equation_index,
+			      false
+			      );
+	      }
+	  }
+      }
+    delete[] l_position_variables;
+
+    assert(l_equation_index == l_nb_equation);
     determine_simplex_parameters(p_db);
   }
 
@@ -378,6 +414,46 @@ namespace edge_matching_puzzle
       assert(p_y < m_info.get_height());
       return m_info.get_width() * p_y + p_x;
     }
+
+  //----------------------------------------------------------------------------
+  void feature_simplex::add_equations(const std::vector<simplex_variable*> & p_variables_pos1,
+				      const std::vector<simplex_variable*> & p_variables_pos2,
+				      unsigned int & p_equation_index,
+				      bool p_horizontal
+				      )
+  {
+      for(auto l_iter_pos1: p_variables_pos1)
+	{
+	  for(auto l_iter_pos2: p_variables_pos2)
+	    {
+	      if(l_iter_pos1->get_piece_id() != l_iter_pos2->get_piece_id())
+		{
+		  m_simplex->set_A_coef(p_equation_index,
+					l_iter_pos1->get_id(),
+					1
+					);
+		  m_simplex->set_A_coef(p_equation_index,
+					l_iter_pos2->get_id(),
+					1
+					);
+
+		  emp_types::t_orientation l_border1 = p_horizontal ? emp_types::t_orientation::EAST : emp_types::t_orientation::SOUTH;
+		  emp_types::t_orientation l_border2 = p_horizontal ? emp_types::t_orientation::WEST : emp_types::t_orientation::NORTH;
+
+		  emp_types::t_color_id l_color1 = m_db.get_piece(l_iter_pos1->get_piece_id()).get_color(l_border1,l_iter_pos1->get_orientation());
+		  emp_types::t_color_id l_color2 = m_db.get_piece(l_iter_pos2->get_piece_id()).get_color(l_border2,l_iter_pos2->get_orientation());
+
+		  m_simplex->set_B_coef(p_equation_index,
+					l_color1 == l_color2 ? 2 : 1
+					);
+		  m_simplex->define_equation_type(p_equation_index,
+						  simplex::t_equation_type::INEQUATION_LT
+						  );
+		  ++p_equation_index;
+		}
+	    }
+	}
+  }
 
   //----------------------------------------------------------------------------
   uint64_t feature_simplex::get_nb_equations(const std::vector<simplex_variable*> & p_variables_pos1,
