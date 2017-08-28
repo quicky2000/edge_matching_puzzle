@@ -254,7 +254,23 @@ namespace edge_matching_puzzle
     // Compute equation number
     // Width * Height because one equation per variable to state that each piece can only have one position/orientation
     // Width * Height because one position can only have piece/orientation
-    uint64_t l_nb_equation = 2 * m_info.get_height() * m_info.get_width();
+    uint64_t l_nb_equation = 0;
+    for(unsigned int l_index = 0;
+	l_index < m_info.get_height() * m_info.get_width();
+	++l_index
+	)
+      {
+	// If position is free then add position equation
+	if(l_position_variables[l_index].size())
+	  {
+	    ++l_nb_equation;
+	  }
+	// if piece is not used then add piece equations
+	if(l_piece_id_variables[l_index].size())
+	  {
+	    ++l_nb_equation;
+	  }
+      }
 
     for(unsigned int l_y = 0;
 	l_y < m_info.get_height();
