@@ -84,6 +84,7 @@ LIST(APPEND DEPENDANCY_LIST "FSM_framework")
 LIST(APPEND DEPENDANCY_LIST "parameter_manager")
 LIST(APPEND DEPENDANCY_LIST "EXT_microhttpd")
 LIST(APPEND DEPENDANCY_LIST "combinatorics")
+LIST(APPEND DEPENDANCY_LIST "simplex")
 
 #------------------------------
 #- Generic part

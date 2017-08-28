@@ -30,6 +30,7 @@ before_install:
   - git clone https://github.com/quicky2000/quicky_utils.git
   - git clone https://github.com/quicky2000/simple_gui.git
   - git clone https://github.com/quicky2000/combinatorics.git
+  - git clone https://github.com/quicky2000/simplex.git
   - cd combinatorics
   - git checkout develop
   - cd $MY_LOCATION/repositories

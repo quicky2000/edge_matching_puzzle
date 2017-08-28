@@ -24,6 +24,7 @@
 #include "emp_FSM_info.h"
 #include "emp_FSM_situation.h"
 #include "simplex_variable.h"
+#include "simplex.h"
 #include <string>
 #include <vector>
 
@@ -84,6 +85,8 @@ namespace edge_matching_puzzle
     emp_types::bitfield m_available_centers;
     emp_types::bitfield * const m_available_pieces[3];
     std::vector<simplex_variable*> m_simplex_variables;
+
+    simplex::simplex<double> * m_simplex;
   };
  
   //----------------------------------------------------------------------------
@@ -96,7 +99,8 @@ namespace edge_matching_puzzle
     m_available_corners(4 * p_db.get_nb_pieces(emp_types::t_kind::CORNER),true),
     m_available_borders(4 * p_db.get_nb_pieces(emp_types::t_kind::BORDER),true),
     m_available_centers(4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER),true),
-    m_available_pieces{&m_available_centers, &m_available_borders, &m_available_corners}
+    m_available_pieces{&m_available_centers, &m_available_borders, &m_available_corners},
+    m_simplex(nullptr)
   {
 
     // Initialise situation with initial situation string
@@ -299,8 +303,69 @@ namespace edge_matching_puzzle
       }
     std::cout << m_simplex_variables.size() << std::endl;
     std::cout << l_nb_equation << std::endl;
+
+    // Create simplex representing puzzle
+    m_simplex = new simplex::simplex<double>(m_simplex_variables.size(),
+					     l_nb_equation,
+					     0,
+					     0
+					     );
+
+    unsigned int l_equation_index = 0;
+
+    // Create position equations
+    for(unsigned int l_index = 0;
+	l_index < m_info.get_height() * m_info.get_width();
+	++l_index
+	)
+      {
+	if(l_position_variables[l_index].size())
+	  {
+	    for(auto l_iter: l_position_variables[l_index])
+	      {
+		m_simplex->set_A_coef(l_equation_index,
+				      l_iter->get_id(),
+				      1
+				      );
+	      }
+	    m_simplex->set_B_coef(l_equation_index,
+				  1
+				  );
+	    m_simplex->define_equation_type(l_equation_index,
+					    simplex::t_equation_type::INEQUATION_LT
+					    );
+	    ++l_equation_index;
+	  }
+      }
     delete[] l_position_variables;
+
+    // Create piece equations
+    for(unsigned int l_index = 0;
+	l_index < m_info.get_height() * m_info.get_width();
+	++l_index
+	)
+      {
+	if(l_piece_id_variables[l_index].size())
+	  {
+	    for(auto l_iter:l_piece_id_variables[l_index])
+	      {
+		m_simplex->set_A_coef(l_equation_index,
+				      l_iter->get_id(),
+				      1
+				      );
+	      }
+	    m_simplex->set_B_coef(l_equation_index,
+				  1
+				  );
+	    m_simplex->define_equation_type(l_equation_index,
+					    simplex::t_equation_type::INEQUATION_LT
+					    );
+	    ++l_equation_index;
+	  }
+      }
+
     delete[] l_piece_id_variables;
+
     determine_simplex_parameters(p_db);
   }
 
@@ -424,6 +489,8 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   feature_simplex::~feature_simplex(void)
   {
+    delete m_simplex;
+    m_simplex = nullptr;
     for(auto l_iter: m_simplex_variables)
       {
 	delete l_iter;
