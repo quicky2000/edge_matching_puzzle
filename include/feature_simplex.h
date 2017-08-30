@@ -317,6 +317,14 @@ namespace edge_matching_puzzle
 					     0
 					     );
 
+    for(unsigned int l_index = 0;
+	l_index < m_simplex_variables.size();
+	++l_index
+	)
+      {
+	m_simplex->set_Z_coef(l_index,1);
+      }
+
     unsigned int l_equation_index = 0;
 
     // Create position equations
