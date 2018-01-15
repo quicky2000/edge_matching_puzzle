@@ -180,12 +180,12 @@ int main(int argc,char ** argv)
     }
   catch(quicky_exception::quicky_runtime_exception & e)
     {
-      std::cout << "ERROR : " << e.what() << std::endl ;
+      std::cout << "ERROR : " << e.what() << " at " << e.get_file() << ":" << e.get_line() <<std::endl ;
       return(-1);
     }
   catch(quicky_exception::quicky_logic_exception & e)
     {
-      std::cout << "ERROR : " << e.what() << std::endl ;
+      std::cout << "ERROR : " << e.what() << " at " << e.get_file() << ":" << e.get_line() << std::endl ;
       return(-1);
     }
   return 0;
