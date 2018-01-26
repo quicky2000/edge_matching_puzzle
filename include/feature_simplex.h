@@ -568,6 +568,29 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   void feature_simplex::run(void)
   {
+    double l_max = 0;
+    bool l_infinite = false;
+    simplex::simplex_listener<double> l_listener(*m_simplex,std::cout);
+    if(m_simplex->find_max(l_max,l_infinite,&l_listener))
+      {
+	std::cout << "Max = " << l_max << std::endl ;
+	for(unsigned int l_index = 0;
+	    l_index < m_simplex->get_total_nb_equation();
+	    ++l_index
+	    )
+	  {
+	    std::cout << "Base variable[" << l_index << "] is X" << m_simplex->get_base_variable(l_index) + 1 << std::endl;
+	  }
+      }
+    else if(l_infinite)
+      {
+	std::cout << "Inifinite Max" << std::endl;
+      }
+    else
+      {
+	std::cout << "No Max found !?" << std::endl;
+      }
+
   }
 
   //----------------------------------------------------------------------------
