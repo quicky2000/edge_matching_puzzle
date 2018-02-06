@@ -24,7 +24,7 @@
 #include "emp_FSM_info.h"
 #include "emp_FSM_situation.h"
 #include "simplex_variable.h"
-#include "simplex.h"
+#include "simplex_solver.h"
 #include <string>
 #include <vector>
 
@@ -92,7 +92,8 @@ namespace edge_matching_puzzle
     emp_types::bitfield * const m_available_pieces[3];
     std::vector<simplex_variable*> m_simplex_variables;
 
-    simplex::simplex<double> * m_simplex;
+    typedef simplex::simplex_solver<double> simplex_t;
+    simplex_t * m_simplex;
   };
  
   //----------------------------------------------------------------------------
@@ -311,18 +312,18 @@ namespace edge_matching_puzzle
     std::cout << l_nb_equation << std::endl;
 
     // Create simplex representing puzzle
-    m_simplex = new simplex::simplex<double>(m_simplex_variables.size(),
-					     l_nb_equation,
-					     0,
-					     0
-					     );
+    m_simplex = new simplex_t(m_simplex_variables.size(),
+			      l_nb_equation,
+			      0,
+			      0
+			      );
 
     for(unsigned int l_index = 0;
 	l_index < m_simplex_variables.size();
 	++l_index
 	)
       {
-	m_simplex->set_Z_coef(l_index,1);
+	    m_simplex->set_Z_coef(l_index,simplex_t::t_coef_type(1));
       }
 
     unsigned int l_equation_index = 0;
@@ -338,12 +339,12 @@ namespace edge_matching_puzzle
 	    for(auto l_iter: l_position_variables[l_index])
 	      {
 		m_simplex->set_A_coef(l_equation_index,
-				      l_iter->get_id(),
-				      1
-				      );
+				              l_iter->get_id(),
+                              simplex_t::t_coef_type(1)
+				             );
 	      }
 	    m_simplex->set_B_coef(l_equation_index,
-				  1
+                              simplex_t::t_coef_type(1)
 				  );
 	    m_simplex->define_equation_type(l_equation_index,
 					    simplex::t_equation_type::INEQUATION_LT
@@ -364,11 +365,11 @@ namespace edge_matching_puzzle
 	      {
 		m_simplex->set_A_coef(l_equation_index,
 				      l_iter->get_id(),
-				      1
+                              simplex_t::t_coef_type(1)
 				      );
 	      }
 	    m_simplex->set_B_coef(l_equation_index,
-				  1
+                              simplex_t::t_coef_type(1)
 				  );
 	    m_simplex->define_equation_type(l_equation_index,
 					    simplex::t_equation_type::INEQUATION_LT
@@ -438,11 +439,11 @@ namespace edge_matching_puzzle
 		{
 		  m_simplex->set_A_coef(p_equation_index,
 					l_iter_pos1->get_id(),
-					1
+                                simplex_t::t_coef_type(1)
 					);
 		  m_simplex->set_A_coef(p_equation_index,
 					l_iter_pos2->get_id(),
-					1
+                                simplex_t::t_coef_type(1)
 					);
 
 		  emp_types::t_orientation l_border1 = p_horizontal ? emp_types::t_orientation::EAST : emp_types::t_orientation::SOUTH;
@@ -452,7 +453,7 @@ namespace edge_matching_puzzle
 		  emp_types::t_color_id l_color2 = m_db.get_piece(l_iter_pos2->get_piece_id()).get_color(l_border2,l_iter_pos2->get_orientation());
 
 		  m_simplex->set_B_coef(p_equation_index,
-					l_color1 == l_color2 ? 2 : 1
+                                simplex_t::t_coef_type(l_color1 == l_color2 ? 2 : 1)
 					);
 		  m_simplex->define_equation_type(p_equation_index,
 						  simplex::t_equation_type::INEQUATION_LT
@@ -568,9 +569,9 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   void feature_simplex::run(void)
   {
-    double l_max = 0;
+    simplex_t::t_coef_type l_max(0);
     bool l_infinite = false;
-    simplex::simplex_listener<double> l_listener(*m_simplex,std::cout);
+    simplex::simplex_listener<simplex_t::t_coef_type> l_listener(*m_simplex,std::cout);
     if(m_simplex->find_max(l_max,l_infinite,&l_listener))
       {
 	std::cout << "Max = " << l_max << std::endl ;
