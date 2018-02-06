@@ -24,6 +24,8 @@
 #include "emp_FSM_info.h"
 #include "emp_FSM_situation.h"
 #include "simplex_variable.h"
+#include "safe_types.h"
+#include "fract.h"
 #include "simplex_solver.h"
 #include <string>
 #include <vector>
@@ -92,7 +94,7 @@ namespace edge_matching_puzzle
     emp_types::bitfield * const m_available_pieces[3];
     std::vector<simplex_variable*> m_simplex_variables;
 
-    typedef simplex::simplex_solver<double> simplex_t;
+    typedef simplex::simplex_solver<quicky_utils::fract<quicky_utils::safe_int32_t>> simplex_t;
     simplex_t * m_simplex;
   };
  
