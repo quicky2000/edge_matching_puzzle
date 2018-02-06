@@ -27,6 +27,7 @@
 #include "safe_types.h"
 #include "fract.h"
 #include "simplex_solver.h"
+#include "emp_simplex_listener.h"
 #include <string>
 #include <vector>
 
@@ -573,7 +574,7 @@ namespace edge_matching_puzzle
   {
     simplex_t::t_coef_type l_max(0);
     bool l_infinite = false;
-    simplex::simplex_listener<simplex_t::t_coef_type> l_listener(*m_simplex,std::cout);
+    emp_simplex_listener<simplex_t::t_coef_type> l_listener(*m_simplex,std::cout);
     if(m_simplex->find_max(l_max,l_infinite,&l_listener))
       {
 	std::cout << "Max = " << l_max << std::endl ;

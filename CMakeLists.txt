@@ -28,6 +28,7 @@ set(MY_SOURCE_FILES
     include/emp_piece_db.h
     include/emp_pieces_parser.h
     include/emp_position_strategy.h
+    include/emp_simplex_listener.h
     include/emp_situation_binary_dumper.h
     include/emp_situation_binary_reader.h
     include/emp_spiral_strategy_generator.h
