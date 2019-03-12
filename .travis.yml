@@ -8,6 +8,12 @@ compiler:
 
 before_install:
   - sudo apt-get update
+# GLPK specific part
+#-----------------------
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install glpk; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libglpk-dev; fi
+# End of GLPK specific part
+#-----------------------
   - sudo apt-get install -y libsdl1.2-dev libmicrohttpd-dev
   - MY_LOCATION=`pwd`
   - echo $MY_LOCATION
@@ -31,6 +37,7 @@ before_install:
   - git clone https://github.com/quicky2000/simple_gui.git
   - git clone https://github.com/quicky2000/combinatorics.git
   - git clone https://github.com/quicky2000/simplex.git
+  - git clone https://github.com/quicky2000/EXT_glpk.git
   - cd combinatorics
   - git checkout develop
   - cd $MY_LOCATION/repositories
