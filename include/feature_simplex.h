@@ -55,17 +55,23 @@ namespace edge_matching_puzzle
 
     inline unsigned int get_nb_piece_possibility(const emp_types::t_kind & p_kind
                                                 ,bool p_minor = false
-						                        );
+						                        ) const;
 
+    /**
+     * Indicate if position defined by parameters is corner/border/center
+     * @param p_x column index
+     * @param p_y row index
+     * @return kind of position: corner/border/center
+     */
     inline emp_types::t_kind get_position_kind(const unsigned int & p_x
                                               ,const unsigned int & p_y
-					                          );
+					                          ) const;
 
     inline unsigned int compute_combination(const emp_types::t_kind & p_kind1
                                            ,const emp_types::t_kind & p_kind2
-					                       );
+					                       ) const;
 
-    inline void determine_simplex_parameters(const emp_piece_db & p_db);
+    inline void determine_simplex_parameters(const emp_piece_db & p_db) const;
 
     /**
        Compute index related to position X,Y
@@ -458,7 +464,7 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  void feature_simplex::determine_simplex_parameters(const emp_piece_db & p_db)
+  void feature_simplex::determine_simplex_parameters(const emp_piece_db & p_db) const
   {
       // Compute simplex variable number
       // Corner and border pieces can have only one orientation per position
@@ -502,7 +508,7 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   unsigned int feature_simplex::compute_combination(const emp_types::t_kind & p_kind1
                                                    ,const emp_types::t_kind & p_kind2
-                                                   )
+                                                   ) const
   {
       return get_nb_piece_possibility(p_kind1) * get_nb_piece_possibility(p_kind2, p_kind1 == p_kind2);
   }
@@ -510,7 +516,7 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   unsigned int feature_simplex::get_nb_piece_possibility(const emp_types::t_kind & p_kind
                                                         ,bool p_minor
-                                                        )
+                                                        ) const
   {
       assert(p_kind < emp_types::t_kind::UNDEFINED);
       unsigned int l_coef = emp_types::t_kind::CENTER == p_kind ? 4 : 1;
@@ -520,7 +526,7 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   emp_types::t_kind feature_simplex::get_position_kind(const unsigned int & p_x
                                                       ,const unsigned int & p_y
-                                                      )
+                                                      ) const
   {
       assert(p_x < m_info.get_width());
       assert(p_y < m_info.get_height());
