@@ -53,10 +53,6 @@ namespace edge_matching_puzzle
                              ,bool p_horizontal
 			                 );
 
-    inline unsigned int get_nb_piece_possibility(const emp_types::t_kind & p_kind
-                                                ,bool p_minor = false
-						                        ) const;
-
     /**
      * Indicate if position defined by parameters is corner/border/center
      * @param p_x column index
@@ -66,12 +62,6 @@ namespace edge_matching_puzzle
     inline emp_types::t_kind get_position_kind(const unsigned int & p_x
                                               ,const unsigned int & p_y
 					                          ) const;
-
-    inline unsigned int compute_combination(const emp_types::t_kind & p_kind1
-                                           ,const emp_types::t_kind & p_kind2
-					                       ) const;
-
-    inline void determine_simplex_parameters(const emp_piece_db & p_db) const;
 
     /**
        Compute index related to position X,Y
@@ -316,8 +306,9 @@ namespace edge_matching_puzzle
               }
           }
       }
-      std::cout << m_simplex_variables.size() << std::endl;
-      std::cout << l_nb_equation << std::endl;
+      std::cout << "== Simplex characteristics ==" << std::endl;
+      std::cout << "Nb variables : " << m_simplex_variables.size() << std::endl;
+      std::cout << "Nb equations : " << l_nb_equation << std::endl;
 
       // Create simplex representing puzzle
       m_simplex = new simplex_t(m_simplex_variables.size(), l_nb_equation, 0, 0);
@@ -401,7 +392,6 @@ namespace edge_matching_puzzle
       delete[] l_position_variables;
 
       assert(l_equation_index == l_nb_equation);
-      determine_simplex_parameters(p_db);
   }
 
   //----------------------------------------------------------------------------
@@ -464,66 +454,6 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  void feature_simplex::determine_simplex_parameters(const emp_piece_db & p_db) const
-  {
-      // Compute simplex variable number
-      // Corner and border pieces can have only one orientation per position
-      // Center pieces can have 4 for orientation per position
-      unsigned int l_nb_variable = p_db.get_nb_pieces(emp_types::t_kind::CORNER) * p_db.get_nb_pieces(emp_types::t_kind::CORNER) + p_db.get_nb_pieces(emp_types::t_kind::BORDER) * p_db.get_nb_pieces(emp_types::t_kind::BORDER) + 4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER) * p_db.get_nb_pieces(emp_types::t_kind::CENTER);
-
-      // Compute number of equations
-      unsigned int l_nb_equation = 0;
-
-      l_nb_equation += 2 * m_info.get_height() * m_info.get_width();
-
-      for(unsigned int l_y = 0;
-	      l_y < m_info.get_height();
-	      ++l_y
-	     )
-      {
-          for(unsigned int l_x = 0;
-	          l_x < m_info.get_width();
-	          ++l_x
-	         )
-          {
-              emp_types::kind l_kind = get_position_kind(l_x,l_y);
-              if(l_x < m_info.get_width() - 1)
-              {
-                  emp_types::kind l_kind_bis = get_position_kind(l_x + 1,l_y);
-                  l_nb_equation += compute_combination(l_kind, l_kind_bis);
-              }
-              if(l_y < m_info.get_height() - 1)
-              {
-                  emp_types::kind l_kind_bis = get_position_kind(l_x,l_y + 1);
-                  l_nb_equation += compute_combination(l_kind, l_kind_bis);
-              }
-          }
-      }
-
-      std::cout << "== SImplex characteristics ==" << std::endl;
-      std::cout << "Nb variables : " << l_nb_variable << std::endl;
-      std::cout << "Nb equations : " << l_nb_equation << std::endl;
-  }
-
-  //----------------------------------------------------------------------------
-  unsigned int feature_simplex::compute_combination(const emp_types::t_kind & p_kind1
-                                                   ,const emp_types::t_kind & p_kind2
-                                                   ) const
-  {
-      return get_nb_piece_possibility(p_kind1) * get_nb_piece_possibility(p_kind2, p_kind1 == p_kind2);
-  }
-
-  //----------------------------------------------------------------------------
-  unsigned int feature_simplex::get_nb_piece_possibility(const emp_types::t_kind & p_kind
-                                                        ,bool p_minor
-                                                        ) const
-  {
-      assert(p_kind < emp_types::t_kind::UNDEFINED);
-      unsigned int l_coef = emp_types::t_kind::CENTER == p_kind ? 4 : 1;
-      return l_coef * (m_db.get_nb_pieces(p_kind) - p_minor);
-  }
-
-  //----------------------------------------------------------------------------
   emp_types::t_kind feature_simplex::get_position_kind(const unsigned int & p_x
                                                       ,const unsigned int & p_y
                                                       ) const
@@ -555,13 +485,6 @@ namespace edge_matching_puzzle
       if(m_simplex->find_max(l_max,l_infinite,&l_listener))
       {
           std::cout << "Max = " << l_max << std::endl;
-          for(unsigned int l_index = 0;
-          l_index < m_simplex->get_total_nb_equation();
-          ++l_index
-             )
-          {
-              std::cout << "Base variable[" << l_index << "] is X" << m_simplex->get_base_variable(l_index) + 1 << std::endl;
-          }
       }
       else if(l_infinite)
       {
