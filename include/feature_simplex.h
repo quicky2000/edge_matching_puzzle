@@ -277,9 +277,9 @@ namespace edge_matching_puzzle
           }
       }
 
-      auto l_count_equation_algo = [&](const simplex_variable & p_var1
-                                      ,const simplex_variable & p_var2
-                                      )
+      auto l_count_equation_algo = [& l_nb_equation](const simplex_variable & p_var1
+                                                    ,const simplex_variable & p_var2
+                                                    )
               {
                 ++l_nb_equation;
               };
@@ -368,16 +368,20 @@ namespace edge_matching_puzzle
 
       delete[] l_piece_id_variables;
 
-      auto l_create_equation_algo = [&](const simplex_variable & p_var1
-                                       ,const simplex_variable & p_var2
-                                       )
+      // Use a local variable to give access to this member by waiting C++20
+      // that allow "=, this" capture
+      auto l_simplex = this->m_simplex;
+      auto l_create_equation_algo = [=, & l_equation_index](const simplex_variable & p_var1
+                                                           ,const simplex_variable & p_var2
+                                                           )
       {
-          m_simplex->set_A_coef(l_equation_index, p_var1.get_id(), simplex_t::t_coef_type(1));
-          m_simplex->set_A_coef(l_equation_index, p_var2.get_id(), simplex_t::t_coef_type(1));
-          m_simplex->set_B_coef(l_equation_index, simplex_t::t_coef_type(1));
-          m_simplex->define_equation_type(l_equation_index, simplex::t_equation_type::INEQUATION_LT);
+          l_simplex->set_A_coef(l_equation_index, p_var1.get_id(), simplex_t::t_coef_type(1));
+          l_simplex->set_A_coef(l_equation_index, p_var2.get_id(), simplex_t::t_coef_type(1));
+          l_simplex->set_B_coef(l_equation_index, simplex_t::t_coef_type(1));
+          l_simplex->define_equation_type(l_equation_index, simplex::t_equation_type::INEQUATION_LT);
           ++l_equation_index;
       };
+
       for(unsigned int l_y = 0;
 	      l_y < m_info.get_height();
 	      ++l_y
