@@ -47,11 +47,20 @@ namespace edge_matching_puzzle
     inline ~feature_simplex(void);
 
   private:
-    inline void add_equations(const std::vector<simplex_variable*> & p_variables_pos1
-                             ,const std::vector<simplex_variable*> & p_variables_pos2
-                             ,unsigned int & p_equation_index
-                             ,bool p_horizontal
-			                 );
+      /**
+       * Perform operations related to relationship between 2 adjacent postions
+       * @tparam T type used to define algorithm containing operations to perform
+       * @param p_variables_pos1 simplex variables related to position 1
+       * @param p_variables_pos2 simplex variables related to position 2
+       * @param p_horizontal true if positions are related horizontally
+       * @param p_lambda algorithm containing operations to perform
+       */
+      template <typename T>
+      void treat_piece_relation_equation(const std::vector<simplex_variable*> & p_variables_pos1
+                                        ,const std::vector<simplex_variable*> & p_variables_pos2
+                                        ,bool p_horizontal
+                                        , T & p_lambda
+                                        );
 
     /**
      * Indicate if position defined by parameters is corner/border/center
@@ -73,22 +82,6 @@ namespace edge_matching_puzzle
                                           ,const unsigned int & p_y
 					                      ) const;
 
-    /**
-       Compute the number of equations for a couple of positions
-       There is an equation for each couple of variables where variable.piece_id
-       from p_variable_pos1 is different from variable.piece_id from
-       p_variable_pos2
-       @param p_variables_pos1 list of variables for position 1
-       @param p_variables_pos2 list of variables for position 2
-       @param p_horizontal indicate orientation of pieces relationship
-       @return number of equations
-     */
-    inline uint64_t
-    get_nb_equations(const std::vector<simplex_variable *> & p_variables_pos1
-                    ,const std::vector<simplex_variable *> & p_variables_pos2
-                    ,bool p_horizontal
-                    ) const;
-
     const emp_piece_db & m_db;
     const emp_FSM_info & m_info;
     emp_FSM_situation m_situation;
@@ -100,7 +93,6 @@ namespace edge_matching_puzzle
 
     typedef simplex::simplex_solver<quicky_utils::fract<quicky_utils::safe_int32_t>> simplex_t;
     simplex_t * m_simplex;
-    unsigned int m_useless;
   };
  
   //----------------------------------------------------------------------------
@@ -115,7 +107,6 @@ namespace edge_matching_puzzle
 	, m_available_centers(4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER),true)
 	, m_available_pieces{&m_available_centers, &m_available_borders, &m_available_corners}
 	, m_simplex(nullptr)
-	, m_useless(0)
   {
       // Initialise situation with initial situation string
       m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
@@ -286,6 +277,13 @@ namespace edge_matching_puzzle
           }
       }
 
+      auto l_count_equation_algo = [&](const simplex_variable & p_var1
+                                      ,const simplex_variable & p_var2
+                                      )
+              {
+                ++l_nb_equation;
+              };
+
       for(unsigned int l_y = 0;
 	      l_y < m_info.get_height();
 	      ++l_y
@@ -299,17 +297,19 @@ namespace edge_matching_puzzle
               //	    std::cout << "Compute equation numbers at (" << l_x << "," << l_y << ")" << std::endl;
               if(l_x < m_info.get_width() - 1)
               {
-                  l_nb_equation += get_nb_equations(l_position_variables[get_position_index(l_x, l_y)]
-                                                   ,l_position_variables[get_position_index(l_x + 1, l_y)]
-                                                   ,true
-                                                   );
+                  treat_piece_relation_equation(l_position_variables[get_position_index(l_x, l_y)]
+                                               ,l_position_variables[get_position_index(l_x + 1, l_y)]
+                                               ,true
+                                               ,l_count_equation_algo
+                                               );
               }
               if(l_y < m_info.get_height() - 1)
               {
-                  l_nb_equation += get_nb_equations(l_position_variables[get_position_index(l_x, l_y)]
-                                                   ,l_position_variables[get_position_index(l_x, l_y + 1)]
-                                                   ,false
-                                                   );
+                  treat_piece_relation_equation(l_position_variables[get_position_index(l_x, l_y)]
+                                               ,l_position_variables[get_position_index(l_x, l_y + 1)]
+                                               ,false
+                                               ,l_count_equation_algo
+                                               );
               }
           }
       }
@@ -368,6 +368,16 @@ namespace edge_matching_puzzle
 
       delete[] l_piece_id_variables;
 
+      auto l_create_equation_algo = [&](const simplex_variable & p_var1
+                                       ,const simplex_variable & p_var2
+                                       )
+      {
+          m_simplex->set_A_coef(l_equation_index, p_var1.get_id(), simplex_t::t_coef_type(1));
+          m_simplex->set_A_coef(l_equation_index, p_var2.get_id(), simplex_t::t_coef_type(1));
+          m_simplex->set_B_coef(l_equation_index, simplex_t::t_coef_type(1));
+          m_simplex->define_equation_type(l_equation_index, simplex::t_equation_type::INEQUATION_LT);
+          ++l_equation_index;
+      };
       for(unsigned int l_y = 0;
 	      l_y < m_info.get_height();
 	      ++l_y
@@ -380,26 +390,25 @@ namespace edge_matching_puzzle
           {
               if(l_x < m_info.get_width() - 1)
               {
-                  add_equations(l_position_variables[get_position_index(l_x, l_y)]
-                               ,l_position_variables[get_position_index(l_x + 1, l_y)]
-                               ,l_equation_index
-                               ,true
-                               );
+                  treat_piece_relation_equation(l_position_variables[get_position_index(l_x, l_y)]
+                                               ,l_position_variables[get_position_index(l_x + 1, l_y)]
+                                               ,true
+                                               ,l_create_equation_algo
+                                               );
               }
               if(l_y < m_info.get_height() - 1)
               {
-                  add_equations(l_position_variables[get_position_index(l_x, l_y)]
-                               ,l_position_variables[get_position_index(l_x, l_y + 1)]
-                               ,l_equation_index
-                               ,false
-                               );
+                  treat_piece_relation_equation(l_position_variables[get_position_index(l_x, l_y)]
+                                               ,l_position_variables[get_position_index(l_x, l_y + 1)]
+                                               ,false
+                                               ,l_create_equation_algo
+                                               );
               }
           }
       }
       delete[] l_position_variables;
 
       assert(l_equation_index == l_nb_equation);
-      std::cout << "Nb useless equations : " << m_useless << std::endl;
   }
 
   //----------------------------------------------------------------------------
@@ -413,70 +422,33 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  void feature_simplex::add_equations(const std::vector<simplex_variable*> & p_variables_pos1
-                                     ,const std::vector<simplex_variable*> & p_variables_pos2
-                                     ,unsigned int & p_equation_index
-                                     ,bool p_horizontal
-				                     )
+  template <typename T>
+  void
+  feature_simplex::treat_piece_relation_equation(const std::vector<simplex_variable *> & p_variables_pos1
+                                                ,const std::vector<simplex_variable *> & p_variables_pos2
+                                                ,bool p_horizontal
+                                                ,T & p_lambda
+                                                )
   {
+      emp_types::t_orientation l_border1 = p_horizontal ? emp_types::t_orientation::EAST : emp_types::t_orientation::SOUTH;
+      emp_types::t_orientation l_border2 = p_horizontal ? emp_types::t_orientation::WEST : emp_types::t_orientation::NORTH;
+
       for(auto l_iter_pos1: p_variables_pos1)
       {
           for(auto l_iter_pos2: p_variables_pos2)
           {
               if(l_iter_pos1->get_piece_id() != l_iter_pos2->get_piece_id())
               {
-
-                  emp_types::t_orientation l_border1 = p_horizontal ? emp_types::t_orientation::EAST : emp_types::t_orientation::SOUTH;
-                  emp_types::t_orientation l_border2 = p_horizontal ? emp_types::t_orientation::WEST : emp_types::t_orientation::NORTH;
-
                   emp_types::t_color_id l_color1 = m_db.get_piece(l_iter_pos1->get_piece_id()).get_color(l_border1,l_iter_pos1->get_orientation());
                   emp_types::t_color_id l_color2 = m_db.get_piece(l_iter_pos2->get_piece_id()).get_color(l_border2,l_iter_pos2->get_orientation());
 
                   if(l_color1 != l_color2)
                   {
-                      m_simplex->set_A_coef(p_equation_index, l_iter_pos1->get_id(), simplex_t::t_coef_type(1));
-                      m_simplex->set_A_coef(p_equation_index, l_iter_pos2->get_id(), simplex_t::t_coef_type(1));
-                      m_simplex->set_B_coef(p_equation_index, simplex_t::t_coef_type(1));
-                      m_simplex->define_equation_type(p_equation_index, simplex::t_equation_type::INEQUATION_LT);
-                      ++p_equation_index;
-                  }
-                  else
-                  {
-                      m_useless += l_color1 == l_color2;
-                  }
-
-              }
-          }
-      }
-  }
-
-  //----------------------------------------------------------------------------
-  uint64_t feature_simplex::get_nb_equations(const std::vector<simplex_variable *> & p_variables_pos1
-                                            ,const std::vector<simplex_variable *> & p_variables_pos2
-                                            ,bool p_horizontal
-                                            ) const
-  {
-      unsigned int l_result = 0;
-      for(auto l_iter_pos1: p_variables_pos1)
-      {
-          for(auto l_iter_pos2: p_variables_pos2)
-          {
-              if(l_iter_pos1->get_piece_id() != l_iter_pos2->get_piece_id())
-              {
-                  emp_types::t_orientation l_border1 = p_horizontal ? emp_types::t_orientation::EAST : emp_types::t_orientation::SOUTH;
-                  emp_types::t_orientation l_border2 = p_horizontal ? emp_types::t_orientation::WEST : emp_types::t_orientation::NORTH;
-
-                  emp_types::t_color_id l_color1 = m_db.get_piece(l_iter_pos1->get_piece_id()).get_color(l_border1,l_iter_pos1->get_orientation());
-                  emp_types::t_color_id l_color2 = m_db.get_piece(l_iter_pos2->get_piece_id()).get_color(l_border2,l_iter_pos2->get_orientation());
-
-                  if(l_color1 != l_color2)
-                  {
-                      ++l_result;
+                      p_lambda(*l_iter_pos1, *l_iter_pos2);
                   }
               }
           }
       }
-      return l_result;
   }
 
   //----------------------------------------------------------------------------
@@ -532,6 +504,7 @@ namespace edge_matching_puzzle
           delete l_iter;
       }
   }
+
 }
 #endif // FEATURE_SIMPLEX_H
 //EOF
