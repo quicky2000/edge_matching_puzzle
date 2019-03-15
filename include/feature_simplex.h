@@ -91,6 +91,12 @@ namespace edge_matching_puzzle
     emp_types::bitfield * const m_available_pieces[3];
     std::vector<simplex_variable*> m_simplex_variables;
 
+    /**
+     * Store all simplex variables related to a position index
+     * Position index = width * Y + X)
+     */
+    std::vector<simplex_variable*> * m_position_variables;
+
     typedef simplex::simplex_solver<quicky_utils::fract<quicky_utils::safe_int32_t>> simplex_t;
     simplex_t * m_simplex;
   };
@@ -106,6 +112,7 @@ namespace edge_matching_puzzle
 	, m_available_borders(4 * p_db.get_nb_pieces(emp_types::t_kind::BORDER),true)
 	, m_available_centers(4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER),true)
 	, m_available_pieces{&m_available_centers, &m_available_borders, &m_available_corners}
+    , m_position_variables(new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()])
 	, m_simplex(nullptr)
   {
       // Initialise situation with initial situation string
@@ -138,10 +145,6 @@ namespace edge_matching_puzzle
       emp_types::bitfield l_matching_borders(4 * p_db.get_nb_pieces(emp_types::t_kind::BORDER));
       emp_types::bitfield l_matching_centers(4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER));
       emp_types::bitfield * const l_matching_pieces[3] = {&l_matching_centers,&l_matching_borders,&l_matching_corners};
-
-      // Store all simplex variables related to a position index
-      // Position index = width * Y + X)
-      std::vector<simplex_variable*> * l_position_variables = new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()];
 
       // Store all simplex variables related to a piece id
       // index 0 correspond to piece id 1)
@@ -249,7 +252,7 @@ namespace edge_matching_puzzle
                       unsigned int l_piece_id = 1 + (l_truncated_piece >> 2);
                       simplex_variable * l_variable = new simplex_variable(m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
                       m_simplex_variables.push_back(l_variable);
-                      l_position_variables[get_position_index(l_x, l_y)].push_back(l_variable);
+                      m_position_variables[get_position_index(l_x, l_y)].push_back(l_variable);
                       l_piece_id_variables[l_piece_id - 1].push_back(l_variable);
                   }
               }
@@ -266,7 +269,7 @@ namespace edge_matching_puzzle
 	     )
       {
           // If position is free then add position equation
-          if(l_position_variables[l_index].size())
+          if(m_position_variables[l_index].size())
           {
               ++l_nb_equation;
           }
@@ -297,16 +300,16 @@ namespace edge_matching_puzzle
               //	    std::cout << "Compute equation numbers at (" << l_x << "," << l_y << ")" << std::endl;
               if(l_x < m_info.get_width() - 1)
               {
-                  treat_piece_relation_equation(l_position_variables[get_position_index(l_x, l_y)]
-                                               ,l_position_variables[get_position_index(l_x + 1, l_y)]
+                  treat_piece_relation_equation(m_position_variables[get_position_index(l_x, l_y)]
+                                               ,m_position_variables[get_position_index(l_x + 1, l_y)]
                                                ,true
                                                ,l_count_equation_algo
                                                );
               }
               if(l_y < m_info.get_height() - 1)
               {
-                  treat_piece_relation_equation(l_position_variables[get_position_index(l_x, l_y)]
-                                               ,l_position_variables[get_position_index(l_x, l_y + 1)]
+                  treat_piece_relation_equation(m_position_variables[get_position_index(l_x, l_y)]
+                                               ,m_position_variables[get_position_index(l_x, l_y + 1)]
                                                ,false
                                                ,l_count_equation_algo
                                                );
@@ -336,9 +339,9 @@ namespace edge_matching_puzzle
           ++l_index
          )
       {
-          if(l_position_variables[l_index].size())
+          if(m_position_variables[l_index].size())
           {
-              for(auto l_iter: l_position_variables[l_index])
+              for(auto l_iter: m_position_variables[l_index])
               {
                   m_simplex->set_A_coef(l_equation_index, l_iter->get_id(), simplex_t::t_coef_type(1));
               }
@@ -394,23 +397,22 @@ namespace edge_matching_puzzle
           {
               if(l_x < m_info.get_width() - 1)
               {
-                  treat_piece_relation_equation(l_position_variables[get_position_index(l_x, l_y)]
-                                               ,l_position_variables[get_position_index(l_x + 1, l_y)]
+                  treat_piece_relation_equation(m_position_variables[get_position_index(l_x, l_y)]
+                                               ,m_position_variables[get_position_index(l_x + 1, l_y)]
                                                ,true
                                                ,l_create_equation_algo
                                                );
               }
               if(l_y < m_info.get_height() - 1)
               {
-                  treat_piece_relation_equation(l_position_variables[get_position_index(l_x, l_y)]
-                                               ,l_position_variables[get_position_index(l_x, l_y + 1)]
+                  treat_piece_relation_equation(m_position_variables[get_position_index(l_x, l_y)]
+                                               ,m_position_variables[get_position_index(l_x, l_y + 1)]
                                                ,false
                                                ,l_create_equation_algo
                                                );
               }
           }
       }
-      delete[] l_position_variables;
 
       assert(l_equation_index == l_nb_equation);
   }
@@ -507,6 +509,9 @@ namespace edge_matching_puzzle
       {
           delete l_iter;
       }
+      // Content of vectors has been destroyed just before
+      delete[] m_position_variables;
+
   }
 
 }
