@@ -28,6 +28,7 @@
 #include "fract.h"
 #include "simplex_solver.h"
 #include "emp_simplex_listener.h"
+#include "emp_gui.h"
 #include <string>
 #include <vector>
 
@@ -39,6 +40,7 @@ namespace edge_matching_puzzle
     inline feature_simplex(const emp_piece_db & p_db
                           ,const emp_FSM_info & p_info
                           ,const std::string & p_initial_situation
+                          ,emp_gui & p_gui
 			              );
 
     // Virtual methods inherited from feature_if
@@ -99,13 +101,15 @@ namespace edge_matching_puzzle
 
     typedef simplex::simplex_solver<quicky_utils::fract<quicky_utils::safe_int32_t>> simplex_t;
     simplex_t * m_simplex;
+    emp_gui & m_gui;
   };
  
   //----------------------------------------------------------------------------
   feature_simplex::feature_simplex(const emp_piece_db & p_db
                                   ,const emp_FSM_info & p_info
                                   ,const std::string & p_initial_situation
-				                  )
+				                  ,emp_gui & p_gui
+			                      )
 	: m_db(p_db)
 	, m_info(p_info)
 	, m_available_corners(4 * p_db.get_nb_pieces(emp_types::t_kind::CORNER),true)
@@ -114,6 +118,7 @@ namespace edge_matching_puzzle
 	, m_available_pieces{&m_available_centers, &m_available_borders, &m_available_corners}
     , m_position_variables(new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()])
 	, m_simplex(nullptr)
+	, m_gui(p_gui)
   {
       // Initialise situation with initial situation string
       m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));

@@ -150,10 +150,11 @@ int main(int argc,char ** argv)
         }
       else if("simplex" == l_feature_name)
         {
-          l_feature = new feature_simplex(l_piece_db,
-					  l_info,
-					  l_initial_situation.get_value<std::string>()
-					  );
+          l_feature = new feature_simplex(l_piece_db
+                                         ,l_info
+                                         ,l_initial_situation.get_value<std::string>()
+                                         ,l_gui
+					                     );
         }
       else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
 	{
