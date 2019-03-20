@@ -23,6 +23,7 @@
 #include "simplex_listener_target_if.h"
 #include "emp_FSM_info.h"
 #include "emp_FSM_situation.h"
+#include "emp_gui.h"
 #include <vector>
 
 namespace edge_matching_puzzle
@@ -36,6 +37,7 @@ namespace edge_matching_puzzle
                                ,const std::vector<simplex_variable *> *const p_position_variables
                                ,const emp_FSM_info & p_info
                                ,const std::string & p_initial_situation
+                               ,emp_gui & p_gui
                                ,std::ostream & p_ostream = std::cout
                                );
     inline void start_iteration(const unsigned int & p_nb_iteration);
@@ -61,6 +63,11 @@ namespace edge_matching_puzzle
 
       emp_FSM_situation m_situation;
       const std::string m_initial_situation;
+
+      /**
+       * GUI to dipslay situation
+       */
+      emp_gui & m_gui;
   };
 
   //----------------------------------------------------------------------------
@@ -70,6 +77,7 @@ namespace edge_matching_puzzle
                                                        ,const std::vector<simplex_variable*> * const p_position_variables
                                                        ,const emp_FSM_info & p_info
                                                        ,const std::string & p_initial_situation
+                                                       ,emp_gui & p_gui
                                                        ,std::ostream & p_ostream
                                                        )
     : m_nb_iteration(0)
@@ -79,6 +87,7 @@ namespace edge_matching_puzzle
     , m_position_variables(p_position_variables)
     , m_info(p_info)
     , m_initial_situation(p_initial_situation)
+    , m_gui(p_gui)
   {
       // Initialise situation with initial situation string
       m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
@@ -166,10 +175,10 @@ namespace edge_matching_puzzle
                   if (l_value == (COEF_TYPE) 0)
                   {
                       ++l_position_values[0];
-                      l_oriented_piece = l_variable.get_oriented_piece();
                   }
                   else if (l_value == (COEF_TYPE) 1)
                   {
+                      l_oriented_piece = l_variable.get_oriented_piece();
                       ++l_position_values[1];
                   } else
                   {
@@ -194,6 +203,8 @@ namespace edge_matching_puzzle
           }
       }
       std::cout << m_situation.to_string() << std::endl;
+      m_gui.display(m_situation);
+      m_gui.refresh();
   }
 
 }

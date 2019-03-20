@@ -497,6 +497,7 @@ namespace edge_matching_puzzle
                                                              ,m_position_variables
                                                              ,m_info
                                                              ,m_initial_situation
+                                                             ,m_gui
                                                              ,std::cout
                                                              );
       if(m_simplex->find_max(l_max,l_infinite,&l_listener))
