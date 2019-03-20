@@ -49,6 +49,7 @@ namespace edge_matching_puzzle
     inline const unsigned int & get_y(void)const;
     inline const emp_types::t_piece_id & get_piece_id(void)const;
     inline const emp_types::t_orientation & get_orientation(void)const;
+    inline const emp_types::t_oriented_piece get_oriented_piece() const;
   private:
     unsigned int m_id;
     unsigned int m_x;
@@ -104,6 +105,13 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
+  const emp_types::t_oriented_piece
+  simplex_variable::get_oriented_piece() const
+  {
+      return edge_matching_puzzle::emp_types::t_oriented_piece(m_piece_id, m_orientation);
+  }
+
+  //----------------------------------------------------------------------------
   inline std::ostream & operator<<(std::ostream & p_stream, const simplex_variable & p_variable)
   {
     p_stream << p_variable.m_piece_id;
@@ -111,6 +119,7 @@ namespace edge_matching_puzzle
     p_stream << "(" << p_variable.m_x << "," << p_variable.m_y << ")";
     return p_stream;
   }
+
 }
 #endif // SIMPLEX_VARIABLE_H
 //EOF
