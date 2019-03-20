@@ -22,6 +22,7 @@
 #include "simplex_variable.h"
 #include "simplex_listener_target_if.h"
 #include "emp_FSM_info.h"
+#include "emp_FSM_situation.h"
 #include <vector>
 
 namespace edge_matching_puzzle
@@ -31,9 +32,10 @@ namespace edge_matching_puzzle
   {
   public:
     inline emp_simplex_listener(const simplex::simplex_listener_target_if<COEF_TYPE> & p_simplex
-                               ,const std::vector<simplex_variable*> & p_variables
-                               ,const std::vector<simplex_variable*> * const p_position_variables
+                               ,const std::vector<simplex_variable *> & p_variables
+                               ,const std::vector<simplex_variable *> *const p_position_variables
                                ,const emp_FSM_info & p_info
+                               ,const std::string & p_initial_situation
                                ,std::ostream & p_ostream = std::cout
                                );
     inline void start_iteration(const unsigned int & p_nb_iteration);
@@ -56,6 +58,9 @@ namespace edge_matching_puzzle
        * Problem info
        */
       const emp_FSM_info & m_info;
+
+      emp_FSM_situation m_situation;
+      const std::string m_initial_situation;
   };
 
   //----------------------------------------------------------------------------
@@ -64,6 +69,7 @@ namespace edge_matching_puzzle
                                                        ,const std::vector<simplex_variable*> & p_variables
                                                        ,const std::vector<simplex_variable*> * const p_position_variables
                                                        ,const emp_FSM_info & p_info
+                                                       ,const std::string & p_initial_situation
                                                        ,std::ostream & p_ostream
                                                        )
     : m_nb_iteration(0)
@@ -72,7 +78,10 @@ namespace edge_matching_puzzle
     , m_variables(p_variables)
     , m_position_variables(p_position_variables)
     , m_info(p_info)
+    , m_initial_situation(p_initial_situation)
   {
+      // Initialise situation with initial situation string
+      m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
   }
 
   //----------------------------------------------------------------------------
@@ -117,7 +126,17 @@ namespace edge_matching_puzzle
       // sure there are no mor emon null values
       COEF_TYPE l_total = (COEF_TYPE)0;
 
+      if("" != m_initial_situation)
+      {
+          m_situation.set(m_initial_situation);
+      }
+      else
+      {
+          m_situation.reset();
+      }
+
       std::vector<COEF_TYPE> l_values = m_simplex.get_variable_values();
+      emp_types::t_oriented_piece l_oriented_piece;
 
       for(unsigned int l_y = 0;
           l_y < m_info.get_height() && l_total < p_z0;
@@ -147,7 +166,9 @@ namespace edge_matching_puzzle
                   if (l_value == (COEF_TYPE) 0)
                   {
                       ++l_position_values[0];
-                  } else if (l_value == (COEF_TYPE) 1)
+                      l_oriented_piece = l_variable.get_oriented_piece();
+                  }
+                  else if (l_value == (COEF_TYPE) 1)
                   {
                       ++l_position_values[1];
                   } else
@@ -159,6 +180,7 @@ namespace edge_matching_puzzle
               if (1 == l_position_values[1] && !l_position_values[2])
               {
                   std::cout << "FIXED";
+                  m_situation.set_piece(l_x, l_y, l_oriented_piece);
               }
               else if (!l_position_values[1] && !l_position_values[2])
               {
@@ -171,6 +193,7 @@ namespace edge_matching_puzzle
               std::cout << std::endl;
           }
       }
+      std::cout << m_situation.to_string() << std::endl;
   }
 
 }

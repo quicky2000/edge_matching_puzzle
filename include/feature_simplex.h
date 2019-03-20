@@ -102,6 +102,7 @@ namespace edge_matching_puzzle
     typedef simplex::simplex_solver<quicky_utils::fract<quicky_utils::safe_int32_t>> simplex_t;
     simplex_t * m_simplex;
     emp_gui & m_gui;
+    const std::string m_initial_situation;
   };
  
   //----------------------------------------------------------------------------
@@ -119,6 +120,7 @@ namespace edge_matching_puzzle
     , m_position_variables(new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()])
 	, m_simplex(nullptr)
 	, m_gui(p_gui)
+	, m_initial_situation(p_initial_situation)
   {
       // Initialise situation with initial situation string
       m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
@@ -490,7 +492,13 @@ namespace edge_matching_puzzle
   {
       simplex_t::t_coef_type l_max(0);
       bool l_infinite = false;
-      emp_simplex_listener<simplex_t::t_coef_type> l_listener(*m_simplex, m_simplex_variables, m_position_variables, m_info, std::cout);
+      emp_simplex_listener<simplex_t::t_coef_type> l_listener(*m_simplex
+                                                             ,m_simplex_variables
+                                                             ,m_position_variables
+                                                             ,m_info
+                                                             ,m_initial_situation
+                                                             ,std::cout
+                                                             );
       if(m_simplex->find_max(l_max,l_infinite,&l_listener))
       {
           std::cout << "Max = " << l_max << std::endl;
