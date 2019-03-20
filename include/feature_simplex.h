@@ -490,7 +490,7 @@ namespace edge_matching_puzzle
   {
       simplex_t::t_coef_type l_max(0);
       bool l_infinite = false;
-      emp_simplex_listener<simplex_t::t_coef_type> l_listener(*m_simplex,m_simplex_variables,std::cout);
+      emp_simplex_listener<simplex_t::t_coef_type> l_listener(*m_simplex, m_simplex_variables, m_position_variables, m_info, std::cout);
       if(m_simplex->find_max(l_max,l_infinite,&l_listener))
       {
           std::cout << "Max = " << l_max << std::endl;

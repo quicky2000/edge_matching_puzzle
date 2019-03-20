@@ -21,6 +21,7 @@
 #include <iostream>
 #include "simplex_variable.h"
 #include "simplex_listener_target_if.h"
+#include "emp_FSM_info.h"
 #include <vector>
 
 namespace edge_matching_puzzle
@@ -31,6 +32,8 @@ namespace edge_matching_puzzle
   public:
     inline emp_simplex_listener(const simplex::simplex_listener_target_if<COEF_TYPE> & p_simplex
                                ,const std::vector<simplex_variable*> & p_variables
+                               ,const std::vector<simplex_variable*> * const p_position_variables
+                               ,const emp_FSM_info & p_info
                                ,std::ostream & p_ostream = std::cout
                                );
     inline void start_iteration(const unsigned int & p_nb_iteration);
@@ -42,18 +45,33 @@ namespace edge_matching_puzzle
       const simplex::simplex_listener_target_if<COEF_TYPE> & m_simplex;
       std::ostream & m_ostream;
       const std::vector<simplex_variable*> & m_variables;
+
+      /**
+       * Store all simplex variables related to a position index
+       * Position index = width * Y + X)
+       */
+      const std::vector<simplex_variable*> * const m_position_variables;
+
+      /**
+       * Problem info
+       */
+      const emp_FSM_info & m_info;
   };
 
   //----------------------------------------------------------------------------
   template <typename COEF_TYPE>
   emp_simplex_listener<COEF_TYPE>::emp_simplex_listener(const simplex::simplex_listener_target_if<COEF_TYPE> & p_simplex
                                                        ,const std::vector<simplex_variable*> & p_variables
+                                                       ,const std::vector<simplex_variable*> * const p_position_variables
+                                                       ,const emp_FSM_info & p_info
                                                        ,std::ostream & p_ostream
-                                                       ):
-            m_nb_iteration(0),
-            m_simplex(p_simplex),
-            m_ostream(p_ostream),
-            m_variables(p_variables)
+                                                       )
+    : m_nb_iteration(0)
+    , m_simplex(p_simplex)
+    , m_ostream(p_ostream)
+    , m_variables(p_variables)
+    , m_position_variables(p_position_variables)
+    , m_info(p_info)
   {
   }
 
@@ -94,7 +112,65 @@ namespace edge_matching_puzzle
   void emp_simplex_listener<COEF_TYPE>::new_Z0(const COEF_TYPE p_z0)
   {
       m_ostream << "Iteration[" << m_nb_iteration << "] : New Z0 : " << p_z0 << std::endl;
-      //m_simplex.display_array(m_ostream);
+
+      // Total of encountered variables values to stop iterations when we are
+      // sure there are no mor emon null values
+      COEF_TYPE l_total = (COEF_TYPE)0;
+
+      std::vector<COEF_TYPE> l_values = m_simplex.get_variable_values();
+
+      for(unsigned int l_y = 0;
+          l_y < m_info.get_height() && l_total < p_z0;
+          ++l_y
+         )
+      {
+          for(unsigned int l_x = 0;
+              l_x < m_info.get_width() && l_total < p_z0;
+              ++l_x
+              )
+          {
+              // Store number of values occurences for : 0, 1 or others
+              unsigned int l_position_values[3] = {0,
+                                                   0,
+                                                   0
+              };
+
+              // Position index
+              unsigned int l_index = m_info.get_width() * l_y + l_x;
+
+              // Iterator on simplex variables related to current position
+              for (auto l_iter:m_position_variables[l_index])
+              {
+                  const simplex_variable & l_variable = *l_iter;
+                  COEF_TYPE l_value = l_values[l_variable.get_id()];
+                  l_total += l_value;
+                  if (l_value == (COEF_TYPE) 0)
+                  {
+                      ++l_position_values[0];
+                  } else if (l_value == (COEF_TYPE) 1)
+                  {
+                      ++l_position_values[1];
+                  } else
+                  {
+                      ++l_position_values[2];
+                  }
+              }
+              std::cout << "Position[" << l_x << ", " << l_y << "] : [" << l_position_values[0] << "," << l_position_values[1] << "," << l_position_values[2] << "] ";
+              if (1 == l_position_values[1] && !l_position_values[2])
+              {
+                  std::cout << "FIXED";
+              }
+              else if (!l_position_values[1] && !l_position_values[2])
+              {
+                  std::cout << "NONE";
+              }
+              else
+              {
+                  std::cout << "UNDETERMINED";
+              }
+              std::cout << std::endl;
+          }
+      }
   }
 
 }
