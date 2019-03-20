@@ -76,9 +76,9 @@ namespace edge_matching_puzzle
 
         inline emp_FSM_situation(const emp_FSM_situation & p_situation);
 
-      private:
         inline void reset();
 
+      private:
         emp_types::t_oriented_piece * m_content;
         unsigned int m_content_size;
         emp_types::bitfield m_used_positions;
