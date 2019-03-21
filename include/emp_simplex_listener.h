@@ -21,6 +21,7 @@
 #include <iostream>
 #include "simplex_variable.h"
 #include "simplex_listener_target_if.h"
+#include "simplex_listener_if.h"
 #include "emp_FSM_info.h"
 #include "emp_FSM_situation.h"
 #include "emp_gui.h"
@@ -29,7 +30,7 @@
 namespace edge_matching_puzzle
 {
   template <typename COEF_TYPE>
-  class emp_simplex_listener
+  class emp_simplex_listener: public simplex::simplex_listener_if<COEF_TYPE>
   {
   public:
     inline emp_simplex_listener(const simplex::simplex_listener_target_if<COEF_TYPE> & p_simplex
@@ -40,10 +41,10 @@ namespace edge_matching_puzzle
                                ,emp_gui & p_gui
                                ,std::ostream & p_ostream = std::cout
                                );
-    inline void start_iteration(const unsigned int & p_nb_iteration);
-    inline void new_input_var_event(const unsigned int & p_input_variable_index);
-    inline void new_output_var_event(const unsigned int & p_input_variable_index);
-    inline void new_Z0(COEF_TYPE p_z0);
+    inline void start_iteration(const unsigned int & p_nb_iteration) override;
+    inline void new_input_var_event(const unsigned int & p_input_variable_index) override;
+    inline void new_output_var_event(const unsigned int & p_input_variable_index) override;
+    inline void new_Z0(COEF_TYPE p_z0) override;
     private:
       unsigned int m_nb_iteration;
       const simplex::simplex_listener_target_if<COEF_TYPE> & m_simplex;
