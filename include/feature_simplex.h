@@ -25,12 +25,15 @@
 #include "emp_FSM_situation.h"
 #include "simplex_variable.h"
 #include "safe_types.h"
+#include "ext_uint.h"
+#include "ext_int.h"
 #include "fract.h"
 #include "simplex_solver.h"
 #include "emp_simplex_listener.h"
 #include "emp_gui.h"
 #include <string>
 #include <vector>
+#include <simplex_solver_glpk.h>
 
 namespace edge_matching_puzzle
 {
@@ -100,6 +103,8 @@ namespace edge_matching_puzzle
     std::vector<simplex_variable*> * m_position_variables;
 
     typedef simplex::simplex_solver<quicky_utils::fract<quicky_utils::safe_int32_t>> simplex_t;
+    //typedef simplex::simplex_solver<quicky_utils::fract<quicky_utils::ext_int<int32_t>>> simplex_t;
+    //typedef simplex::simplex_solver_glpk simplex_t;
     simplex_t * m_simplex;
     emp_gui & m_gui;
     const std::string m_initial_situation;
