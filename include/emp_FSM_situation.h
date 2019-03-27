@@ -38,12 +38,12 @@ namespace edge_matching_puzzle
         inline static void init(const emp_FSM_info & p_info);
 
         // Methods inherited from FSM_situation
-        inline const std::string to_string() const;
-        inline const std::string get_string_id() const;
-        inline void to_string(std::string &) const;
-        inline void get_string_id(std::string &) const;
-        inline bool is_final() const;
-        inline bool less(const FSM_interfaces::FSM_situation_if *p_situation) const;
+        inline const std::string to_string() const override;
+        inline const std::string get_string_id() const override;
+        inline void to_string(std::string &) const override;
+        inline void get_string_id(std::string &) const override;
+        inline bool is_final() const override;
+        inline bool less(const FSM_interfaces::FSM_situation_if *p_situation) const override;
         // End of methods inherited from FSM_situation
 
         // Dedicated method
@@ -72,7 +72,7 @@ namespace edge_matching_puzzle
 
         static inline const unsigned int & get_nb_bits();
 
-        inline ~emp_FSM_situation();
+        inline ~emp_FSM_situation() override;
 
         inline emp_FSM_situation(const emp_FSM_situation & p_situation);
 
