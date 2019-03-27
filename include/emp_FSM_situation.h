@@ -34,15 +34,15 @@ namespace edge_matching_puzzle
   class emp_FSM_situation: public FSM_base::FSM_situation<emp_FSM_context>
   {
   public:
-    inline emp_FSM_situation(void);
+    inline emp_FSM_situation();
     inline static void init(const emp_FSM_info & p_info);
 
     // Methods inherited from FSM_situation
-    inline const std::string to_string(void)const;
-    inline const std::string get_string_id(void)const;
+    inline const std::string to_string()const;
+    inline const std::string get_string_id()const;
     inline void to_string(std::string &)const;
     inline void get_string_id(std::string &)const;
-    inline bool is_final(void)const;
+    inline bool is_final()const;
     inline bool less(const FSM_interfaces::FSM_situation_if *p_situation)const;
     // End of methods inherited from FSM_situation
 
@@ -57,14 +57,15 @@ namespace edge_matching_puzzle
 
     inline void set(const emp_types::bitfield & p_bitfield);
     inline void set(const std::string & p_string);
-    inline const unsigned int get_level(void)const;
+    inline const unsigned int get_level()const;
     inline void compute_string_id(std::string & p_id)const;
     inline void compute_bin_id(emp_types::bitfield & p_bitfield)const;
-    static inline const unsigned int & get_nb_bits(void);
-    inline ~emp_FSM_situation(void);
+    static inline const unsigned int & get_nb_bits();
+    inline ~emp_FSM_situation();
     inline emp_FSM_situation(const emp_FSM_situation & p_situation);
+
  private:
-    inline void reset(void);
+    inline void reset();
  
     emp_types::t_oriented_piece * m_content;
     unsigned int m_content_size;
@@ -77,19 +78,19 @@ namespace edge_matching_puzzle
   };
 
   //----------------------------------------------------------------------------
-  const unsigned int emp_FSM_situation::get_level(void)const
+  const unsigned int emp_FSM_situation::get_level()const
   {
     return m_content_size;
   }
 
   //----------------------------------------------------------------------------
-  const unsigned int & emp_FSM_situation::get_nb_bits(void)
+  const unsigned int & emp_FSM_situation::get_nb_bits()
     {
       return m_situation_nb_bits;
     }
 
   //----------------------------------------------------------------------------
-  emp_FSM_situation::emp_FSM_situation(void)
+  emp_FSM_situation::emp_FSM_situation()
     :m_content(new emp_types::t_oriented_piece[m_info->get_width() * m_info->get_height()]),
     m_content_size(0),
     m_used_positions(m_info->get_width() * m_info->get_height())
@@ -109,7 +110,7 @@ namespace edge_matching_puzzle
       }
 
   //----------------------------------------------------------------------------
-    emp_FSM_situation::~emp_FSM_situation(void)
+    emp_FSM_situation::~emp_FSM_situation()
       {
 	delete[] m_content;
       }
@@ -135,14 +136,14 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  const std::string emp_FSM_situation::to_string(void)const
+  const std::string emp_FSM_situation::to_string()const
     {
       std::string l_unique_id;
       compute_string_id(l_unique_id);
       return l_unique_id;
     }
   //----------------------------------------------------------------------------
-  const std::string emp_FSM_situation::get_string_id(void)const
+  const std::string emp_FSM_situation::get_string_id()const
     {
       std::string l_unique_id;
       compute_string_id(l_unique_id);
@@ -159,7 +160,7 @@ namespace edge_matching_puzzle
     compute_string_id(p_string_id);
   }
   //----------------------------------------------------------------------------
-  bool emp_FSM_situation::is_final(void)const
+  bool emp_FSM_situation::is_final()const
   {
     return m_content_size == m_info->get_width() * m_info->get_height();
     //return m_content_size == 2 * m_info->get_width() + 2 * ( m_info->get_height() - 2);
@@ -273,7 +274,7 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  void emp_FSM_situation::reset(void)
+  void emp_FSM_situation::reset()
   {
     m_used_positions.reset();
     m_content_size = 0;
