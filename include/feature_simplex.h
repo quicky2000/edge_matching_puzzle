@@ -47,9 +47,9 @@ namespace edge_matching_puzzle
 			              );
 
     // Virtual methods inherited from feature_if
-    inline void run();
+    inline void run() override;
     // End of virtual methods inherited from feature_if
-    inline ~feature_simplex();
+    inline ~feature_simplex() override;
 
   private:
       /**
