@@ -513,7 +513,7 @@ namespace edge_matching_puzzle
       {
           std::cout << "Inifinite Max" << std::endl;
       }
-    else
+      else
       {
           std::cout << "No Max found !?" << std::endl;
       }
