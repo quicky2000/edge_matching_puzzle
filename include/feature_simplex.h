@@ -160,7 +160,7 @@ namespace edge_matching_puzzle
 
       // Store all simplex variables related to a piece id
       // index 0 correspond to piece id 1)
-      std::vector<simplex_variable*> * l_piece_id_variables = new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()];
+      auto * l_piece_id_variables = new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()];
 
       // Determine for each position which piece match constraints
       for(unsigned int l_y = 0;
@@ -260,7 +260,7 @@ namespace edge_matching_puzzle
                       l_loop_pieces.set(0,1,l_piece_kind_id);
                       const emp_types::t_binary_piece l_piece = p_db.get_piece(l_type,l_piece_kind_id);
                       unsigned int l_truncated_piece = l_piece >> (4 * p_db.get_color_id_size());
-                      emp_types::t_orientation l_orientation = (emp_types::t_orientation)(l_truncated_piece & 0x3);
+                      auto l_orientation = (emp_types::t_orientation)(l_truncated_piece & 0x3);
                       unsigned int l_piece_id = 1 + (l_truncated_piece >> 2);
                       simplex_variable * l_variable = new simplex_variable(m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
                       m_simplex_variables.push_back(l_variable);
