@@ -47,9 +47,9 @@ namespace edge_matching_puzzle
 			              );
 
     // Virtual methods inherited from feature_if
-    inline void run(void);
+    inline void run();
     // End of virtual methods inherited from feature_if
-    inline ~feature_simplex(void);
+    inline ~feature_simplex();
 
   private:
       /**
@@ -493,7 +493,7 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  void feature_simplex::run(void)
+  void feature_simplex::run()
   {
       simplex_t::t_coef_type l_max(0);
       bool l_infinite = false;
@@ -520,7 +520,7 @@ namespace edge_matching_puzzle
   }
 
   //----------------------------------------------------------------------------
-  feature_simplex::~feature_simplex(void)
+  feature_simplex::~feature_simplex()
   {
       delete m_simplex;
       m_simplex = nullptr;
