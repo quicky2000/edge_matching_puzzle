@@ -78,6 +78,9 @@ namespace edge_matching_puzzle
 
         inline void reset();
 
+        inline static
+        unsigned int get_piece_representation_width();
+
       private:
         emp_types::t_oriented_piece * m_content;
         unsigned int m_content_size;
@@ -99,6 +102,12 @@ namespace edge_matching_puzzle
   const unsigned int & emp_FSM_situation::get_nb_bits()
   {
       return m_situation_nb_bits;
+  }
+
+  //----------------------------------------------------------------------------
+  unsigned int emp_FSM_situation::get_piece_representation_width()
+  {
+      return m_piece_representation_width;
   }
 
   //----------------------------------------------------------------------------
