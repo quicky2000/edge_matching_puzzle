@@ -256,13 +256,13 @@ namespace edge_matching_puzzle
                   {
                       // We decrement because 0 mean no piece in other cases this
                       // is the index of oriented piece in piece list by kind
-                      unsigned int l_piece_kind_id = l_ffs - 1;
+                      unsigned int l_piece_kind_id = (unsigned int)l_ffs - 1;
                       l_loop_pieces.set(0,1,l_piece_kind_id);
                       const emp_types::t_binary_piece l_piece = p_db.get_piece(l_type,l_piece_kind_id);
                       unsigned int l_truncated_piece = l_piece >> (4 * p_db.get_color_id_size());
                       auto l_orientation = (emp_types::t_orientation)(l_truncated_piece & 0x3);
                       unsigned int l_piece_id = 1 + (l_truncated_piece >> 2);
-                      simplex_variable * l_variable = new simplex_variable(m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
+                      simplex_variable * l_variable = new simplex_variable((unsigned int)m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
                       m_simplex_variables.push_back(l_variable);
                       m_position_variables[get_position_index(l_x, l_y)].push_back(l_variable);
                       l_piece_id_variables[l_piece_id - 1].push_back(l_variable);
@@ -274,7 +274,7 @@ namespace edge_matching_puzzle
       // Compute equation number
       // Width * Height because one equation per variable to state that each piece can only have one position/orientation
       // Width * Height because one position can only have piece/orientation
-      uint64_t l_nb_equation = 0;
+      uint32_t l_nb_equation = 0;
       for(unsigned int l_index = 0;
           l_index < m_info.get_height() * m_info.get_width();
 	      ++l_index
@@ -333,7 +333,7 @@ namespace edge_matching_puzzle
       std::cout << "Nb equations : " << l_nb_equation << std::endl;
 
       // Create simplex representing puzzle
-      m_simplex = new simplex_t(m_simplex_variables.size(), l_nb_equation, 0, 0);
+      m_simplex = new simplex_t((unsigned int)m_simplex_variables.size(), l_nb_equation, 0, 0);
 
       for(unsigned int l_index = 0;
 	      l_index < m_simplex_variables.size();
