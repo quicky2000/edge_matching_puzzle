@@ -129,7 +129,7 @@ namespace edge_matching_puzzle
   {
       // Initialise situation with initial situation string
       m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
-      if("" != p_initial_situation)
+      if(!p_initial_situation.empty())
       {
           m_situation.set(p_initial_situation);
       }
@@ -281,12 +281,12 @@ namespace edge_matching_puzzle
 	     )
       {
           // If position is free then add position equation
-          if(m_position_variables[l_index].size())
+          if(!m_position_variables[l_index].empty())
           {
               ++l_nb_equation;
           }
           // if piece is not used then add piece equations
-          if(l_piece_id_variables[l_index].size())
+          if(!l_piece_id_variables[l_index].empty())
           {
               ++l_nb_equation;
           }
@@ -351,7 +351,7 @@ namespace edge_matching_puzzle
           ++l_index
          )
       {
-          if(m_position_variables[l_index].size())
+          if(!m_position_variables[l_index].empty())
           {
               for(auto l_iter: m_position_variables[l_index])
               {
@@ -369,7 +369,7 @@ namespace edge_matching_puzzle
 	      ++l_index
 	     )
       {
-          if(l_piece_id_variables[l_index].size())
+          if(!l_piece_id_variables[l_index].empty())
           {
               for(auto l_iter:l_piece_id_variables[l_index])
               {
