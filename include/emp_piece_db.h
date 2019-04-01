@@ -407,7 +407,7 @@ namespace edge_matching_puzzle
         std::cout << "Building piece database" << std::endl;
 
         unsigned int l_nb_edge = (p_width - 1) * p_height + (p_height - 1) * p_width;
-        unsigned int l_nb_pieces = p_pieces.size();
+        unsigned int l_nb_pieces = (unsigned int)p_pieces.size();
 
         // Creating constraints database
         for(unsigned int l_index = (unsigned int)emp_types::t_kind::CENTER;
@@ -585,9 +585,9 @@ namespace edge_matching_puzzle
 		throw quicky_exception::quicky_logic_exception("Border2center color " + std::to_string(l_iter_color) + " is not in center colors",__LINE__,__FILE__);
 	      }
 	  }
-	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CORNER] = m_corner_colors.size();
-	m_nb_color_kinds[(unsigned int)emp_types::t_kind::BORDER] = m_border_colors.size();
-	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CENTER] = m_center_colors.size();
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CORNER] = (unsigned int)m_corner_colors.size();
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::BORDER] = (unsigned int)m_border_colors.size();
+	m_nb_color_kinds[(unsigned int)emp_types::t_kind::CENTER] = (unsigned int)m_center_colors.size();
 
 
 	m_color_kind = new emp_types::t_kind[m_border_color_id];
@@ -819,7 +819,7 @@ namespace edge_matching_puzzle
         bool l_error = false;
         for(auto l_iter: m_colors)
           {
-            unsigned int l_nb = l_color2pieces.find(l_iter)->second.size();
+            unsigned int l_nb = (unsigned int)l_color2pieces.find(l_iter)->second.size();
             if(l_nb % 2) 
               {
                 l_error = true;
@@ -885,7 +885,7 @@ namespace edge_matching_puzzle
         unsigned int l_total_pieces_links = 0;
         for(auto l_iter : p_pieces)
           {
-            unsigned int l_nb = l_piece2links.count(l_iter.get_id());
+            unsigned int l_nb = (unsigned int)l_piece2links.count(l_iter.get_id());
             l_total_pieces_links += l_nb;
           }
         if(l_total_pieces_links != 2 * l_links.size())
@@ -909,7 +909,7 @@ namespace edge_matching_puzzle
                 emp_types::t_orientation l_orientation = (emp_types::t_orientation)l_orient_index;
                 if(l_iter.get_color(l_orientation))
                   {
-                    unsigned int l_nb = l_piece_edge_2links.count(emp_types::t_oriented_piece(l_id,l_orientation));
+                    unsigned int l_nb = (unsigned int)l_piece_edge_2links.count(emp_types::t_oriented_piece(l_id,l_orientation));
                     l_total_pieces_links += l_nb;
                   }
               }
@@ -988,7 +988,7 @@ namespace edge_matching_puzzle
         std::cout << "Color repartition on pieces :" <<std::endl ;
         for(auto l_iter: m_colors)
           {
-            unsigned int l_nb = l_color2pieces.find(l_iter)->second.size();
+            unsigned int l_nb = (unsigned int)l_color2pieces.find(l_iter)->second.size();
             std::cout << "Color = " << l_iter << " appears on " << l_nb << " pieces edge" << std::endl ;
           }
 
@@ -1157,7 +1157,7 @@ namespace edge_matching_puzzle
     {
       unsigned int l_index = (unsigned int) p_kind;
       assert(l_index < 3);
-      unsigned int l_index2 = p_constraints.size() - l_index - 1;
+      unsigned int l_index2 = ((unsigned int)p_constraints.size()) - l_index - 1;
       assert(l_index2 < 4);
       emp_piece_constraint l_constraints(p_constraints);
       t_constraint_db::const_iterator l_iter = m_constraint_db[l_index][l_index2].find(l_constraints);
