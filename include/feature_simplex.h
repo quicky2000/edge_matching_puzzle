@@ -34,6 +34,7 @@
 #include <string>
 #include <vector>
 #include <simplex_solver_glpk.h>
+#include <map>
 
 namespace edge_matching_puzzle
 {
@@ -87,6 +88,17 @@ namespace edge_matching_puzzle
                                           ,const unsigned int & p_y
 					                      ) const;
 
+    /**
+     * Record hint information: piece + its location
+     * @param p_piece_id Piece Id
+     * @param p_x X location
+     * @param p_y Y location
+     */
+    inline void record_hint(unsigned int p_piece_id
+                           ,unsigned int p_x
+                           ,unsigned int p_y
+                           );
+
     const emp_piece_db & m_db;
     const emp_FSM_info & m_info;
     emp_FSM_situation m_situation;
@@ -107,7 +119,21 @@ namespace edge_matching_puzzle
     //typedef simplex::simplex_solver_glpk simplex_t;
     simplex_t * m_simplex;
     emp_gui & m_gui;
-    const std::string m_initial_situation;
+
+    /**
+     * String representation of initail situation
+     */
+    std::string m_initial_situation;
+
+    /**
+     * Positions where a piece is placed at the beginning: hint
+     */
+     std::map<std::pair<unsigned int, unsigned int>, unsigned int> m_position_hint;
+
+    /**
+     * Pieces whose position is known at the beginning: hint
+     */
+     std::map<unsigned int, std::pair<unsigned int, unsigned int>> m_piece_hint;
   };
  
   //----------------------------------------------------------------------------
@@ -129,9 +155,25 @@ namespace edge_matching_puzzle
   {
       // Initialise situation with initial situation string
       m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
-      if(!p_initial_situation.empty())
+      if(!m_initial_situation.empty())
       {
-          m_situation.set(p_initial_situation);
+          // Search if some pieces have a determined position but no orientation
+          unsigned int l_piece_width = emp_FSM_situation::get_piece_representation_width();
+          assert(!(m_initial_situation.size() % l_piece_width));
+          for(unsigned int l_index = 0; l_index < m_info.get_height() * m_info.get_width(); ++l_index)
+          {
+              char l_orientation = m_initial_situation[l_piece_width * (l_index + 1) - 1];
+              if(' ' == l_orientation)
+              {
+                  unsigned int l_x = l_index % m_info.get_width();
+                  unsigned int l_y = l_index / m_info.get_width();
+                  auto l_piece_id = (emp_types::t_piece_id) std::stoul(m_initial_situation.substr(l_index * l_piece_width, l_piece_width - 1));
+                  std::cout << "Hint " << l_piece_id << " @(" << l_x << "," << l_y << ")" << std::endl;
+                  m_initial_situation.replace(l_piece_width * l_index, l_piece_width, std::string(l_piece_width, '-'));
+                  record_hint(l_piece_id, l_x, l_y);
+              }
+          }
+          m_situation.set(m_initial_situation);
       }
 
       // Mark used piece as unavailable
@@ -153,6 +195,13 @@ namespace edge_matching_puzzle
               }
           }
       }
+
+      // Mark hint pieces as unavailable
+      for(auto l_iter: m_piece_hint)
+      {
+          m_available_pieces[(unsigned int)p_db.get_piece(l_iter.first).get_kind()]->set(0x0, 4, 4 * p_db.get_kind_index(l_iter.first));
+      }
+
       emp_types::bitfield l_matching_corners(4 * p_db.get_nb_pieces(emp_types::t_kind::CORNER));
       emp_types::bitfield l_matching_borders(4 * p_db.get_nb_pieces(emp_types::t_kind::BORDER));
       emp_types::bitfield l_matching_centers(4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER));
@@ -173,7 +222,24 @@ namespace edge_matching_puzzle
 	          ++l_x
 	         )
           {
-              if(!m_situation.contains_piece(l_x,l_y))
+              const auto l_position_hint_iter = m_position_hint.find({l_x, l_y});
+              if(m_position_hint.end() != l_position_hint_iter)
+              {
+                  for(auto l_orientation = (unsigned int)emp_types::orientation::NORTH;
+                      l_orientation <= (unsigned int)emp_types::orientation::WEST;
+                      ++l_orientation
+                      )
+                  {
+                      simplex_variable *l_variable = new simplex_variable((unsigned int) m_simplex_variables.size()
+                                                                         ,l_x
+                                                                         ,l_y
+                                                                         ,l_position_hint_iter->second
+                                                                         ,(emp_types::orientation) l_orientation
+                                                                         );
+                      m_simplex_variables.push_back(l_variable);
+                  }
+              }
+              else if(!m_situation.contains_piece(l_x,l_y))
               {
                   // Compute surrounding constraints
 
@@ -531,6 +597,19 @@ namespace edge_matching_puzzle
       // Content of vectors has been destroyed just before
       delete[] m_position_variables;
 
+  }
+
+  //----------------------------------------------------------------------------
+  void
+  feature_simplex::record_hint(unsigned int p_piece_id
+                              ,unsigned int p_x
+                              ,unsigned int p_y
+                              )
+  {
+      assert(m_piece_hint.end() == m_piece_hint.find(p_piece_id));
+      m_piece_hint.insert({p_piece_id, {p_x, p_y}});
+      assert(m_position_hint.end() == m_position_hint.find({p_x, p_y}));
+      m_position_hint.insert({{p_x, p_y}, p_piece_id});
   }
 
 }
