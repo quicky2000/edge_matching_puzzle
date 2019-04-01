@@ -389,6 +389,7 @@ namespace edge_matching_puzzle
     m_border_color_id(0),
     m_color_id_size(0),
     m_max_constraint(0),
+    m_corners{nullptr, nullptr, nullptr, nullptr},
     m_border_pieces(nullptr),
     m_center_pieces(nullptr),
     m_piece_id2kind_index(new unsigned int[p_pieces.size()]),
@@ -415,15 +416,6 @@ namespace edge_matching_puzzle
 	    )
           {
             m_constraint_db[l_index] = new t_constraint_db[4 - l_index];
-          }
-
-        // Creating corner array
-        for(unsigned int l_index = 0;
-	    l_index < 4 ;
-	    ++l_index
-	    )
-          {
-            m_corners[l_index] = NULL;
           }
 
 	// Create arrays to store binary representation of each piece
