@@ -52,22 +52,22 @@ namespace edge_matching_puzzle
        Return the number of bits necessary to code color id including a special
        code for border color
     **/
-    inline const unsigned int & get_color_id_size(void)const;
+    inline const unsigned int & get_color_id_size()const;
 
     /**
        Return the number of bits necessary to code piece id with ids starting at 0
     **/
-    inline const unsigned int & get_piece_id_size(void)const;
+    inline const unsigned int & get_piece_id_size()const;
 
     /**
        Return the number of bits necessary to code piece id with id == 0 mean no piece
     **/
-    inline const unsigned int & get_dumped_piece_id_size(void)const;
+    inline const unsigned int & get_dumped_piece_id_size()const;
 
     /**
        Return the id used internally to represent border color
     **/
-    inline const unsigned int & get_border_color_id(void)const;
+    inline const unsigned int & get_border_color_id()const;
 
     /**
        Search Piece by Id
@@ -159,7 +159,7 @@ namespace edge_matching_puzzle
     /**
        Return a map containing for earch center color of border pieces the number of occurence of this colors
     */
-    inline const std::map<emp_types::t_color_id,unsigned int> & get_border2center_colors_nb(void)const;
+    inline const std::map<emp_types::t_color_id,unsigned int> & get_border2center_colors_nb()const;
 
     /**
        Type used to store list of colors
@@ -169,29 +169,29 @@ namespace edge_matching_puzzle
     /**
        Return All colors
     **/
-    inline const t_color_list & get_colors(void) const;
+    inline const t_color_list & get_colors() const;
 
     /**
        Return List of colors composing center of puzzle
     **/
-    inline const t_color_list & get_center_colors(void) const;
+    inline const t_color_list & get_center_colors() const;
 
     /**
        Return List of colors composing border of puzzle
     **/
-    inline const t_color_list & get_border_colors(void) const;
+    inline const t_color_list & get_border_colors() const;
 
     /**
        Return Colors of edge pieces that are related to center pieces
     **/
-    inline const t_color_list & get_border2center_colors(void) const;
+    inline const t_color_list & get_border2center_colors() const;
 
     /**
        Return Colors of corners
     **/
-    inline const t_color_list & get_corner_colors(void) const;
+    inline const t_color_list & get_corner_colors() const;
 
-    inline ~emp_piece_db(void);
+    inline ~emp_piece_db();
 
   private:
     /**
@@ -1126,25 +1126,25 @@ namespace edge_matching_puzzle
       }
 
     //----------------------------------------------------------------------------
-    const unsigned int & emp_piece_db::get_color_id_size(void)const
+    const unsigned int & emp_piece_db::get_color_id_size()const
       {
 	return m_color_id_size;
       }
 
     //----------------------------------------------------------------------------
-    const unsigned int & emp_piece_db::get_piece_id_size(void)const
+    const unsigned int & emp_piece_db::get_piece_id_size()const
       {
         return m_coded_piece_id_size;
       }
 
     //----------------------------------------------------------------------------
-    const unsigned int & emp_piece_db::get_dumped_piece_id_size(void)const
+    const unsigned int & emp_piece_db::get_dumped_piece_id_size()const
       {
         return m_dumped_piece_id_size;
       }
 
     //----------------------------------------------------------------------------
-    const unsigned int &  emp_piece_db::get_border_color_id(void)const
+    const unsigned int &  emp_piece_db::get_border_color_id()const
       {
 	return m_border_color_id;
       }
@@ -1377,7 +1377,7 @@ namespace edge_matching_puzzle
 
 
     //----------------------------------------------------------------------------
-    emp_piece_db::~emp_piece_db(void)
+    emp_piece_db::~emp_piece_db()
       {
         for(unsigned int l_index = 0 ;
 	    l_index < 4 ;
@@ -1542,37 +1542,37 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const std::map<emp_types::t_color_id,unsigned int> & emp_piece_db::get_border2center_colors_nb(void)const
+    const std::map<emp_types::t_color_id,unsigned int> & emp_piece_db::get_border2center_colors_nb()const
     {
       return m_border2center_colors_nb;
     }
 
     //--------------------------------------------------------------------------
-    const emp_piece_db::t_color_list & emp_piece_db::get_colors(void) const
+    const emp_piece_db::t_color_list & emp_piece_db::get_colors() const
     {
       return m_colors;
     }
 
     //--------------------------------------------------------------------------
-    const emp_piece_db::t_color_list & emp_piece_db::get_center_colors(void) const
+    const emp_piece_db::t_color_list & emp_piece_db::get_center_colors() const
     {
       return m_center_colors;
     }
 
     //--------------------------------------------------------------------------
-    const emp_piece_db::t_color_list & emp_piece_db::get_border_colors(void) const
+    const emp_piece_db::t_color_list & emp_piece_db::get_border_colors() const
     {
       return m_border_colors;
     }
 
     //--------------------------------------------------------------------------
-    const emp_piece_db::t_color_list & emp_piece_db::get_border2center_colors(void) const
+    const emp_piece_db::t_color_list & emp_piece_db::get_border2center_colors() const
     {
       return m_border2center_colors;
     }
 
     //--------------------------------------------------------------------------
-    const emp_piece_db::t_color_list & emp_piece_db::get_corner_colors(void) const
+    const emp_piece_db::t_color_list & emp_piece_db::get_corner_colors() const
     {
       return m_corner_colors;
     }
