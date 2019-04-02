@@ -849,19 +849,16 @@ namespace edge_matching_puzzle
         t_piece2links l_piece2links;
         typedef std::multimap<emp_types::t_oriented_piece,emp_link> t_piece_edge_2links;
         t_piece_edge_2links l_piece_edge_2links;
-        for(unsigned int l_index1 = 0;
-	    l_index1 < p_pieces.size();
-	    ++l_index1
-	    )
+        for(auto l_iter_piece: p_pieces)
           {
             for(auto l_orient_index1 = (unsigned int)emp_types::t_orientation::NORTH ;
                 l_orient_index1 <= (unsigned int)emp_types::t_orientation::WEST; 
                 ++l_orient_index1
 		)
               {
-                emp_types::t_piece_id l_id = p_pieces[l_index1].get_id();
+                emp_types::t_piece_id l_id = l_iter_piece.get_id();
                 auto l_orientation = (emp_types::t_orientation)l_orient_index1;
-                emp_types::t_color_id l_color = p_pieces[l_index1].get_color(l_orientation);
+                emp_types::t_color_id l_color = l_iter_piece.get_color(l_orientation);
                 if(l_color)
                   {
                     t_color2oriented_pieces::const_iterator l_iter_color = l_color2pieces.find(l_color);
@@ -1371,12 +1368,9 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     emp_piece_db::~emp_piece_db()
       {
-        for(unsigned int l_index = 0 ;
-	    l_index < 4 ;
-	    ++l_index
-	    )
+        for(auto l_iter: m_corners)
           {
-            delete m_corners[l_index];
+            delete l_iter;
           }
 
 	for(unsigned int l_index = 0 ;
