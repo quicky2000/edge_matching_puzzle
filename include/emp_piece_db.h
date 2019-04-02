@@ -765,7 +765,7 @@ namespace edge_matching_puzzle
           }
 
         // Record identical pieces binary filters
-        if(m_identical_pieces_db.size())
+        if(!m_identical_pieces_db.empty())
           {
             for(auto l_iter: m_identical_pieces_db)
               {
@@ -956,7 +956,7 @@ namespace edge_matching_puzzle
         print_auto_similarities(emp_piece::t_auto_similarity::HALF_SIMILAR,l_auto_similarities);
         print_auto_similarities(emp_piece::t_auto_similarity::SIMILAR,l_auto_similarities);
 
-        if(m_identical_pieces_db.size())
+        if(!m_identical_pieces_db.empty())
           {
             std::cout << "Identical pieces:" << std::endl ;
             for(auto l_iter: m_identical_pieces_db)
@@ -1304,7 +1304,7 @@ namespace edge_matching_puzzle
 				  )
     {
       std::cout << p_name << " : " << p_list.size() ;
-      if(p_list.size())
+      if(!p_list.empty())
         {
           std::cout << " = { " << *(p_list.begin());
           for(auto l_iter = ++(p_list.begin());
