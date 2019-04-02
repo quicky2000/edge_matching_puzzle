@@ -1463,7 +1463,7 @@ namespace edge_matching_puzzle
     const std::set<emp_types::t_piece_id> * const emp_piece_db::get_identical_pieces(const emp_types::t_piece_id & p_id)const
       {
         auto l_iter = m_identical_pieces_db.find(p_id);
-        return (m_identical_pieces_db.end() == l_iter ? NULL : &(l_iter->second));
+        return (m_identical_pieces_db.end() == l_iter ? nullptr : &(l_iter->second));
       }
 
     //----------------------------------------------------------------------------
