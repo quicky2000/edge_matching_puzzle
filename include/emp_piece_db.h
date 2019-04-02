@@ -1239,7 +1239,7 @@ namespace edge_matching_puzzle
 	  )
         {
           emp_types::t_oriented_piece l_oriented_piece(p_piece.get_id(),(emp_types::t_orientation)l_piece_orient_index);
-          std::array<const emp_constraint*,4> l_oriented_piece_constraints;
+          std::array<const emp_constraint*,4> l_oriented_piece_constraints = {nullptr, nullptr, nullptr, nullptr};
           // Fill array with oriented colors
           for(auto l_border_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
               l_border_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
