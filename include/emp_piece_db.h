@@ -1184,7 +1184,7 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     void emp_piece_db::compute_binary_constraints(const emp_piece & p_piece)
     {
-      unsigned int l_increment = pow(2,(unsigned int) p_piece.get_auto_similarity());
+      auto l_increment = (unsigned int)pow(2,(unsigned int) p_piece.get_auto_similarity());
       // Compute for different orientations of piece
       for(auto l_piece_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
           l_piece_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
@@ -1231,7 +1231,7 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     void emp_piece_db::compute_constraints(const emp_piece & p_piece)
     {
-      unsigned int l_increment = pow(2,(unsigned int) p_piece.get_auto_similarity());
+      auto l_increment = (unsigned int)pow(2,(unsigned int) p_piece.get_auto_similarity());
       // Compute for different orientations of piece
       for(auto l_piece_orient_index = (unsigned int)emp_types::t_orientation::NORTH ;
           l_piece_orient_index <= (unsigned int)emp_types::t_orientation::WEST; 
