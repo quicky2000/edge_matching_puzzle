@@ -107,9 +107,9 @@ namespace edge_matching_puzzle
         const emp_types::bitfield & get_pieces(const emp_types::t_binary_piece & p_constraint) const;
 
         inline
-        const emp_types::bitfield & get_get_binary_identical_pieces(const emp_types::t_kind & p_kind
-                                                                   ,const emp_types::t_piece_id & p_kind_id
-								                                   ) const;
+        const emp_types::bitfield & get_binary_identical_pieces(const emp_types::t_kind & p_kind
+                                                               ,const emp_types::t_piece_id & p_kind_id
+                                                               ) const;
         /**
          Get Corner by index
         **/
@@ -1201,9 +1201,9 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const emp_types::bitfield & emp_piece_db::get_get_binary_identical_pieces(const emp_types::t_kind & p_kind
-                                                                             ,const emp_types::t_piece_id & p_kind_id
-									                                         ) const
+    const emp_types::bitfield & emp_piece_db::get_binary_identical_pieces(const emp_types::t_kind & p_kind
+                                                                         ,const emp_types::t_piece_id & p_kind_id
+                                                                         ) const
     {
         assert(p_kind_id < 4 * m_nb_pieces[(unsigned int)p_kind]);
         return m_binary_identical_pieces[(unsigned int)p_kind][p_kind_id];
