@@ -763,7 +763,6 @@ namespace edge_matching_puzzle
                 }
                 --l_nb_border;
             }
-            --l_nb_border;
         }
 
         // Compute constraints related to each piece
