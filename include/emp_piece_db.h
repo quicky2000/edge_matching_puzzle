@@ -106,6 +106,26 @@ namespace edge_matching_puzzle
         inline
         const emp_types::bitfield & get_pieces(const emp_types::t_binary_piece & p_constraint) const;
 
+        /**
+         * Search which pieces could be placed on a position of kind p_kind
+         * whose side defined by p_orientation would be occupied by piece
+         * defined by p_piece_id and whose orientation is not defined
+         * The fact that piece orientation is not defined means that piece is a
+         * center piece because corner and border pieces have their orientation
+         * fixed by their location
+         * In case of border or corner piece the result can be obtained using
+         * get_pieces(constraint) method
+         * @param p_kind kind of position for which we want possible neigborhood
+         * @param p_piece_id unoriented piece positionned place for which neighborhood is computed
+         * @param p_orientation indication on which side is positionned the unoriented piece
+         * @return pieces that could be in the neigborhood
+         */
+        inline
+        emp_types::bitfield compute_possible_neighborhood(const emp_types::t_kind & p_kind
+                                                         ,const emp_types::t_piece_id & p_piece_id
+                                                         ,const emp_types::t_orientation & p_orientation
+                                                         ) const;
+
         inline
         const emp_types::bitfield & get_binary_identical_pieces(const emp_types::t_kind & p_kind
                                                                ,const emp_types::t_piece_id & p_kind_id
@@ -1593,6 +1613,49 @@ namespace edge_matching_puzzle
     const emp_piece_db::t_color_list & emp_piece_db::get_corner_colors() const
     {
         return m_corner_colors;
+    }
+
+    //--------------------------------------------------------------------------
+    emp_types::bitfield
+    emp_piece_db::compute_possible_neighborhood(const emp_types::t_kind & p_kind
+                                               ,const emp_types::t_piece_id & p_piece_id
+                                               ,const emp_types::t_orientation & p_orientation
+                                               ) const
+    {
+        const emp_piece & l_piece = get_piece(p_piece_id);
+
+        assert(emp_types::t_kind::CORNER != p_kind);
+        assert(emp_types::t_kind::CENTER == l_piece.get_kind());
+
+        emp_types::bitfield l_result(m_nb_pieces[(unsigned int)p_kind] * 4);
+
+        // In case neighborhood is computed for a border position, border
+        // constaint is on the opposite side of neighborhood so orienation can
+        // be used directly for border constraint computaiton
+        uint32_t l_border_constraint = emp_types::t_kind::CENTER == p_kind ? 0 : (m_border_color_id << (m_color_id_size * (unsigned int) p_orientation));
+
+        // Compute for different orientations of piece as piece is not oriented
+        // and OR all constraints
+        for(auto l_piece_orient_index = (unsigned int)emp_types::t_orientation::NORTH;
+            l_piece_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
+            l_piece_orient_index += 1
+           )
+        {
+            // Piece is not oriented so we will compute constraint for each
+            // possible orientation meaning that border orientation does not
+            // matter
+            emp_types::t_color_id l_color_id = l_piece.get_color(emp_types::t_orientation::NORTH,(emp_types::t_orientation)l_piece_orient_index);
+
+            // Piece is a center so color_id cannot be 0
+            assert(l_color_id);
+
+            // Orientation for constraint is inverted : North constraint will be given by South of upper piece
+            uint32_t l_color_constraint = l_color_id << (m_color_id_size * ((((unsigned int)p_orientation) + 2) % 4));
+            uint32_t l_constraint = l_border_constraint | l_color_constraint;
+
+            l_result.apply_or(get_pieces(l_constraint), l_result);
+        }
+        return l_result;
     }
 }
 #endif // EMP_PIECE_DB_H
