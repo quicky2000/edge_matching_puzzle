@@ -99,6 +99,15 @@ namespace edge_matching_puzzle
                            ,unsigned int p_y
                            );
 
+    /**
+     * Treat situation string representation to extract hints ( pieces whose
+     * location is know but not orientation) and remove them from string
+     * representation
+     * @param p_situation string representation of situation, hints will be
+     * extracted and removed
+     */
+    inline void extract_hints(std::string & p_situation);
+
     const emp_piece_db & m_db;
     const emp_FSM_info & m_info;
     emp_FSM_situation m_situation;
@@ -158,21 +167,7 @@ namespace edge_matching_puzzle
       if(!m_initial_situation.empty())
       {
           // Search if some pieces have a determined position but no orientation
-          unsigned int l_piece_width = emp_FSM_situation::get_piece_representation_width();
-          assert(!(m_initial_situation.size() % l_piece_width));
-          for(unsigned int l_index = 0; l_index < m_info.get_height() * m_info.get_width(); ++l_index)
-          {
-              char l_orientation = m_initial_situation[l_piece_width * (l_index + 1) - 1];
-              if(' ' == l_orientation)
-              {
-                  unsigned int l_x = l_index % m_info.get_width();
-                  unsigned int l_y = l_index / m_info.get_width();
-                  auto l_piece_id = (emp_types::t_piece_id) std::stoul(m_initial_situation.substr(l_index * l_piece_width, l_piece_width - 1));
-                  std::cout << "Hint " << l_piece_id << " @(" << l_x << "," << l_y << ")" << std::endl;
-                  m_initial_situation.replace(l_piece_width * l_index, l_piece_width, std::string(l_piece_width, '-'));
-                  record_hint(l_piece_id, l_x, l_y);
-              }
-          }
+          extract_hints(m_initial_situation);
           m_situation.set(m_initial_situation);
       }
 
@@ -668,6 +663,28 @@ namespace edge_matching_puzzle
       m_piece_hint.insert({p_piece_id, {p_x, p_y}});
       assert(m_position_hint.end() == m_position_hint.find({p_x, p_y}));
       m_position_hint.insert({{p_x, p_y}, p_piece_id});
+  }
+
+  //----------------------------------------------------------------------------
+  void
+  feature_simplex::extract_hints(std::string & p_situation)
+  {
+      // Search if some pieces have a determined position but no orientation
+      unsigned int l_piece_width = emp_FSM_situation::get_piece_representation_width();
+      assert(!(p_situation.size() % l_piece_width));
+      for(unsigned int l_index = 0; l_index < m_info.get_height() * m_info.get_width(); ++l_index)
+      {
+          char l_orientation = p_situation[l_piece_width * (l_index + 1) - 1];
+          if(' ' == l_orientation)
+          {
+              unsigned int l_x = l_index % m_info.get_width();
+              unsigned int l_y = l_index / m_info.get_width();
+              auto l_piece_id = (emp_types::t_piece_id) std::stoul(p_situation.substr(l_index * l_piece_width, l_piece_width - 1));
+              std::cout << "Hint " << l_piece_id << " @(" << l_x << "," << l_y << ")" << std::endl;
+              p_situation.replace(l_piece_width * l_index, l_piece_width, std::string(l_piece_width, '-'));
+              record_hint(l_piece_id, l_x, l_y);
+          }
+      }
   }
 
 }
