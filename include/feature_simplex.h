@@ -222,6 +222,9 @@ namespace edge_matching_puzzle
 	          ++l_x
 	         )
           {
+              emp_types::t_kind l_type = get_position_kind(l_x,l_y);
+              emp_types::bitfield l_possible_neighborhood(4 * p_db.get_nb_pieces(l_type), true);
+
               const auto l_position_hint_iter = m_position_hint.find({l_x, l_y});
               if(m_position_hint.end() != l_position_hint_iter)
               {
@@ -253,6 +256,19 @@ namespace edge_matching_puzzle
                           const emp_piece & l_east_piece = p_db.get_piece(l_oriented_piece.first);
                           l_east_constraint = l_east_piece.get_color(emp_types::t_orientation::WEST,l_oriented_piece.second);
                       }
+                      else
+                      {
+                          const auto l_neighbor_hint_iter = m_position_hint.find({l_x + 1, l_y});
+                          if(m_position_hint.end() != l_neighbor_hint_iter)
+                          {
+                              l_possible_neighborhood.apply_and(l_possible_neighborhood
+                                                               ,m_db.compute_possible_neighborhood(l_type
+                                                                                                  ,l_neighbor_hint_iter->second
+                                                                                                  , emp_types::t_orientation::EAST
+                                                                                                  )
+                                                               );
+                          }
+                      }
                   }
                   else
                   {
@@ -269,6 +285,19 @@ namespace edge_matching_puzzle
                           const emp_types::t_oriented_piece l_oriented_piece = m_situation.get_piece(l_x,l_y - 1);
                           const emp_piece & l_north_piece = p_db.get_piece(l_oriented_piece.first);
                           l_north_constraint = l_north_piece.get_color(emp_types::t_orientation::SOUTH,l_oriented_piece.second);
+                      }
+                      else
+                      {
+                          const auto l_neighbor_hint_iter = m_position_hint.find({l_x, l_y - 1});
+                          if(m_position_hint.end() != l_neighbor_hint_iter)
+                          {
+                              l_possible_neighborhood.apply_and(l_possible_neighborhood
+                                                               ,m_db.compute_possible_neighborhood(l_type
+                                                                                                  ,l_neighbor_hint_iter->second
+                                                                                                  ,emp_types::t_orientation::NORTH
+                                                                                                  )
+                                                               );
+                          }
                       }
                   }
                   else
@@ -287,6 +316,19 @@ namespace edge_matching_puzzle
                           const emp_piece & l_west_piece = p_db.get_piece(l_oriented_piece.first);
                           l_west_constraint = l_west_piece.get_color(emp_types::t_orientation::EAST,l_oriented_piece.second);
                       }
+                      else
+                      {
+                          const auto l_neighbor_hint_iter = m_position_hint.find({l_x - 1, l_y});
+                          if(m_position_hint.end() != l_neighbor_hint_iter)
+                          {
+                              l_possible_neighborhood.apply_and(l_possible_neighborhood,
+                                                                m_db.compute_possible_neighborhood(l_type
+                                                                                                  ,l_neighbor_hint_iter->second
+                                                                                                  , emp_types::t_orientation::WEST
+                                                                                                  )
+                                                               );
+                          }
+                      }
                   }
                   else
                   {
@@ -304,6 +346,20 @@ namespace edge_matching_puzzle
                           const emp_piece & l_south_piece = p_db.get_piece(l_oriented_piece.first);
                           l_south_constraint = l_south_piece.get_color(emp_types::t_orientation::NORTH,l_oriented_piece.second);
                       }
+                      else
+                      {
+                          const auto l_neighbor_hint_iter = m_position_hint.find({l_x, l_y + 1});
+                          if(m_position_hint.end() != l_neighbor_hint_iter)
+                          {
+                              l_possible_neighborhood.apply_and(l_possible_neighborhood
+                                                               ,m_db.compute_possible_neighborhood(l_type
+                                                                                                  ,l_neighbor_hint_iter->second
+                                                                                                  ,emp_types::t_orientation::SOUTH
+                                                                                                  )
+                                                               );
+                          }
+                      }
+
                   }
                   else
                   {
@@ -311,9 +367,11 @@ namespace edge_matching_puzzle
                   }
                   l_constraint = (l_constraint << p_db.get_color_id_size()) | l_south_constraint;
 
-                  emp_types::t_kind l_type = get_position_kind(l_x,l_y);
                   // Compute pieces matching to constraint
                   l_matching_pieces[(unsigned int)l_type]->apply_and(p_db.get_pieces(l_constraint),*m_available_pieces[(unsigned int)l_type]);
+
+                  // Filter with possible neigborhood related to hints
+                  l_matching_pieces[(unsigned int)l_type]->apply_and(*l_matching_pieces[(unsigned int)l_type], l_possible_neighborhood);
 
                   // Iterating on matching pieces
                   emp_types::bitfield l_loop_pieces(*l_matching_pieces[(unsigned int)l_type]);
