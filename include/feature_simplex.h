@@ -108,6 +108,13 @@ namespace edge_matching_puzzle
      */
     inline void extract_hints(std::string & p_situation);
 
+    /**
+     * Remove pieces already placed from available pieces
+     * @param p_db Piece database
+     */
+    void
+    record_unavailable_pieces(const emp_piece_db & p_db) const;
+
     const emp_piece_db & m_db;
     const emp_FSM_info & m_info;
     emp_FSM_situation m_situation;
@@ -143,6 +150,7 @@ namespace edge_matching_puzzle
      * Pieces whose position is known at the beginning: hint
      */
      std::map<unsigned int, std::pair<unsigned int, unsigned int>> m_piece_hint;
+
   };
  
   //----------------------------------------------------------------------------
@@ -171,31 +179,7 @@ namespace edge_matching_puzzle
           m_situation.set(m_initial_situation);
       }
 
-      // Mark used piece as unavailable
-      for(unsigned int l_y = 0;
-	      l_y < m_info.get_height();
-	      ++l_y
-	     )
-      {
-          for(unsigned int l_x = 0;
-	          l_x < m_info.get_width();
-	          ++l_x
-	         )
-          {
-              if(m_situation.contains_piece(l_x,l_y))
-              {
-                  const emp_types::t_oriented_piece & l_piece = m_situation.get_piece(l_x,l_y);
-                  emp_types::t_piece_id l_id = l_piece.first;
-                  m_available_pieces[(unsigned int)p_db.get_piece(l_id).get_kind()]->set(0x0,4,4 * p_db.get_kind_index(l_id));
-              }
-          }
-      }
-
-      // Mark hint pieces as unavailable
-      for(auto l_iter: m_piece_hint)
-      {
-          m_available_pieces[(unsigned int)p_db.get_piece(l_iter.first).get_kind()]->set(0x0, 4, 4 * p_db.get_kind_index(l_iter.first));
-      }
+      record_unavailable_pieces(p_db);
 
       emp_types::bitfield l_matching_corners(4 * p_db.get_nb_pieces(emp_types::t_kind::CORNER));
       emp_types::bitfield l_matching_borders(4 * p_db.get_nb_pieces(emp_types::t_kind::BORDER));
@@ -546,6 +530,37 @@ namespace edge_matching_puzzle
       }
 
       assert(l_equation_index == l_nb_equation);
+  }
+
+  //---------------------------------------------------------------------------
+  void
+  feature_simplex::record_unavailable_pieces(const emp_piece_db & p_db) const
+  {
+      // Mark used piece as unavailable
+      for(unsigned int l_y = 0;
+          l_y < m_info.get_height();
+          ++l_y
+         )
+      {
+          for(unsigned int l_x = 0;
+              l_x < m_info.get_width();
+              ++l_x
+             )
+          {
+              if(m_situation.contains_piece(l_x, l_y))
+              {
+                  const emp_types::t_oriented_piece & l_piece = m_situation.get_piece(l_x, l_y);
+                  emp_types::t_piece_id l_id = l_piece.first;
+                  m_available_pieces[(unsigned int)p_db.get_piece(l_id).get_kind()]->set(0x0, 4, 4 * p_db.get_kind_index(l_id));
+              }
+          }
+      }
+
+      // Mark hint pieces as unavailable
+      for(auto l_iter: m_piece_hint)
+      {
+          m_available_pieces[(unsigned int)p_db.get_piece(l_iter.first).get_kind()]->set(0x0, 4, 4 * p_db.get_kind_index(l_iter.first));
+      }
   }
 
   //----------------------------------------------------------------------------
