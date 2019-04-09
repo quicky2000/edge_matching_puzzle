@@ -189,10 +189,6 @@ namespace edge_matching_puzzle
       emp_types::bitfield l_matching_centers(4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER));
       emp_types::bitfield * const l_matching_pieces[3] = {&l_matching_centers,&l_matching_borders,&l_matching_corners};
 
-      // Store all simplex variables related to a piece id
-      // index 0 correspond to piece id 1)
-      auto * l_piece_id_variables = new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()];
-
       // Determine for each position which piece match constraints
       for(unsigned int l_y = 0;
           l_y < m_info.get_height();
@@ -371,10 +367,19 @@ namespace edge_matching_puzzle
                       simplex_variable * l_variable = new simplex_variable((unsigned int)m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
                       m_simplex_variables.push_back(l_variable);
                       m_position_variables[get_position_index(l_x, l_y)].push_back(l_variable);
-                      l_piece_id_variables[l_piece_id - 1].push_back(l_variable);
                   }
               }
           }
+      }
+
+      // Store all simplex variables related to a piece id
+      // index 0 correspond to piece id 1)
+      auto * l_piece_id_variables = new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()];
+
+      // Regroup variables per pieces
+      for(auto l_iter: m_simplex_variables)
+      {
+        l_piece_id_variables[l_iter->get_piece_id() - 1].push_back(l_iter);
       }
 
       // Compute equation number
