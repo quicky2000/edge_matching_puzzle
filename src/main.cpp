@@ -81,7 +81,7 @@ int main(int argc,char ** argv)
 
       // Get puzzle description
       std::vector<emp_piece> l_pieces;
-      emp_pieces_parser l_piece_parser(l_definition_file.get_value<std::string>().c_str());
+      emp_pieces_parser l_piece_parser(l_definition_file.get_value<std::string>());
       unsigned int l_width = 0;
       unsigned int l_height = 0;
       l_piece_parser.parse(l_width,l_height,l_pieces);
@@ -99,7 +99,7 @@ int main(int argc,char ** argv)
         }
 
 
-      emp_gui l_gui(l_width,l_height,l_ressources_path.get_value<std::string>().c_str(),l_pieces);
+      emp_gui l_gui(l_width,l_height,l_ressources_path.get_value<std::string>(),l_pieces);
 
       emp_piece_db l_piece_db(l_pieces,l_width,l_height);
       emp_FSM_info l_info(l_width,l_height,l_piece_db.get_piece_id_size(),l_piece_db.get_dumped_piece_id_size());
@@ -107,7 +107,7 @@ int main(int argc,char ** argv)
       emp_FSM_situation::init(l_info);
 
 
-      feature_if * l_feature = NULL;
+      feature_if * l_feature = nullptr;
       std::string l_feature_name = l_feature_name_parameter.get_value<std::string>();
       if("display_all" == l_feature_name)
         {
@@ -173,7 +173,7 @@ int main(int argc,char ** argv)
 	      throw quicky_exception::quicky_logic_exception("Should not occur",__LINE__,__FILE__);
 	    }
 	  l_generator->generate();
-	  emp_strategy * l_strategy = new emp_strategy(*l_generator,l_piece_db,l_gui,l_info,l_dump_file_name);
+	  auto * l_strategy = new emp_strategy(*l_generator,l_piece_db,l_gui,l_info,l_dump_file_name);
 	  if(l_initial_situation.value_set())
 	    {
 	      l_strategy->set_initial_state(l_initial_situation.get_value<std::string>());

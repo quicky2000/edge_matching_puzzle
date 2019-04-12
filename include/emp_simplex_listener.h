@@ -133,7 +133,7 @@ namespace edge_matching_puzzle
 
       // Total of encountered variables values to stop iterations when we are
       // sure there are no mor emon null values
-      COEF_TYPE l_total = (COEF_TYPE)0;
+      auto l_total = (COEF_TYPE)0;
 
       if("" != m_initial_situation)
       {
