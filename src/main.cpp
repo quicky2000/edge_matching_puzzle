@@ -59,145 +59,142 @@ using namespace parameter_manager;
 //------------------------------------------------------------------------------
 int main(int argc,char ** argv)
 {
-  try
+    try
     {
-      // Defining application command line parameters
-      parameter_manager::parameter_manager l_param_manager("edge_matching_puzzle.exe","--",3);
-      parameter_if l_definition_file("definition",false);
-      l_param_manager.add(l_definition_file);
-      parameter_if l_ressources_path("ressources",false);
-      l_param_manager.add(l_ressources_path);
-      parameter_if l_feature_name_parameter("feature_name",false);
-      l_param_manager.add(l_feature_name_parameter);
-      parameter_if l_dump_file("dump_file",true);
-      l_param_manager.add(l_dump_file);
-      parameter_if l_initial_situation("initial_situation",true);
-      l_param_manager.add(l_initial_situation);
+        // Defining application command line parameters
+        parameter_manager::parameter_manager l_param_manager("edge_matching_puzzle.exe", "--", 3);
+        parameter_if l_definition_file("definition", false);
+        l_param_manager.add(l_definition_file);
+        parameter_if l_ressources_path("ressources", false);
+        l_param_manager.add(l_ressources_path);
+        parameter_if l_feature_name_parameter("feature_name", false);
+        l_param_manager.add(l_feature_name_parameter);
+        parameter_if l_dump_file("dump_file",true);
+        l_param_manager.add(l_dump_file);
+        parameter_if l_initial_situation("initial_situation", true);
+        l_param_manager.add(l_initial_situation);
 
-      // Treating parameters
-      l_param_manager.treat_parameters(argc,argv);
+        // Treating parameters
+        l_param_manager.treat_parameters(argc,argv);
 
-      std::string l_dump_file_name = l_dump_file.value_set() ? l_dump_file.get_value<std::string>() : "results.bin";
+        std::string l_dump_file_name = l_dump_file.value_set() ? l_dump_file.get_value<std::string>() : "results.bin";
 
-      // Get puzzle description
-      std::vector<emp_piece> l_pieces;
-      emp_pieces_parser l_piece_parser(l_definition_file.get_value<std::string>());
-      unsigned int l_width = 0;
-      unsigned int l_height = 0;
-      l_piece_parser.parse(l_width,l_height,l_pieces);
+        // Get puzzle description
+        std::vector<emp_piece> l_pieces;
+        emp_pieces_parser l_piece_parser(l_definition_file.get_value<std::string>());
+        unsigned int l_width = 0;
+        unsigned int l_height = 0;
+        l_piece_parser.parse(l_width, l_height, l_pieces);
 
-      std::cout << l_pieces.size() << " pieces loaded" << std::endl ;
-      if(l_pieces.size() != l_width * l_height)
+        std::cout << l_pieces.size() << " pieces loaded" << std::endl ;
+        if(l_pieces.size() != l_width * l_height)
         {
-          std::stringstream l_stream_width;
-          l_stream_width << l_width;
-          std::stringstream l_stream_height;
-          l_stream_height << l_height;
-          std::stringstream l_stream_nb_pieces;
-          l_stream_nb_pieces << l_pieces.size();
-          throw quicky_exception::quicky_logic_exception("Inconsistency between puzzle dimensions ("+l_stream_width.str()+"*"+l_stream_height.str()+") and piece number ("+l_stream_nb_pieces.str()+")",__LINE__,__FILE__);
+            std::stringstream l_stream_width;
+            l_stream_width << l_width;
+            std::stringstream l_stream_height;
+            l_stream_height << l_height;
+            std::stringstream l_stream_nb_pieces;
+            l_stream_nb_pieces << l_pieces.size();
+            throw quicky_exception::quicky_logic_exception("Inconsistency between puzzle dimensions (" + l_stream_width.str() + "*" + l_stream_height.str() + ") and piece number (" + l_stream_nb_pieces.str() + ")",__LINE__,__FILE__);
         }
 
+        emp_gui l_gui(l_width,l_height,l_ressources_path.get_value<std::string>(), l_pieces);
 
-      emp_gui l_gui(l_width,l_height,l_ressources_path.get_value<std::string>(),l_pieces);
+        emp_piece_db l_piece_db(l_pieces, l_width, l_height);
+        emp_FSM_info l_info(l_width, l_height, l_piece_db.get_piece_id_size(), l_piece_db.get_dumped_piece_id_size());
 
-      emp_piece_db l_piece_db(l_pieces,l_width,l_height);
-      emp_FSM_info l_info(l_width,l_height,l_piece_db.get_piece_id_size(),l_piece_db.get_dumped_piece_id_size());
+        emp_FSM_situation::init(l_info);
 
-      emp_FSM_situation::init(l_info);
-
-
-      feature_if * l_feature = nullptr;
-      std::string l_feature_name = l_feature_name_parameter.get_value<std::string>();
-      if("display_all" == l_feature_name)
+        feature_if * l_feature = nullptr;
+        std::string l_feature_name = l_feature_name_parameter.get_value<std::string>();
+        if("display_all" == l_feature_name)
         {
-          l_feature = new feature_display_all(l_piece_db,l_info,l_gui);
+            l_feature = new feature_display_all(l_piece_db, l_info, l_gui);
         }
-      else if("display_max" == l_feature_name)
+        else if("display_max" == l_feature_name)
         {
-          l_feature = new feature_display_max(l_piece_db,l_info,l_gui);
+            l_feature = new feature_display_max(l_piece_db, l_info, l_gui);
         }
-      else if("display_solutions" == l_feature_name)
+        else if("display_solutions" == l_feature_name)
         {
-          l_feature = new feature_display_solutions(l_piece_db,l_info,l_gui);
+            l_feature = new feature_display_solutions(l_piece_db, l_info, l_gui);
         }
-      else if("dump_solutions" == l_feature_name)
+        else if("dump_solutions" == l_feature_name)
         {
-          l_feature = new feature_dump_solutions(l_piece_db,l_info,l_gui,l_dump_file_name);
+            l_feature = new feature_dump_solutions(l_piece_db, l_info, l_gui, l_dump_file_name);
         }
-      else if("dump_summary" == l_feature_name)
+        else if("dump_summary" == l_feature_name)
         {
-          l_feature = new feature_dump_summary(l_dump_file_name,l_info);
+            l_feature = new feature_dump_summary(l_dump_file_name, l_info);
         }
-      else if("display_dump" == l_feature_name)
+        else if("display_dump" == l_feature_name)
         {
-          l_feature = new feature_display_dump(l_dump_file_name,l_info,l_gui);
+            l_feature = new feature_display_dump(l_dump_file_name, l_info, l_gui);
         }
-      else if("display_situation" == l_feature_name)
+        else if("display_situation" == l_feature_name)
         {
-          l_feature = new feature_display_situation(l_initial_situation.get_value<std::string>(),l_info,l_gui);
+            l_feature = new feature_display_situation(l_initial_situation.get_value<std::string>(), l_info, l_gui);
         }
-      else if("compute_stats" == l_feature_name)
+        else if("compute_stats" == l_feature_name)
         {
-          l_feature = new feature_compute_stats(l_piece_db,l_info,l_gui);
+            l_feature = new feature_compute_stats(l_piece_db, l_info, l_gui);
         }
-      else if("border_exploration" == l_feature_name)
+        else if("border_exploration" == l_feature_name)
         {
-          l_feature = new feature_border_exploration(l_piece_db,
-						     l_info,
-						     l_initial_situation.get_value<std::string>()
-						     );
+            l_feature = new feature_border_exploration(l_piece_db
+                                                      ,l_info
+                                                      ,l_initial_situation.get_value<std::string>()
+                                                      );
         }
-      else if("simplex" == l_feature_name)
+        else if("simplex" == l_feature_name)
         {
-          l_feature = new feature_simplex(l_piece_db
-                                         ,l_info
-                                         ,l_initial_situation.get_value<std::string>()
-                                         ,l_gui
-					                     );
+            l_feature = new feature_simplex(l_piece_db
+                                           ,l_info
+                                           ,l_initial_situation.get_value<std::string>()
+                                           ,l_gui
+                                           );
         }
-      else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
-	{
-          // No need to delete this object, it will be done in emp_strategy destructor
-	  emp_strategy_generator * l_generator = nullptr;
-	  if("new_strategy" == l_feature_name)
-	    {
-	      l_generator = new emp_spiral_strategy_generator(l_info.get_width(),l_info.get_height());
-	    }
-	  else if("new_text_strategy" == l_feature_name)
-	    {
-	      l_generator = new emp_text_strategy_generator(l_info.get_width(),l_info.get_height(),"strategy.txt");
-	    }
-	  else
-	    {
-	      throw quicky_exception::quicky_logic_exception("Should not occur",__LINE__,__FILE__);
-	    }
-	  l_generator->generate();
-	  auto * l_strategy = new emp_strategy(*l_generator,l_piece_db,l_gui,l_info,l_dump_file_name);
-	  if(l_initial_situation.value_set())
-	    {
-	      l_strategy->set_initial_state(l_initial_situation.get_value<std::string>());
-	    }
-	  l_feature = l_strategy;
-	}
-      else
+        else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
         {
-          throw quicky_exception::quicky_logic_exception("Unsupported feature \""+l_feature_name+"\"",__LINE__,__FILE__);
+            // No need to delete this object, it will be done in emp_strategy destructor
+            emp_strategy_generator * l_generator = nullptr;
+            if("new_strategy" == l_feature_name)
+            {
+                l_generator = new emp_spiral_strategy_generator(l_info.get_width(), l_info.get_height());
+            }
+            else if("new_text_strategy" == l_feature_name)
+            {
+                l_generator = new emp_text_strategy_generator(l_info.get_width(), l_info.get_height(), "strategy.txt");
+            }
+            else
+            {
+                throw quicky_exception::quicky_logic_exception("Should not occur", __LINE__, __FILE__);
+            }
+            l_generator->generate();
+            auto * l_strategy = new emp_strategy(*l_generator, l_piece_db, l_gui, l_info, l_dump_file_name);
+            if(l_initial_situation.value_set())
+            {
+                l_strategy->set_initial_state(l_initial_situation.get_value<std::string>());
+            }
+            l_feature = l_strategy;
         }
-      l_feature->run();
-      delete l_feature;
+        else
+        {
+            throw quicky_exception::quicky_logic_exception("Unsupported feature \"" + l_feature_name + "\"", __LINE__, __FILE__);
+        }
+        l_feature->run();
+        delete l_feature;
     }
-  catch(quicky_exception::quicky_runtime_exception & e)
+    catch(quicky_exception::quicky_runtime_exception & e)
     {
-      std::cout << "ERROR : " << e.what() << " at " << e.get_file() << ":" << e.get_line() <<std::endl ;
-      return(-1);
+        std::cout << "ERROR : " << e.what() << " at " << e.get_file() << ":" << e.get_line() <<std::endl ;
+        return(-1);
     }
-  catch(quicky_exception::quicky_logic_exception & e)
+    catch(quicky_exception::quicky_logic_exception & e)
     {
-      std::cout << "ERROR : " << e.what() << " at " << e.get_file() << ":" << e.get_line() << std::endl ;
-      return(-1);
+        std::cout << "ERROR : " << e.what() << " at " << e.get_file() << ":" << e.get_line() << std::endl ;
+        return(-1);
     }
-  return 0;
-  
+    return 0;
 }
 //EOF
