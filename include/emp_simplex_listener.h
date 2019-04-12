@@ -24,6 +24,7 @@
 #include "simplex_listener_if.h"
 #include "emp_FSM_info.h"
 #include "emp_FSM_situation.h"
+#include "emp_variable_generator.h"
 #include "emp_gui.h"
 #include <vector>
 
@@ -34,8 +35,7 @@ namespace edge_matching_puzzle
   {
   public:
     inline emp_simplex_listener(const simplex::simplex_listener_target_if<COEF_TYPE> & p_simplex
-                               ,const std::vector<simplex_variable *> & p_variables
-                               ,const std::vector<simplex_variable *> *const p_position_variables
+                               ,const emp_variable_generator & p_variable_generator
                                ,const emp_FSM_info & p_info
                                ,const std::string & p_initial_situation
                                ,emp_gui & p_gui
@@ -43,20 +43,19 @@ namespace edge_matching_puzzle
                                );
     inline void start_iteration(const unsigned int & p_nb_iteration) override;
     inline void new_input_var_event(const unsigned int & p_input_variable_index) override;
-    inline void new_output_var_event(const unsigned int & p_input_variable_index) override;
+    inline void new_output_var_event(const unsigned int & p_output_variable_index) override;
     inline void new_Z0(COEF_TYPE p_z0) override;
+
     private:
       unsigned int m_nb_iteration;
       const simplex::simplex_listener_target_if<COEF_TYPE> & m_simplex;
       std::ostream & m_ostream;
-      const std::vector<simplex_variable*> & m_variables;
 
       /**
-       * Store all simplex variables related to a position index
-       * Position index = width * Y + X)
+       * Variable generator that store all variables
        */
-      const std::vector<simplex_variable*> * const m_position_variables;
 
+      const emp_variable_generator & m_variable_generator;
       /**
        * Problem info
        */
@@ -74,8 +73,7 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   template <typename COEF_TYPE>
   emp_simplex_listener<COEF_TYPE>::emp_simplex_listener(const simplex::simplex_listener_target_if<COEF_TYPE> & p_simplex
-                                                       ,const std::vector<simplex_variable*> & p_variables
-                                                       ,const std::vector<simplex_variable*> * const p_position_variables
+                                                       ,const emp_variable_generator & p_variable_generator
                                                        ,const emp_FSM_info & p_info
                                                        ,const std::string & p_initial_situation
                                                        ,emp_gui & p_gui
@@ -84,8 +82,7 @@ namespace edge_matching_puzzle
     : m_nb_iteration(0)
     , m_simplex(p_simplex)
     , m_ostream(p_ostream)
-    , m_variables(p_variables)
-    , m_position_variables(p_position_variables)
+    , m_variable_generator(p_variable_generator)
     , m_info(p_info)
     , m_initial_situation(p_initial_situation)
     , m_gui(p_gui)
@@ -106,9 +103,10 @@ namespace edge_matching_puzzle
   void emp_simplex_listener<COEF_TYPE>::new_input_var_event(const unsigned int & p_input_variable_index)
   {
       m_ostream << "Iteration[" << m_nb_iteration << "] : New input variable selected : " << p_input_variable_index;
-      if(p_input_variable_index < m_variables.size())
+      const std::vector<simplex_variable *> & l_variable_list = m_variable_generator.get_variables();
+      if(p_input_variable_index < l_variable_list.size())
       {
-          m_ostream << " => " << *m_variables[p_input_variable_index];
+          m_ostream << " => " << *l_variable_list[p_input_variable_index];
       }
       m_ostream << std::endl;
   }
@@ -119,9 +117,10 @@ namespace edge_matching_puzzle
   {
       //assert(p_output_variable_index < m_variables.size());
       m_ostream << "Iteration[" << m_nb_iteration << "] : New output variable selected : " << p_output_variable_index;
-      if(p_output_variable_index < m_variables.size())
+      const std::vector<simplex_variable *> & l_variable_list = m_variable_generator.get_variables();
+      if(p_output_variable_index < l_variable_list.size())
       {
-          m_ostream << " => " << *m_variables[p_output_variable_index];
+          m_ostream << " => " << *l_variable_list[p_output_variable_index];
       }
       m_ostream << std::endl;
   }
@@ -168,7 +167,7 @@ namespace edge_matching_puzzle
               unsigned int l_index = m_info.get_width() * l_y + l_x;
 
               // Iterator on simplex variables related to current position
-              for (auto l_iter:m_position_variables[l_index])
+              for (auto l_iter:m_variable_generator.get_position_variables(l_index))
               {
                   const simplex_variable & l_variable = *l_iter;
                   COEF_TYPE l_value = l_values[l_variable.get_id()];

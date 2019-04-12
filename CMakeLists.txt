@@ -55,6 +55,7 @@ set(MY_SOURCE_FILES
     include/precomputed_transition_info.h
     include/sequential_border_backtracker.h
     include/simplex_variable.h
+    include/emp_variable_generator.h
     src/border_backtracker.cpp
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp
@@ -67,7 +68,8 @@ set(MY_SOURCE_FILES
     src/feature_display_all.cpp
     src/feature_display_max.cpp
     src/feature_display_solutions.cpp
-    src/feature_dump_solutions.cpp)
+    src/feature_dump_solutions.cpp
+   )
 
 
 # List header directories in project
