@@ -30,10 +30,10 @@ namespace edge_matching_puzzle
                           const uint32_t & p_height,
                           const unsigned int & p_piece_id_size,
                           const unsigned int & p_dumped_piece_id_size);
-      inline const uint32_t & get_width(void)const;
-      inline const uint32_t & get_height(void)const;
-      inline const unsigned int & get_piece_id_size(void)const;
-      inline const unsigned int & get_dumped_piece_id_size(void)const;
+      inline const uint32_t & get_width()const;
+      inline const uint32_t & get_height()const;
+      inline const unsigned int & get_piece_id_size()const;
+      inline const unsigned int & get_dumped_piece_id_size()const;
     private:
       const uint32_t m_width;
       const uint32_t m_height;
@@ -54,25 +54,25 @@ namespace edge_matching_puzzle
     }
 
   //----------------------------------------------------------------------------
-  const uint32_t & emp_FSM_info::get_width(void)const
+  const uint32_t & emp_FSM_info::get_width()const
     {
       return m_width;
     }
   
   //----------------------------------------------------------------------------
-  const uint32_t & emp_FSM_info::get_height(void)const
+  const uint32_t & emp_FSM_info::get_height()const
     {
       return m_height;
     }
 
   //----------------------------------------------------------------------------
-  const unsigned int & emp_FSM_info::get_piece_id_size(void)const
+  const unsigned int & emp_FSM_info::get_piece_id_size()const
     {
       return m_piece_id_size;
     }
 
   //----------------------------------------------------------------------------
-  const unsigned int & emp_FSM_info::get_dumped_piece_id_size(void)const
+  const unsigned int & emp_FSM_info::get_dumped_piece_id_size()const
     {
       return m_dumped_piece_id_size;
     }
