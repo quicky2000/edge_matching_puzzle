@@ -19,6 +19,8 @@
 #ifndef EMP_FSM_INFO_H
 #define EMP_FSM_INFO_H
 
+#include <cinttypes>
+
 namespace edge_matching_puzzle
 {
   class emp_FSM_info
