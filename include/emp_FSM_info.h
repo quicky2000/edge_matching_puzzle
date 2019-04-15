@@ -23,59 +23,113 @@
 
 namespace edge_matching_puzzle
 {
-  class emp_FSM_info
+    /**
+     * Class storing generic information about puzzle
+     */
+    class emp_FSM_info
     {
-    public:
-      inline emp_FSM_info(const uint32_t & p_width,
-                          const uint32_t & p_height,
-                          const unsigned int & p_piece_id_size,
-                          const unsigned int & p_dumped_piece_id_size);
-      inline const uint32_t & get_width()const;
-      inline const uint32_t & get_height()const;
-      inline const unsigned int & get_piece_id_size()const;
-      inline const unsigned int & get_dumped_piece_id_size()const;
-    private:
-      const uint32_t m_width;
-      const uint32_t m_height;
-      const unsigned int m_piece_id_size;
-      const unsigned int m_dumped_piece_id_size;
+      public:
+        /**
+         * Constructor
+         * @param p_width Puzzle width
+         * @param p_height
+         * @param p_piece_id_size
+         * @param p_dumped_piece_id_size
+         */
+        inline
+        emp_FSM_info(const uint32_t & p_width
+                    ,const uint32_t & p_height
+                    ,const unsigned int & p_piece_id_size
+                    ,const unsigned int & p_dumped_piece_id_size
+                    );
+
+        /**
+         * Return puzzle width
+         * @return width
+         */
+        inline
+        const uint32_t & get_width() const;
+
+        /**
+         * Return puzzle height
+         * @return height
+         */
+        inline
+        const uint32_t & get_height() const;
+
+        /**
+         * Accessor to number of bits needed to code pieces ids from to 0 to nb pieces - 1
+         * @return number of bits needed to code pieces ids from to 0 to nb pieces - 1
+         */
+        inline
+        const unsigned int & get_piece_id_size() const;
+
+        /**
+         * Accessor to number of bits needed to code pieces ids from to 1 to nb pieces
+         * @return number of bits needed to code pieces ids from to 1 to nb pieces
+         */
+        inline
+        const unsigned int & get_dumped_piece_id_size() const;
+
+      private:
+
+        /**
+         * Puzzle width
+         */
+        const uint32_t m_width;
+
+        /**
+         * Puzzle heigth
+         */
+        const uint32_t m_height;
+
+        /**
+         * Number of bits needed to code pieces ids from o to nb pieces - 1
+         */
+        const unsigned int m_piece_id_size;
+
+        /**
+         * Number of bits needed to code pieces ids from 1 to nb  pieces
+         */
+        const unsigned int m_dumped_piece_id_size;
     };
 
   //----------------------------------------------------------------------------
-  emp_FSM_info::emp_FSM_info(const uint32_t & p_width,
-                             const uint32_t & p_height,
-                             const unsigned int & p_piece_id_size,
-                             const unsigned int & p_dumped_piece_id_size):
-    m_width(p_width),
-    m_height(p_height),
-    m_piece_id_size(p_piece_id_size),
-    m_dumped_piece_id_size(p_dumped_piece_id_size)
-    {
-    }
+  emp_FSM_info::emp_FSM_info(const uint32_t & p_width
+                            ,const uint32_t & p_height
+                            ,const unsigned int & p_piece_id_size
+                            ,const unsigned int & p_dumped_piece_id_size
+                            )
+  :m_width(p_width)
+  ,m_height(p_height)
+  ,m_piece_id_size(p_piece_id_size)
+  ,m_dumped_piece_id_size(p_dumped_piece_id_size)
+  {
+  }
 
   //----------------------------------------------------------------------------
-  const uint32_t & emp_FSM_info::get_width()const
-    {
+  const uint32_t & emp_FSM_info::get_width() const
+  {
       return m_width;
-    }
+  }
   
   //----------------------------------------------------------------------------
-  const uint32_t & emp_FSM_info::get_height()const
-    {
+  const uint32_t & emp_FSM_info::get_height() const
+  {
       return m_height;
-    }
+  }
 
   //----------------------------------------------------------------------------
-  const unsigned int & emp_FSM_info::get_piece_id_size()const
-    {
+  const unsigned int & emp_FSM_info::get_piece_id_size() const
+  {
       return m_piece_id_size;
-    }
+  }
 
   //----------------------------------------------------------------------------
-  const unsigned int & emp_FSM_info::get_dumped_piece_id_size()const
-    {
+  const unsigned int & emp_FSM_info::get_dumped_piece_id_size() const
+  {
       return m_dumped_piece_id_size;
-    }
+  }
 }
 #endif // EMP_FSM_INFO_H
 //EOF
