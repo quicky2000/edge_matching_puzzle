@@ -114,6 +114,7 @@ namespace edge_matching_puzzle
          * @param p_db Piece database
          * @param p_situation Initial situation
          */
+        inline
         void
         record_unavailable_pieces(const emp_piece_db & p_db
                                  ,const emp_FSM_situation & p_situation
@@ -124,6 +125,7 @@ namespace edge_matching_puzzle
          * initial situation constraints
          * @param p_db Piece database info
          */
+        inline
         void
         create_variables(const emp_piece_db & p_db
                         ,const emp_FSM_situation & p_situation
