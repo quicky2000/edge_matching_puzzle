@@ -19,6 +19,7 @@
 #ifndef EMP_FSM_INFO_H
 #define EMP_FSM_INFO_H
 
+#include "emp_types.h"
 #include <cinttypes>
 
 namespace edge_matching_puzzle
@@ -70,6 +71,29 @@ namespace edge_matching_puzzle
          */
         inline
         const unsigned int & get_dumped_piece_id_size() const;
+
+        /**
+         * Indicate if position defined by parameters is corner/border/center
+         * @param p_x column index
+         * @param p_y row index
+         * @return kind of position: corner/border/center
+         */
+        inline
+        emp_types::t_kind get_position_kind(const unsigned int & p_x
+                                           ,const unsigned int & p_y
+                                           ) const;
+
+        /**
+           Compute index related to position X,Y
+           @param X position
+           @param Y position
+           @return index related to position
+        */
+        inline
+        unsigned int get_position_index(const unsigned int & p_x
+                                       ,const unsigned int & p_y
+                                       ) const;
+
 
       private:
 
@@ -130,6 +154,42 @@ namespace edge_matching_puzzle
   {
       return m_dumped_piece_id_size;
   }
+
+  //-------------------------------------------------------------------------
+  emp_types::t_kind
+  emp_FSM_info::get_position_kind(const unsigned int & p_x
+                                 ,const unsigned int & p_y
+                                 ) const
+  {
+      assert(p_x < m_width);
+      assert(p_y < m_height);
+      emp_types::t_kind l_type = emp_types::t_kind::CENTER;
+      if(!p_x || !p_y || m_width - 1 == p_x || p_y == m_height - 1)
+      {
+          l_type = emp_types::t_kind::BORDER;
+          if((!p_x && !p_y) ||
+             (!p_x && p_y == m_height - 1) ||
+             (!p_y && p_x == m_width - 1) ||
+             (p_y == m_height - 1 && p_x == m_width - 1)
+            )
+          {
+              l_type = emp_types::t_kind::CORNER;
+          }
+      }
+      return l_type;
+  }
+
+  //-------------------------------------------------------------------------
+  unsigned int
+  emp_FSM_info::get_position_index(const unsigned int & p_x
+                                  ,const unsigned int & p_y
+                                  ) const
+  {
+      assert(p_x < m_width);
+      assert(p_y < m_height);
+      return m_width * p_y + p_x;
+  }
+
 }
 #endif // EMP_FSM_INFO_H
 //EOF

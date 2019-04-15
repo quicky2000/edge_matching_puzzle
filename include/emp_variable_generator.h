@@ -132,28 +132,6 @@ namespace edge_matching_puzzle
                         );
 
         /**
-         * Indicate if position defined by parameters is corner/border/center
-         * @param p_x column index
-         * @param p_y row index
-         * @return kind of position: corner/border/center
-         */
-        inline
-        emp_types::t_kind get_position_kind(const unsigned int & p_x
-                                           ,const unsigned int & p_y
-                                           ) const;
-
-        /**
-           Compute index related to position X,Y
-           @param X position
-           @param Y position
-           @return index related to position
-        */
-        inline
-        unsigned int get_position_index(const unsigned int & p_x
-                                       ,const unsigned int & p_y
-                                       ) const;
-
-        /**
          * Reference on database of pieces composing puzzle
          */
         const emp_piece_db & m_db;
@@ -354,7 +332,7 @@ namespace edge_matching_puzzle
                 ++l_x
                     )
             {
-                emp_types::t_kind l_type = get_position_kind(l_x,l_y);
+                emp_types::t_kind l_type = m_info.get_position_kind(l_x,l_y);
                 emp_types::bitfield l_possible_neighborhood(4 * p_db.get_nb_pieces(l_type), true);
 
                 const auto l_position_hint_iter = m_position_hint.find({l_x, l_y});
@@ -520,46 +498,11 @@ namespace edge_matching_puzzle
                         unsigned int l_piece_id = 1 + (l_truncated_piece >> 2);
                         simplex_variable * l_variable = new simplex_variable((unsigned int)m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
                         m_simplex_variables.push_back(l_variable);
-                        m_position_variables[get_position_index(l_x, l_y)].push_back(l_variable);
+                        m_position_variables[m_info.get_position_index(l_x, l_y)].push_back(l_variable);
                     }
                 }
             }
         }
-    }
-
-    //-------------------------------------------------------------------------
-    emp_types::t_kind
-    emp_variable_generator::get_position_kind(const unsigned int & p_x
-                                             ,const unsigned int & p_y
-                                             ) const
-    {
-        assert(p_x < m_info.get_width());
-        assert(p_y < m_info.get_height());
-        emp_types::t_kind l_type = emp_types::t_kind::CENTER;
-        if(!p_x || !p_y || m_info.get_width() - 1 == p_x || p_y == m_info.get_height() - 1)
-        {
-            l_type = emp_types::t_kind::BORDER;
-            if((!p_x && !p_y) ||
-               (!p_x && p_y == m_info.get_height() - 1) ||
-               (!p_y && p_x == m_info.get_width() - 1) ||
-               (p_y == m_info.get_height() - 1 && p_x == m_info.get_width() - 1)
-                    )
-            {
-                l_type = emp_types::t_kind::CORNER;
-            }
-        }
-        return l_type;
-    }
-
-    //-------------------------------------------------------------------------
-    unsigned int
-    emp_variable_generator::get_position_index(const unsigned int & p_x
-                                              ,const unsigned int & p_y
-                                              ) const
-    {
-        assert(p_x < m_info.get_width());
-        assert(p_y < m_info.get_height());
-        return m_info.get_width() * p_y + p_x;
     }
 
     //-------------------------------------------------------------------------
@@ -634,16 +577,16 @@ namespace edge_matching_puzzle
             {
                 if(l_x < m_info.get_width() - 1)
                 {
-                    treat_piece_relation_equation(m_position_variables[get_position_index(l_x, l_y)]
-                                                 ,m_position_variables[get_position_index(l_x + 1, l_y)]
+                    treat_piece_relation_equation(m_position_variables[m_info.get_position_index(l_x, l_y)]
+                                                 ,m_position_variables[m_info.get_position_index(l_x + 1, l_y)]
                                                  ,true
                                                  ,p_lambda
                                                  );
                 }
                 if(l_y < m_info.get_height() - 1)
                 {
-                    treat_piece_relation_equation(m_position_variables[get_position_index(l_x, l_y)]
-                                                 ,m_position_variables[get_position_index(l_x, l_y + 1)]
+                    treat_piece_relation_equation(m_position_variables[m_info.get_position_index(l_x, l_y)]
+                                                 ,m_position_variables[m_info.get_position_index(l_x, l_y + 1)]
                                                  ,false
                                                  ,p_lambda
                                                  );
