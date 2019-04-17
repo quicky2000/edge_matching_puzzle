@@ -63,6 +63,14 @@ namespace edge_matching_puzzle
         const std::vector<simplex_variable*> & get_position_variables(unsigned int p_index) const;
 
         /**
+         * Accessor to variables related to a piece id
+         * @param p_piece id, should be > 0
+         * @return reference on variable list
+         */
+        inline
+        const std::vector<simplex_variable*> & get_piece_variables(unsigned int p_piece_id) const;
+
+        /**
          * Perform operations related to relationship between 2 adjacent postions
          * @tparam T type used to define algorithm containing operations to perform
          * @param p_variables_pos1 simplex variables related to position 1
@@ -166,6 +174,12 @@ namespace edge_matching_puzzle
         std::vector<simplex_variable*> * m_position_variables;
 
         /**
+         * Store all simplex variables related to a piece id
+         * vector index = piece_id - 1 because piece id min value is 1
+         */
+        std::vector<std::vector<simplex_variable*>> m_piece_variables;
+
+        /**
          * Positions where a piece is placed at the beginning: hint
          */
         std::map<std::pair<unsigned int, unsigned int>, unsigned int> m_position_hint;
@@ -209,6 +223,7 @@ namespace edge_matching_puzzle
     , m_hints(std::move(p_hints))
     , m_initial_situation{m_hints}
     , m_position_variables(new std::vector<simplex_variable*>[p_info.get_width() * p_info.get_height()])
+    , m_piece_variables(p_info.get_width() * p_info.get_height())
     , m_available_corners(4 * p_db.get_nb_pieces(emp_types::t_kind::CORNER),true)
     , m_available_borders(4 * p_db.get_nb_pieces(emp_types::t_kind::BORDER),true)
     , m_available_centers(4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER),true)
@@ -499,6 +514,8 @@ namespace edge_matching_puzzle
                         simplex_variable * l_variable = new simplex_variable((unsigned int)m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
                         m_simplex_variables.push_back(l_variable);
                         m_position_variables[m_info.get_position_index(l_x, l_y)].push_back(l_variable);
+                        assert(l_piece_id <= m_info.get_width() * m_info.get_height());
+                        m_piece_variables[l_piece_id - 1].push_back(l_variable);
                     }
                 }
             }
@@ -593,6 +610,15 @@ namespace edge_matching_puzzle
                 }
             }
         }
+    }
+
+    //-------------------------------------------------------------------------
+    const std::vector<simplex_variable *> &
+    emp_variable_generator::get_piece_variables(unsigned int p_piece_id) const
+    {
+        assert(p_piece_id);
+        assert(p_piece_id <= m_piece_variables.size());
+        return m_piece_variables[p_piece_id - 1];
     }
 }
 #endif //EMP_VARIABLE_GENERATOR_H
