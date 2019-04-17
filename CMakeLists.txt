@@ -71,6 +71,8 @@ set(MY_SOURCE_FILES
     src/feature_dump_solutions.cpp
     include/feature_system_equation.h
     src/feature_system_equation.cpp
+    include/emp_se_step_info.h
+    src/emp_se_step_info.cpp
    )
 
 

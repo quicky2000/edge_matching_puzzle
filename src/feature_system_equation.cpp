@@ -15,7 +15,10 @@
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
+#include <feature_system_equation.h>
+
 #include "feature_system_equation.h"
+#include "emp_se_step_info.h"
 
 namespace edge_matching_puzzle
 {
@@ -27,6 +30,7 @@ namespace edge_matching_puzzle
                                                     )
     : m_variable_generator(p_db, p_info, p_initial_situation, m_situation)
     , m_gui(p_gui)
+    , m_info(p_info)
     {
         m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
 
@@ -85,17 +89,63 @@ namespace edge_matching_puzzle
     {
         m_gui.display(m_situation);
 
-        emp_types::bitfield l_availabe_variables(m_variable_generator.get_variables().size(), true);
-        unsigned int l_bit_index = 0;
-        while((l_bit_index = l_availabe_variables.ffs()))
+        std::vector<emp_se_step_info> l_stack;
+
+        // Determine for each position which piece match constraints
+        for(unsigned int l_y = 0;
+            l_y < m_info.get_height();
+            ++l_y
+                )
         {
-            --l_bit_index;
-            simplex_variable & l_variable = *m_variable_generator.get_variables()[l_bit_index];
-            l_availabe_variables.apply_and(l_availabe_variables, m_pieces_and_masks[l_bit_index]);
-            m_situation.set_piece(l_variable.get_x(), l_variable.get_y(), l_variable.get_oriented_piece());
-            m_gui.display(m_situation);
-            m_gui.refresh();
+            for (unsigned int l_x = 0;
+                 l_x < m_info.get_width();
+                 ++l_x
+                    )
+            {
+                l_stack.emplace_back(emp_se_step_info(m_info.get_position_kind(l_x, l_y), (unsigned int)m_variable_generator.get_variables().size()));
+            }
         }
+        l_stack.emplace_back(emp_se_step_info(emp_types::t_kind::UNDEFINED, (unsigned int)m_variable_generator.get_variables().size()));
+
+        unsigned int l_nb_pieces = m_info.get_height() * m_info.get_width();
+        unsigned int l_step = 0;
+        unsigned int l_counter = 0;
+        while(l_step < l_nb_pieces)
+        {
+            ++l_counter;
+            unsigned int l_variable_index;
+            if(l_stack[l_step].get_next_variable(l_variable_index))
+            {
+                l_stack[l_step + 1].select_variable(l_variable_index, l_stack[l_step], m_pieces_and_masks[l_variable_index]);
+                emp_FSM_situation l_situation = extract_situation(l_stack, l_step);
+                m_gui.display(l_situation);
+                m_gui.refresh();
+                ++l_step;
+            }
+            else
+            {
+                assert(l_step);
+                --l_step;
+            }
+        }
+        std::cout << "Solution found after " << l_counter << " iterations" << std::endl;
+    }
+
+    //-------------------------------------------------------------------------
+    emp_FSM_situation
+    feature_system_equation::extract_situation(const std::vector<emp_se_step_info> & p_stack,
+                                               unsigned int p_step
+                                              )
+    {
+        emp_FSM_situation l_result{m_situation};
+        assert(p_step < (unsigned int)p_stack.size());
+        for(unsigned int l_index = 0; l_index <= p_step; ++l_index)
+        {
+            unsigned int l_variable_index = p_stack[l_index].get_variable_index();
+            simplex_variable & l_variable = *m_variable_generator.get_variables()[l_variable_index];
+            l_result.set_piece(l_variable.get_x(), l_variable.get_y(), l_variable.get_oriented_piece());
+        }
+        return l_result;
     }
 
 }

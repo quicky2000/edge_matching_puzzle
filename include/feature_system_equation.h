@@ -25,11 +25,14 @@
 #include "emp_FSM_situation.h"
 #include "emp_variable_generator.h"
 #include "emp_types.h"
+#include "emp_se_step_info.h"
 #include <string>
 #include <vector>
 
 namespace edge_matching_puzzle
 {
+    class emp_se_step_info;
+
     class feature_system_equation: public feature_if
     {
       public:
@@ -47,6 +50,10 @@ namespace edge_matching_puzzle
         ~feature_system_equation() override = default;
 
       private:
+
+        emp_FSM_situation extract_situation(const std::vector<emp_se_step_info> & p_stack
+                                           ,unsigned int p_step
+                                           );
         /**
          * Contains current situation
          */
@@ -64,6 +71,11 @@ namespace edge_matching_puzzle
          * Graphical interface for situation display
          */
         emp_gui & m_gui;
+
+        /**
+         * Puzzle information
+         */
+        const emp_FSM_info & m_info;
     };
 }
 #endif // _EMP_SYSTEM_EQUATION_H_
