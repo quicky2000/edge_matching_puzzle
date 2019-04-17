@@ -35,7 +35,7 @@
 #include "feature_display_dump.h"
 #include "feature_display_dump.h"
 #include "feature_display_situation.h"
-
+#include "feature_system_equation.h"
 
 #include "emp_spiral_strategy_generator.h"
 #include "emp_text_strategy_generator.h"
@@ -153,6 +153,14 @@ int main(int argc,char ** argv)
                                            ,l_initial_situation.get_value<std::string>()
                                            ,l_gui
                                            );
+        }
+        else if("system_equation" == l_feature_name)
+        {
+            l_feature = new feature_system_equation(l_piece_db
+                                               ,l_info
+                                               ,l_initial_situation.get_value<std::string>()
+                                               ,l_gui
+                                               );
         }
         else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
         {

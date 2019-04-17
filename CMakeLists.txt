@@ -69,6 +69,8 @@ set(MY_SOURCE_FILES
     src/feature_display_max.cpp
     src/feature_display_solutions.cpp
     src/feature_dump_solutions.cpp
+    include/feature_system_equation.h
+    src/feature_system_equation.cpp
    )
 
 
