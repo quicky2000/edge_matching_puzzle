@@ -120,13 +120,15 @@ namespace edge_matching_puzzle
                 emp_FSM_situation l_situation = extract_situation(l_stack, l_step);
                 m_gui.display(l_situation);
                 m_gui.refresh();
-                ++l_step;
+                simplex_variable & l_variable = *m_variable_generator.get_variables()[l_variable_index];
+                if(l_step == l_variable.get_x() + m_info.get_width() * l_variable.get_y())
+                {
+                    ++l_step;
+                    continue;
+                }
             }
-            else
-            {
-                assert(l_step);
-                --l_step;
-            }
+            assert(l_step);
+            --l_step;
         }
         std::cout << "Solution found after " << l_counter << " iterations" << std::endl;
     }
