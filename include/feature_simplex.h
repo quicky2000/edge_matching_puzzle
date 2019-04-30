@@ -32,9 +32,9 @@
 #include "simplex_solver.h"
 #include "emp_simplex_listener.h"
 #include "emp_gui.h"
+#include "simplex_solver_glpk.h"
 #include <string>
 #include <vector>
-#include <simplex_solver_glpk.h>
 #include <map>
 
 namespace edge_matching_puzzle
