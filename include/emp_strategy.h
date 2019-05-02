@@ -53,16 +53,16 @@ namespace edge_matching_puzzle
                         const emp_FSM_info & p_FSM_info,
 			const std::string & p_file_name);
 
-    inline void run(void);
+    inline void run();
 
 
-    inline ~emp_strategy(void);
+    inline ~emp_strategy();
     inline void set_initial_state(const std::string & p_situation);
 
     // Methods used by webserver when activated
-    inline void pause(void);
-    inline void restart(void);
-    inline bool is_paused(void)const;
+    inline void pause();
+    inline void restart();
+    inline bool is_paused()const;
     inline void send_info(uint64_t & p_nb_situations,
                           uint64_t & p_nb_sokutions,
                           unsigned int & p_shift,
@@ -324,7 +324,7 @@ namespace edge_matching_puzzle
   }
 
   //--------------------------------------------------------------------------
-  emp_strategy::~emp_strategy(void)
+  emp_strategy::~emp_strategy()
     {
 #ifdef SAVE_THREAD
       m_stop_save_thread = true;
@@ -369,7 +369,7 @@ namespace edge_matching_puzzle
 
 
   //--------------------------------------------------------------------------
-  void emp_strategy::run(void)
+  void emp_strategy::run()
   {
 #ifdef WEBSERVER
     m_web_server->start();
@@ -534,19 +534,19 @@ namespace edge_matching_puzzle
   }
 
   //--------------------------------------------------------------------------
-  void emp_strategy::pause(void)
+  void emp_strategy::pause()
     {
       m_pause_requested = true;
     }
 
   //--------------------------------------------------------------------------
-  void emp_strategy::restart(void)
+  void emp_strategy::restart()
     {
       m_pause_requested = false;
     }
 
   //--------------------------------------------------------------------------
-  bool emp_strategy::is_paused(void)const
+  bool emp_strategy::is_paused()const
   {
     return m_paused;
   }
