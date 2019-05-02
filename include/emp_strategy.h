@@ -53,10 +53,10 @@ namespace edge_matching_puzzle
                         const emp_FSM_info & p_FSM_info,
 			const std::string & p_file_name);
 
-    inline void run();
+    inline void run() override;
 
 
-    inline ~emp_strategy();
+    inline ~emp_strategy() override;
     inline void set_initial_state(const std::string & p_situation);
 
     // Methods used by webserver when activated
