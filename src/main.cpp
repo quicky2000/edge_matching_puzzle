@@ -37,8 +37,7 @@
 #include "feature_display_situation.h"
 #include "feature_system_equation.h"
 
-#include "emp_spiral_strategy_generator.h"
-#include "emp_text_strategy_generator.h"
+#include "emp_strategy_generator_factory.h"
 #include "emp_strategy.h"
 
 #include "quicky_exception.h"
@@ -168,11 +167,11 @@ int main(int argc,char ** argv)
             emp_strategy_generator * l_generator = nullptr;
             if("new_strategy" == l_feature_name)
             {
-                l_generator = new emp_spiral_strategy_generator(l_info.get_width(), l_info.get_height());
+                l_generator = emp_strategy_generator_factory::create("spiral", l_info);
             }
             else if("new_text_strategy" == l_feature_name)
             {
-                l_generator = new emp_text_strategy_generator(l_info.get_width(), l_info.get_height(), "strategy.txt");
+                l_generator = emp_strategy_generator_factory::create("strategy.txt", l_info);
             }
             else
             {

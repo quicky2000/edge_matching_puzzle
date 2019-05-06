@@ -73,6 +73,8 @@ set(MY_SOURCE_FILES
     src/feature_system_equation.cpp
     include/emp_se_step_info.h
     src/emp_se_step_info.cpp
+    include/emp_strategy_generator_factory.h
+    src/emp_strategy_generator_factory.cpp
    )
 
 
