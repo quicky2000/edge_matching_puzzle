@@ -30,6 +30,7 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <memory>
 
 //#define WEBSERVER
 //#define SAVE_THREAD
@@ -46,7 +47,7 @@ namespace edge_matching_puzzle
       public:
 
         inline
-        emp_strategy(const emp_strategy_generator & p_generator
+        emp_strategy(std::unique_ptr<emp_strategy_generator> & p_generator
                     ,const emp_piece_db & p_piece_db
                     ,emp_gui & p_gui
                     ,const emp_FSM_info & p_FSM_info
@@ -166,7 +167,7 @@ namespace edge_matching_puzzle
         emp_gui &m_gui;
 #endif // GUI
 
-        const emp_strategy_generator & m_generator;
+        std::unique_ptr<emp_strategy_generator> m_generator;
 
         emp_situation_binary_dumper m_dumper;
 
@@ -206,15 +207,15 @@ namespace edge_matching_puzzle
     };
 
     //----------------------------------------------------------------------------
-    emp_strategy::emp_strategy(const emp_strategy_generator & p_generator
+    emp_strategy::emp_strategy(std::unique_ptr<emp_strategy_generator> & p_generator
                               ,const emp_piece_db & p_piece_db
                               ,emp_gui & p_gui
                               ,const emp_FSM_info & p_FSM_info
                               ,const std::string & p_file_name
                               )
     : m_piece_db(p_piece_db)
-    , m_size(p_generator.get_width() * p_generator.get_height())
-    //m_size(2 * (p_generator.get_width() + p_generator.get_height() - 2 )),
+    , m_size(p_generator->get_width() * p_generator->get_height())
+    //m_size(2 * (p_generator->get_width() + p_generator->get_height() - 2 )),
     // We allocate a supplementaty emp_position_strategy that will contains
     // no information. it will be used by corners and borders pieces as 
     // neighbour for orientations that are outside
@@ -227,8 +228,8 @@ namespace edge_matching_puzzle
 #ifdef GUI
     , m_gui(p_gui)
 #endif // GUI
-    , m_generator(p_generator)
-    , m_dumper(p_file_name,p_FSM_info,&m_generator,true)
+    , m_generator(std::move(p_generator))
+    , m_dumper(p_file_name,p_FSM_info,m_generator.get(),true)
     , m_solution_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2))
     , m_nb_situation_explored(0)
     , m_nb_solutions(0)
@@ -262,12 +263,12 @@ namespace edge_matching_puzzle
 
         for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
         {
-            std::pair<unsigned int,unsigned int> l_current_position = p_generator.get_position(l_index);
+            std::pair<unsigned int,unsigned int> l_current_position = p_generator->get_position(l_index);
 
             // Compute kind of current position
             emp_types::t_kind l_kind = emp_types::t_kind::CENTER;
-            bool l_x_border = l_current_position.first == 0 || l_current_position.first == p_generator.get_width() - 1;
-            bool l_y_border = l_current_position.second == 0 || l_current_position.second == p_generator.get_height() - 1;
+            bool l_x_border = l_current_position.first == 0 || l_current_position.first == p_generator->get_width() - 1;
+            bool l_y_border = l_current_position.second == 0 || l_current_position.second == p_generator->get_height() - 1;
             if(l_x_border || l_y_border)
             {
                 if(!l_x_border || !l_y_border)
@@ -289,7 +290,7 @@ namespace edge_matching_puzzle
             //Compute neighbour access info
             if(l_current_position.second > 0)
             {
-                emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator.get_position_index(l_current_position.first,l_current_position.second - 1)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::SOUTH)));
+                emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator->get_position_index(l_current_position.first,l_current_position.second - 1)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::SOUTH)));
                 m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::NORTH,l_access_info);
             }
             else
@@ -299,7 +300,7 @@ namespace edge_matching_puzzle
             }
             if(l_current_position.first > 0)
             {
-                emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator.get_position_index(l_current_position.first - 1,l_current_position.second)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::EAST)));
+                emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator->get_position_index(l_current_position.first - 1,l_current_position.second)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::EAST)));
                 m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::WEST,l_access_info);
             }
             else
@@ -307,9 +308,9 @@ namespace edge_matching_puzzle
               emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[m_size]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::EAST)));
               m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::WEST,l_access_info);
             }
-            if(l_current_position.second < p_generator.get_height() - 1)
+            if(l_current_position.second < p_generator->get_height() - 1)
             {
-              emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator.get_position_index(l_current_position.first,l_current_position.second + 1)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::NORTH)));
+              emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator->get_position_index(l_current_position.first,l_current_position.second + 1)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::NORTH)));
               m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::SOUTH,l_access_info);
             }
             else
@@ -317,9 +318,9 @@ namespace edge_matching_puzzle
               emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[m_size]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::NORTH)));
               m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::SOUTH,l_access_info);
             }
-            if(l_current_position.first  < p_generator.get_width() - 1)
+            if(l_current_position.first  < p_generator->get_width() - 1)
             {
-              emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator.get_position_index(l_current_position.first + 1,l_current_position.second)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::WEST)));
+              emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator->get_position_index(l_current_position.first + 1,l_current_position.second)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::WEST)));
               m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::EAST,l_access_info);
             }
             else
@@ -380,7 +381,6 @@ namespace edge_matching_puzzle
             m_positions_strategy[l_index].~emp_position_strategy();
         }
         operator delete[] ((void*)m_positions_strategy);
-        delete &m_generator;
     }
 
     //--------------------------------------------------------------------------
@@ -388,7 +388,7 @@ namespace edge_matching_puzzle
     {
         for(unsigned int l_index = 0 ; l_index <= p_index ; ++l_index)
         {
-            const std::pair<unsigned int,unsigned int> & l_position = m_generator.get_position(l_index);
+            const std::pair<unsigned int,unsigned int> & l_position = m_generator->get_position(l_index);
             emp_types::t_binary_piece l_binary = (m_positions_strategy[l_index].get_piece_info() >> (4 * m_piece_db.get_color_id_size()));
             emp_types::t_oriented_piece l_oriented_piece(1 + (l_binary >> 2),((emp_types::t_orientation)(l_binary & 0x3)));
             p_situation.set_piece(l_position.first,l_position.second,l_oriented_piece);
@@ -535,7 +535,7 @@ namespace edge_matching_puzzle
         bool l_continu = true;
         while(l_continu && l_index < m_size)
         {
-            const std::pair<unsigned int,unsigned int> & l_position = m_generator.get_position(l_index);
+            const std::pair<unsigned int,unsigned int> & l_position = m_generator->get_position(l_index);
             l_continu = l_initial_situation.contains_piece(l_position.first,l_position.second);
 
             if(l_continu)
@@ -603,7 +603,7 @@ namespace edge_matching_puzzle
         p_shift = 4 * m_piece_db.get_color_id_size();
         for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
         {
-            const std::pair<unsigned int,unsigned int> & l_position = m_generator.get_position(l_index);
+            const std::pair<unsigned int,unsigned int> & l_position = m_generator->get_position(l_index);
             p_pieces[p_FSM_info.get_width() * l_position.second + l_position.first] = m_positions_strategy[l_index].get_piece_info();
         }
     }
