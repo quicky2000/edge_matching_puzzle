@@ -52,8 +52,6 @@
 #include <map>
 
 using namespace edge_matching_puzzle;
-using namespace parameter_manager;
-
 
 //------------------------------------------------------------------------------
 int main(int argc,char ** argv)
@@ -62,15 +60,15 @@ int main(int argc,char ** argv)
     {
         // Defining application command line parameters
         parameter_manager::parameter_manager l_param_manager("edge_matching_puzzle.exe", "--", 3);
-        parameter_if l_definition_file("definition", false);
+        parameter_manager::parameter_if l_definition_file("definition", false);
         l_param_manager.add(l_definition_file);
-        parameter_if l_ressources_path("ressources", false);
+        parameter_manager::parameter_if l_ressources_path("ressources", false);
         l_param_manager.add(l_ressources_path);
-        parameter_if l_feature_name_parameter("feature_name", false);
+        parameter_manager::parameter_if l_feature_name_parameter("feature_name", false);
         l_param_manager.add(l_feature_name_parameter);
-        parameter_if l_dump_file("dump_file",true);
+        parameter_manager::parameter_if l_dump_file("dump_file",true);
         l_param_manager.add(l_dump_file);
-        parameter_if l_initial_situation("initial_situation", true);
+        parameter_manager::parameter_if l_initial_situation("initial_situation", true);
         l_param_manager.add(l_initial_situation);
 
         // Treating parameters
