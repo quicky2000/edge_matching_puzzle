@@ -44,8 +44,6 @@ namespace edge_matching_puzzle
     class emp_strategy: public feature_if
     {
       public:
-        // Type representing color constraint
-        typedef emp_types::t_binary_piece t_constraint;
 
         inline
         emp_strategy(const emp_strategy_generator & p_generator
