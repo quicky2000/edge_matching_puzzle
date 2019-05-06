@@ -74,7 +74,7 @@ namespace edge_matching_puzzle
 
         inline
         void send_info(uint64_t & p_nb_situations
-                      ,uint64_t & p_nb_sokutions
+                      ,uint64_t & p_nb_solutions
                       ,unsigned int & p_shift
                       ,emp_types::t_binary_piece * p_pieces
                       ,const emp_FSM_info & p_FSM_info
