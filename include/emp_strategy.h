@@ -195,7 +195,9 @@ namespace edge_matching_puzzle
 
          unsigned int m_start_index;
 
+#if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
          const emp_FSM_info & m_FSM_info;
+#endif // defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
 
 #ifdef SAVE_THREAD
         std::atomic<bool> m_stop_save_thread;
@@ -236,7 +238,9 @@ namespace edge_matching_puzzle
     , m_pause_requested(false)
     , m_paused(false)
     , m_start_index(0)
+#if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
     , m_FSM_info(p_FSM_info)
+#endif // defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
 #ifdef SAVE_THREAD
     , m_stop_save_thread(false)
     , m_save_thread(nullptr)
