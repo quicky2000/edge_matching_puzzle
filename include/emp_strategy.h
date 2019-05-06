@@ -242,7 +242,7 @@ namespace edge_matching_puzzle
     , m_save_thread(nullptr)
 #endif // SAVE_THREAD
     {
-        uint32_t l_color_mask = (1 << p_piece_db.get_color_id_size()) - 1;
+        uint32_t l_color_mask = (1u << p_piece_db.get_color_id_size()) - 1;
         std::cout << "Color id mask = 0x" << std::hex << l_color_mask << std::dec << std::endl ;
 
         new(&(m_positions_strategy[m_size]))emp_position_strategy(emp_types::t_kind::CENTER,m_empty_bitfield);
