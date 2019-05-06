@@ -159,7 +159,12 @@ namespace edge_matching_puzzle
         **/
         emp_types::bitfield m_corners;
 
+#ifdef GUI
+        /**
+         * Graphical interface
+         */
         emp_gui &m_gui;
+#endif // GUI
 
         const emp_strategy_generator & m_generator;
 
@@ -217,7 +222,9 @@ namespace edge_matching_puzzle
     , m_centers(4 * p_piece_db.get_nb_pieces(emp_types::t_kind::CENTER),true)
     , m_borders(4 * p_piece_db.get_nb_pieces(emp_types::t_kind::BORDER),true)
     , m_corners(4 * p_piece_db.get_nb_pieces(emp_types::t_kind::CORNER),true)
+#ifdef GUI
     , m_gui(p_gui)
+#endif // GUI
     , m_generator(p_generator)
     , m_dumper(p_file_name,p_FSM_info,&m_generator,true)
     , m_solution_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2))
