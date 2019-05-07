@@ -29,7 +29,7 @@ namespace edge_matching_puzzle
                                                     )
     : m_strategy_generator(std::move(p_strategy_generator))
     , m_variable_generator(p_db
-                          ,*m_strategy_generator.get()
+                          ,*m_strategy_generator
                           ,p_info
                           ,p_initial_situation
                           ,m_situation
@@ -102,7 +102,7 @@ namespace edge_matching_puzzle
         {
             unsigned int l_x;
             unsigned int l_y;
-            std::tie(l_x, l_y) = m_strategy_generator.get()->get_position(l_index);
+            std::tie(l_x, l_y) = m_strategy_generator->get_position(l_index);
             l_stack.emplace_back(emp_se_step_info(m_info.get_position_kind(l_x, l_y), (unsigned int)m_variable_generator.get_variables().size()));
         }
         l_stack.emplace_back(emp_se_step_info(emp_types::t_kind::UNDEFINED, (unsigned int)m_variable_generator.get_variables().size()));
@@ -122,7 +122,7 @@ namespace edge_matching_puzzle
                 simplex_variable & l_variable = *m_variable_generator.get_variables()[l_variable_index];
                 unsigned int l_step_x;
                 unsigned int l_step_y;
-                std::tie(l_step_x, l_step_y) = m_strategy_generator.get()->get_position(l_step);
+                std::tie(l_step_x, l_step_y) = m_strategy_generator->get_position(l_step);
                 if(l_step_x == l_variable.get_x() && l_step_y == l_variable.get_y())
                 {
                     ++l_step;
