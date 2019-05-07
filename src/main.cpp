@@ -101,9 +101,28 @@ int main(int argc,char ** argv)
         emp_FSM_info l_info(l_width, l_height, l_piece_db.get_piece_id_size(), l_piece_db.get_dumped_piece_id_size());
 
         emp_FSM_situation::init(l_info);
+        std::string l_feature_name = l_feature_name_parameter.get_value<std::string>();
+
+        // Generate strategy if needed
+        std::unique_ptr<emp_strategy_generator> l_strategy_generator = nullptr;
+        if("new_strategy" == l_feature_name)
+        {
+            l_strategy_generator.reset(emp_strategy_generator_factory::create("spiral", l_info));
+        }
+        else if("new_text_strategy" == l_feature_name)
+        {
+            l_strategy_generator.reset(emp_strategy_generator_factory::create("strategy.txt", l_info));
+        }
+        else
+        {
+            throw quicky_exception::quicky_logic_exception("Should not occur", __LINE__, __FILE__);
+        }
+        if(l_strategy_generator)
+        {
+            l_strategy_generator->generate();
+        }
 
         feature_if * l_feature = nullptr;
-        std::string l_feature_name = l_feature_name_parameter.get_value<std::string>();
         if("display_all" == l_feature_name)
         {
             l_feature = new feature_display_all(l_piece_db, l_info, l_gui);
@@ -161,21 +180,7 @@ int main(int argc,char ** argv)
         }
         else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
         {
-            std::unique_ptr<emp_strategy_generator> l_generator = nullptr;
-            if("new_strategy" == l_feature_name)
-            {
-                l_generator.reset(emp_strategy_generator_factory::create("spiral", l_info));
-            }
-            else if("new_text_strategy" == l_feature_name)
-            {
-                l_generator.reset(emp_strategy_generator_factory::create("strategy.txt", l_info));
-            }
-            else
-            {
-                throw quicky_exception::quicky_logic_exception("Should not occur", __LINE__, __FILE__);
-            }
-            l_generator->generate();
-            auto * l_strategy = new emp_strategy(l_generator, l_piece_db, l_gui, l_info, l_dump_file_name);
+            auto * l_strategy = new emp_strategy(l_strategy_generator, l_piece_db, l_gui, l_info, l_dump_file_name);
             if(l_initial_situation.value_set())
             {
                 l_strategy->set_initial_state(l_initial_situation.get_value<std::string>());
