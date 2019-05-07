@@ -70,6 +70,8 @@ int main(int argc,char ** argv)
         l_param_manager.add(l_dump_file);
         parameter_manager::parameter_if l_initial_situation("initial_situation", true);
         l_param_manager.add(l_initial_situation);
+        parameter_manager::parameter_if l_strategy_param("strategy", true);
+        l_param_manager.add(l_strategy_param);
 
         // Treating parameters
         l_param_manager.treat_parameters(argc,argv);
@@ -105,7 +107,11 @@ int main(int argc,char ** argv)
 
         // Generate strategy if needed
         std::unique_ptr<emp_strategy_generator> l_strategy_generator = nullptr;
-        if("new_strategy" == l_feature_name)
+        if(l_strategy_param.value_set())
+        {
+            l_strategy_generator.reset(emp_strategy_generator_factory::create(l_strategy_param.get_value<std::string>(), l_info));
+        }
+        else if("new_strategy" == l_feature_name)
         {
             l_strategy_generator.reset(emp_strategy_generator_factory::create("spiral", l_info));
         }
