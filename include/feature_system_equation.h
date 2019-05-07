@@ -28,15 +28,18 @@
 #include "emp_se_step_info.h"
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace edge_matching_puzzle
 {
     class emp_se_step_info;
+    class emp_strategy_generator;
 
     class feature_system_equation: public feature_if
     {
       public:
         feature_system_equation(const emp_piece_db & p_db
+                               ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
                                ,const emp_FSM_info & p_info
                                ,const std::string & p_initial_situation
                                ,emp_gui & p_gui
@@ -54,6 +57,12 @@ namespace edge_matching_puzzle
         emp_FSM_situation extract_situation(const std::vector<emp_se_step_info> & p_stack
                                            ,unsigned int p_step
                                            );
+
+        /**
+         * Strategy generator that will determine order of positions
+         */
+        const std::unique_ptr<emp_strategy_generator> m_strategy_generator;
+
         /**
          * Contains current situation
          */

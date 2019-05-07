@@ -32,6 +32,7 @@
 #include "simplex_solver.h"
 #include "emp_simplex_listener.h"
 #include "emp_gui.h"
+#include "emp_strategy_generator.h"
 #include "simplex_solver_glpk.h"
 #include <string>
 #include <vector>
@@ -43,6 +44,7 @@ namespace edge_matching_puzzle
   {
   public:
     inline feature_simplex(const emp_piece_db & p_db
+                          ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
                           ,const emp_FSM_info & p_info
                           ,const std::string & p_initial_situation
                           ,emp_gui & p_gui
@@ -78,6 +80,7 @@ namespace edge_matching_puzzle
  
   //----------------------------------------------------------------------------
   feature_simplex::feature_simplex(const emp_piece_db & p_db
+                                  ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
                                   ,const emp_FSM_info & p_info
                                   ,const std::string & p_initial_situation
 				                  ,emp_gui & p_gui
@@ -91,7 +94,12 @@ namespace edge_matching_puzzle
       // Initialise situation with initial situation string
       m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
 
-      m_variable_generator = new emp_variable_generator(p_db, p_info, p_initial_situation, m_situation);
+      m_variable_generator = new emp_variable_generator(p_db
+                                                       ,*p_strategy_generator.get()
+                                                       ,p_info
+                                                       ,p_initial_situation
+                                                       ,m_situation
+                                                       );
 
       m_initial_situation = m_variable_generator->get_initial_situation_str();
 

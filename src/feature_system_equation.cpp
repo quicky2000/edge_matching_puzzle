@@ -22,11 +22,18 @@ namespace edge_matching_puzzle
 {
     //-------------------------------------------------------------------------
     feature_system_equation::feature_system_equation(const emp_piece_db & p_db
+                                                    ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
                                                     ,const emp_FSM_info & p_info
                                                     ,const std::string & p_initial_situation
                                                     ,emp_gui & p_gui
                                                     )
-    : m_variable_generator(p_db, p_info, p_initial_situation, m_situation)
+    : m_strategy_generator(std::move(p_strategy_generator))
+    , m_variable_generator(p_db
+                          ,*m_strategy_generator.get()
+                          ,p_info
+                          ,p_initial_situation
+                          ,m_situation
+                          )
     , m_gui(p_gui)
     , m_info(p_info)
     {
@@ -90,24 +97,18 @@ namespace edge_matching_puzzle
         std::vector<emp_se_step_info> l_stack;
 
         // Determine for each position which piece match constraints
-        for(unsigned int l_y = 0;
-            l_y < m_info.get_height();
-            ++l_y
-                )
+        unsigned int l_nb_pieces = m_info.get_height() * m_info.get_width();
+        for(unsigned int l_index = 0; l_index < l_nb_pieces; ++l_index)
         {
-            for (unsigned int l_x = 0;
-                 l_x < m_info.get_width();
-                 ++l_x
-                    )
-            {
-                l_stack.emplace_back(emp_se_step_info(m_info.get_position_kind(l_x, l_y), (unsigned int)m_variable_generator.get_variables().size()));
-            }
+            unsigned int l_x;
+            unsigned int l_y;
+            std::tie(l_x, l_y) = m_strategy_generator.get()->get_position(l_index);
+            l_stack.emplace_back(emp_se_step_info(m_info.get_position_kind(l_x, l_y), (unsigned int)m_variable_generator.get_variables().size()));
         }
         l_stack.emplace_back(emp_se_step_info(emp_types::t_kind::UNDEFINED, (unsigned int)m_variable_generator.get_variables().size()));
 
-        unsigned int l_nb_pieces = m_info.get_height() * m_info.get_width();
         unsigned int l_step = 0;
-        unsigned int l_counter = 0;
+        uint64_t l_counter = 0;
         while(l_step < l_nb_pieces)
         {
             ++l_counter;
@@ -119,7 +120,10 @@ namespace edge_matching_puzzle
                 m_gui.display(l_situation);
                 m_gui.refresh();
                 simplex_variable & l_variable = *m_variable_generator.get_variables()[l_variable_index];
-                if(l_step == l_variable.get_x() + m_info.get_width() * l_variable.get_y())
+                unsigned int l_step_x;
+                unsigned int l_step_y;
+                std::tie(l_step_x, l_step_y) = m_strategy_generator.get()->get_position(l_step);
+                if(l_step_x == l_variable.get_x() && l_step_y == l_variable.get_y())
                 {
                     ++l_step;
                     continue;

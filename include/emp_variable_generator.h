@@ -24,6 +24,7 @@
 #include "simplex_variable.h"
 #include "emp_FSM_situation.h"
 #include "emp_types.h"
+#include "emp_strategy_generator.h"
 #include <vector>
 #include <string>
 #include <map>
@@ -35,6 +36,7 @@ namespace edge_matching_puzzle
       public:
         inline
         emp_variable_generator(const emp_piece_db & p_db
+                              ,const emp_strategy_generator & p_strategy_generator
                               ,const emp_FSM_info & p_info
                               ,std::string p_hints
                               ,emp_FSM_situation & p_situation
@@ -132,10 +134,13 @@ namespace edge_matching_puzzle
          * Create all system equations variables by taking in account hints and
          * initial situation constraints
          * @param p_db Piece database info
+         * @param p_strategy_generator give position order
+         * @param p_situation give initail constraints
          */
         inline
         void
         create_variables(const emp_piece_db & p_db
+                        ,const emp_strategy_generator & p_strategy_generator
                         ,const emp_FSM_situation & p_situation
                         );
 
@@ -214,6 +219,7 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     emp_variable_generator::emp_variable_generator(const edge_matching_puzzle::emp_piece_db & p_db
+                                                  ,const emp_strategy_generator & p_strategy_generator
                                                   ,const emp_FSM_info & p_info
                                                   ,std::string p_hints
                                                   ,emp_FSM_situation & p_situation
@@ -244,7 +250,7 @@ namespace edge_matching_puzzle
         record_unavailable_pieces(p_db, p_situation);
 
         // Create problem variables
-        create_variables(p_db, p_situation);
+        create_variables(p_db, p_strategy_generator, p_situation);
 
     }
 
@@ -328,6 +334,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     void
     emp_variable_generator::create_variables(const emp_piece_db & p_db
+                                            ,const emp_strategy_generator & p_strategy_generator
                                             ,const emp_FSM_situation & p_situation
                                             )
     {
@@ -336,188 +343,189 @@ namespace edge_matching_puzzle
         emp_types::bitfield l_matching_centers(4 * p_db.get_nb_pieces(emp_types::t_kind::CENTER));
         emp_types::bitfield * const l_matching_pieces[3] = {&l_matching_centers,&l_matching_borders,&l_matching_corners};
 
+        unsigned int l_nb_pieces = m_info.get_width() * m_info.get_height();
+
         // Determine for each position which piece match constraints
-        for(unsigned int l_y = 0;
-            l_y < m_info.get_height();
-            ++l_y
-                )
+        for(unsigned int l_index = 0;
+            l_index < l_nb_pieces;
+            ++l_index
+           )
         {
-            for(unsigned int l_x = 0;
-                l_x < m_info.get_width();
-                ++l_x
-                    )
+            unsigned int l_x;
+            unsigned int l_y;
+            std::tie(l_x, l_y) = p_strategy_generator.get_position(l_index);
+
+            emp_types::t_kind l_type = m_info.get_position_kind(l_x,l_y);
+            emp_types::bitfield l_possible_neighborhood(4 * p_db.get_nb_pieces(l_type), true);
+
+            const auto l_position_hint_iter = m_position_hint.find({l_x, l_y});
+            if(m_position_hint.end() != l_position_hint_iter)
             {
-                emp_types::t_kind l_type = m_info.get_position_kind(l_x,l_y);
-                emp_types::bitfield l_possible_neighborhood(4 * p_db.get_nb_pieces(l_type), true);
-
-                const auto l_position_hint_iter = m_position_hint.find({l_x, l_y});
-                if(m_position_hint.end() != l_position_hint_iter)
+                for(auto l_orientation = (unsigned int)emp_types::orientation::NORTH;
+                    l_orientation <= (unsigned int)emp_types::orientation::WEST;
+                    ++l_orientation
+                   )
                 {
-                    for(auto l_orientation = (unsigned int)emp_types::orientation::NORTH;
-                        l_orientation <= (unsigned int)emp_types::orientation::WEST;
-                        ++l_orientation
-                            )
+                    simplex_variable *l_variable = new simplex_variable((unsigned int) m_simplex_variables.size()
+                                                                       ,l_x
+                                                                       ,l_y
+                                                                       ,l_position_hint_iter->second
+                                                                       ,(emp_types::orientation) l_orientation
+                                                                       );
+                    m_simplex_variables.push_back(l_variable);
+                }
+            }
+            else if(!p_situation.contains_piece(l_x,l_y))
+            {
+                // Compute surrounding constraints
+
+                // Compute EAST constraint
+                emp_types::t_binary_piece l_east_constraint = 0x0;
+                if(l_x < m_info.get_width() - 1)
+                {
+                    if(p_situation.contains_piece(l_x + 1,l_y))
                     {
-                        simplex_variable *l_variable = new simplex_variable((unsigned int) m_simplex_variables.size()
-                                ,l_x
-                                ,l_y
-                                ,l_position_hint_iter->second
-                                ,(emp_types::orientation) l_orientation
-                                                                           );
-                        m_simplex_variables.push_back(l_variable);
+                        const emp_types::t_oriented_piece l_oriented_piece = p_situation.get_piece(l_x + 1 ,l_y);
+                        const emp_piece & l_east_piece = p_db.get_piece(l_oriented_piece.first);
+                        l_east_constraint = l_east_piece.get_color(emp_types::t_orientation::WEST,l_oriented_piece.second);
+                    }
+                    else
+                    {
+                        const auto l_neighbor_hint_iter = m_position_hint.find({l_x + 1, l_y});
+                        if(m_position_hint.end() != l_neighbor_hint_iter)
+                        {
+                            l_possible_neighborhood.apply_and(l_possible_neighborhood
+                                                             ,m_db.compute_possible_neighborhood(l_type
+                                                                                                ,l_neighbor_hint_iter->second
+                                                                                                ,emp_types::t_orientation::EAST
+                                                                                                )
+                                                             );
+                        }
                     }
                 }
-                else if(!p_situation.contains_piece(l_x,l_y))
+                else
                 {
-                    // Compute surrounding constraints
+                    l_east_constraint = p_db.get_border_color_id();
+                }
+                emp_types::t_binary_piece l_constraint = l_east_constraint;
 
-                    // Compute EAST constraint
-                    emp_types::t_binary_piece l_east_constraint = 0x0;
-                    if(l_x < m_info.get_width() - 1)
+                // Compute NORTH constraint
+                emp_types::t_binary_piece l_north_constraint = 0x0;
+                if(l_y)
+                {
+                    if(p_situation.contains_piece(l_x,l_y - 1))
                     {
-                        if(p_situation.contains_piece(l_x + 1,l_y))
-                        {
-                            const emp_types::t_oriented_piece l_oriented_piece = p_situation.get_piece(l_x + 1 ,l_y);
-                            const emp_piece & l_east_piece = p_db.get_piece(l_oriented_piece.first);
-                            l_east_constraint = l_east_piece.get_color(emp_types::t_orientation::WEST,l_oriented_piece.second);
-                        }
-                        else
-                        {
-                            const auto l_neighbor_hint_iter = m_position_hint.find({l_x + 1, l_y});
-                            if(m_position_hint.end() != l_neighbor_hint_iter)
-                            {
-                                l_possible_neighborhood.apply_and(l_possible_neighborhood
-                                        ,m_db.compute_possible_neighborhood(l_type
-                                                ,l_neighbor_hint_iter->second
-                                                ,emp_types::t_orientation::EAST
-                                                                           )
-                                                                 );
-                            }
-                        }
+                        const emp_types::t_oriented_piece l_oriented_piece = p_situation.get_piece(l_x,l_y - 1);
+                        const emp_piece & l_north_piece = p_db.get_piece(l_oriented_piece.first);
+                        l_north_constraint = l_north_piece.get_color(emp_types::t_orientation::SOUTH,l_oriented_piece.second);
                     }
                     else
                     {
-                        l_east_constraint = p_db.get_border_color_id();
-                    }
-                    emp_types::t_binary_piece l_constraint = l_east_constraint;
-
-                    // Compute NORTH constraint
-                    emp_types::t_binary_piece l_north_constraint = 0x0;
-                    if(l_y)
-                    {
-                        if(p_situation.contains_piece(l_x,l_y - 1))
+                        const auto l_neighbor_hint_iter = m_position_hint.find({l_x, l_y - 1});
+                        if(m_position_hint.end() != l_neighbor_hint_iter)
                         {
-                            const emp_types::t_oriented_piece l_oriented_piece = p_situation.get_piece(l_x,l_y - 1);
-                            const emp_piece & l_north_piece = p_db.get_piece(l_oriented_piece.first);
-                            l_north_constraint = l_north_piece.get_color(emp_types::t_orientation::SOUTH,l_oriented_piece.second);
+                            l_possible_neighborhood.apply_and(l_possible_neighborhood
+                                                             ,m_db.compute_possible_neighborhood(l_type
+                                                                                                ,l_neighbor_hint_iter->second
+                                                                                                ,emp_types::t_orientation::NORTH
+                                                                                                )
+                                                             );
                         }
-                        else
-                        {
-                            const auto l_neighbor_hint_iter = m_position_hint.find({l_x, l_y - 1});
-                            if(m_position_hint.end() != l_neighbor_hint_iter)
-                            {
-                                l_possible_neighborhood.apply_and(l_possible_neighborhood
-                                        ,m_db.compute_possible_neighborhood(l_type
-                                                ,l_neighbor_hint_iter->second
-                                                ,emp_types::t_orientation::NORTH
-                                                                           )
-                                                                 );
-                            }
-                        }
-                    }
-                    else
-                    {
-                        l_north_constraint = p_db.get_border_color_id();
-                    }
-                    l_constraint = (l_constraint << p_db.get_color_id_size()) | l_north_constraint;
-
-                    // Compute WEST constraint
-                    emp_types::t_binary_piece l_west_constraint = 0x0;
-                    if(l_x > 0)
-                    {
-                        if(p_situation.contains_piece(l_x - 1,l_y))
-                        {
-                            const emp_types::t_oriented_piece l_oriented_piece = p_situation.get_piece(l_x - 1,l_y);
-                            const emp_piece & l_west_piece = p_db.get_piece(l_oriented_piece.first);
-                            l_west_constraint = l_west_piece.get_color(emp_types::t_orientation::EAST,l_oriented_piece.second);
-                        }
-                        else
-                        {
-                            const auto l_neighbor_hint_iter = m_position_hint.find({l_x - 1, l_y});
-                            if(m_position_hint.end() != l_neighbor_hint_iter)
-                            {
-                                l_possible_neighborhood.apply_and(l_possible_neighborhood
-                                        ,m_db.compute_possible_neighborhood(l_type
-                                                ,l_neighbor_hint_iter->second
-                                                , emp_types::t_orientation::WEST
-                                                                           )
-                                                                 );
-                            }
-                        }
-                    }
-                    else
-                    {
-                        l_west_constraint = p_db.get_border_color_id();
-                    }
-                    l_constraint = (l_constraint << p_db.get_color_id_size()) | l_west_constraint;
-
-                    // Compute SOUTH constraint
-                    emp_types::t_binary_piece l_south_constraint = 0x0;
-                    if(l_y < m_info.get_height() - 1)
-                    {
-                        if(p_situation.contains_piece(l_x,l_y + 1))
-                        {
-                            const emp_types::t_oriented_piece l_oriented_piece = p_situation.get_piece(l_x, l_y + 1);
-                            const emp_piece & l_south_piece = p_db.get_piece(l_oriented_piece.first);
-                            l_south_constraint = l_south_piece.get_color(emp_types::t_orientation::NORTH,l_oriented_piece.second);
-                        }
-                        else
-                        {
-                            const auto l_neighbor_hint_iter = m_position_hint.find({l_x, l_y + 1});
-                            if(m_position_hint.end() != l_neighbor_hint_iter)
-                            {
-                                l_possible_neighborhood.apply_and(l_possible_neighborhood
-                                        ,m_db.compute_possible_neighborhood(l_type
-                                                ,l_neighbor_hint_iter->second
-                                                ,emp_types::t_orientation::SOUTH
-                                                                           )
-                                                                 );
-                            }
-                        }
-
-                    }
-                    else
-                    {
-                        l_south_constraint = p_db.get_border_color_id();
-                    }
-                    l_constraint = (l_constraint << p_db.get_color_id_size()) | l_south_constraint;
-
-                    // Compute pieces matching to constraint
-                    l_matching_pieces[(unsigned int)l_type]->apply_and(p_db.get_pieces(l_constraint),*m_available_pieces[(unsigned int)l_type]);
-
-                    // Filter with possible neigborhood related to hints
-                    l_matching_pieces[(unsigned int)l_type]->apply_and(*l_matching_pieces[(unsigned int)l_type], l_possible_neighborhood);
-
-                    // Iterating on matching pieces
-                    emp_types::bitfield l_loop_pieces(*l_matching_pieces[(unsigned int)l_type]);
-                    int l_ffs = 0;
-                    while((l_ffs = l_loop_pieces.ffs()) != 0)
-                    {
-                        // We decrement because 0 mean no piece in other cases this
-                        // is the index of oriented piece in piece list by kind
-                        unsigned int l_piece_kind_id = (unsigned int)l_ffs - 1;
-                        l_loop_pieces.set(0,1,l_piece_kind_id);
-                        const emp_types::t_binary_piece l_piece = p_db.get_piece(l_type,l_piece_kind_id);
-                        unsigned int l_truncated_piece = l_piece >> (4 * p_db.get_color_id_size());
-                        auto l_orientation = (emp_types::t_orientation)(l_truncated_piece & 0x3);
-                        unsigned int l_piece_id = 1 + (l_truncated_piece >> 2);
-                        simplex_variable * l_variable = new simplex_variable((unsigned int)m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
-                        m_simplex_variables.push_back(l_variable);
-                        m_position_variables[m_info.get_position_index(l_x, l_y)].push_back(l_variable);
-                        assert(l_piece_id <= m_info.get_width() * m_info.get_height());
-                        m_piece_variables[l_piece_id - 1].push_back(l_variable);
                     }
                 }
+                else
+                {
+                    l_north_constraint = p_db.get_border_color_id();
+                }
+                l_constraint = (l_constraint << p_db.get_color_id_size()) | l_north_constraint;
+
+                // Compute WEST constraint
+                emp_types::t_binary_piece l_west_constraint = 0x0;
+                if(l_x > 0)
+                {
+                    if(p_situation.contains_piece(l_x - 1,l_y))
+                    {
+                        const emp_types::t_oriented_piece l_oriented_piece = p_situation.get_piece(l_x - 1,l_y);
+                        const emp_piece & l_west_piece = p_db.get_piece(l_oriented_piece.first);
+                        l_west_constraint = l_west_piece.get_color(emp_types::t_orientation::EAST,l_oriented_piece.second);
+                    }
+                    else
+                    {
+                        const auto l_neighbor_hint_iter = m_position_hint.find({l_x - 1, l_y});
+                        if(m_position_hint.end() != l_neighbor_hint_iter)
+                        {
+                            l_possible_neighborhood.apply_and(l_possible_neighborhood
+                                                             ,m_db.compute_possible_neighborhood(l_type
+                                                                                                ,l_neighbor_hint_iter->second
+                                                                                                , emp_types::t_orientation::WEST
+                                                                                                )
+                                                             );
+                        }
+                    }
+                }
+                else
+                {
+                    l_west_constraint = p_db.get_border_color_id();
+                }
+                l_constraint = (l_constraint << p_db.get_color_id_size()) | l_west_constraint;
+
+                // Compute SOUTH constraint
+                emp_types::t_binary_piece l_south_constraint = 0x0;
+                if(l_y < m_info.get_height() - 1)
+                {
+                    if(p_situation.contains_piece(l_x,l_y + 1))
+                    {
+                        const emp_types::t_oriented_piece l_oriented_piece = p_situation.get_piece(l_x, l_y + 1);
+                        const emp_piece & l_south_piece = p_db.get_piece(l_oriented_piece.first);
+                        l_south_constraint = l_south_piece.get_color(emp_types::t_orientation::NORTH,l_oriented_piece.second);
+                    }
+                    else
+                    {
+                        const auto l_neighbor_hint_iter = m_position_hint.find({l_x, l_y + 1});
+                        if(m_position_hint.end() != l_neighbor_hint_iter)
+                        {
+                            l_possible_neighborhood.apply_and(l_possible_neighborhood
+                                                             ,m_db.compute_possible_neighborhood(l_type
+                                                                                                ,l_neighbor_hint_iter->second
+                                                                                                ,emp_types::t_orientation::SOUTH
+                                                                                                )
+                                                             );
+                        }
+                    }
+
+                }
+                else
+                {
+                    l_south_constraint = p_db.get_border_color_id();
+                }
+                l_constraint = (l_constraint << p_db.get_color_id_size()) | l_south_constraint;
+
+
+                // Compute pieces matching to constraint
+                l_matching_pieces[(unsigned int)l_type]->apply_and(p_db.get_pieces(l_constraint),*m_available_pieces[(unsigned int)l_type]);
+
+                // Filter with possible neigborhood related to hints
+                l_matching_pieces[(unsigned int)l_type]->apply_and(*l_matching_pieces[(unsigned int)l_type], l_possible_neighborhood);
+            }
+
+            // Iterating on matching pieces
+            emp_types::bitfield l_loop_pieces(*l_matching_pieces[(unsigned int)l_type]);
+            int l_ffs = 0;
+            while((l_ffs = l_loop_pieces.ffs()) != 0)
+            {
+                // We decrement because 0 mean no piece in other cases this
+                // is the index of oriented piece in piece list by kind
+                unsigned int l_piece_kind_id = (unsigned int)l_ffs - 1;
+                l_loop_pieces.set(0,1,l_piece_kind_id);
+                const emp_types::t_binary_piece l_piece = p_db.get_piece(l_type,l_piece_kind_id);
+                unsigned int l_truncated_piece = l_piece >> (4 * p_db.get_color_id_size());
+                auto l_orientation = (emp_types::t_orientation)(l_truncated_piece & 0x3);
+                unsigned int l_piece_id = 1 + (l_truncated_piece >> 2);
+                simplex_variable * l_variable = new simplex_variable((unsigned int)m_simplex_variables.size(), l_x, l_y, l_piece_id, l_orientation);
+                m_simplex_variables.push_back(l_variable);
+                m_position_variables[m_info.get_position_index(l_x, l_y)].push_back(l_variable);
+                assert(l_piece_id <= m_info.get_width() * m_info.get_height());
+                m_piece_variables[l_piece_id - 1].push_back(l_variable);
             }
         }
     }

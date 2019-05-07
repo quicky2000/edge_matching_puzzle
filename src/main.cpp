@@ -113,6 +113,10 @@ int main(int argc,char ** argv)
         {
             l_strategy_generator.reset(emp_strategy_generator_factory::create("strategy.txt", l_info));
         }
+        else if("system_equation" == l_feature_name || "simplex" == l_feature_name)
+        {
+            l_strategy_generator.reset(emp_strategy_generator_factory::create("basic", l_info));
+        }
         else
         {
             throw quicky_exception::quicky_logic_exception("Should not occur", __LINE__, __FILE__);
@@ -165,6 +169,7 @@ int main(int argc,char ** argv)
         else if("simplex" == l_feature_name)
         {
             l_feature = new feature_simplex(l_piece_db
+                                           ,l_strategy_generator
                                            ,l_info
                                            ,l_initial_situation.get_value<std::string>()
                                            ,l_gui
@@ -173,10 +178,11 @@ int main(int argc,char ** argv)
         else if("system_equation" == l_feature_name)
         {
             l_feature = new feature_system_equation(l_piece_db
-                                               ,l_info
-                                               ,l_initial_situation.get_value<std::string>()
-                                               ,l_gui
-                                               );
+                                                   ,l_strategy_generator
+                                                   ,l_info
+                                                   ,l_initial_situation.get_value<std::string>()
+                                                   ,l_gui
+                                                   );
         }
         else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
         {
