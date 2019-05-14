@@ -86,6 +86,17 @@ namespace edge_matching_puzzle
 
         // Mask variables due to incompatible borders
         m_variable_generator.treat_piece_relations(l_lamda);
+
+        // Prepare masks that will be used to check if a position is still usable
+        m_positions_check_mask.resize(m_info.get_width() * m_info.get_height(), emp_types::bitfield(l_nb_variables));
+        for(auto l_iter: m_variable_generator.get_variables())
+        {
+            // Position index is index in strategy generator sequence !
+            unsigned int l_position_index = m_strategy_generator->get_position_index(l_iter->get_x(), l_iter->get_y());
+            unsigned int l_id = l_iter->get_id();
+            assert(l_position_index < m_positions_check_mask.size());
+            m_positions_check_mask[l_position_index].set(1, 1, l_id);
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -125,9 +136,40 @@ namespace edge_matching_puzzle
                 std::tie(l_step_x, l_step_y) = m_strategy_generator->get_position(l_step);
                 if(l_step_x == l_variable.get_x() && l_step_y == l_variable.get_y())
                 {
+#if 0
+
                     ++l_step;
                     continue;
+#endif // 0
+                    // Check if there are no lock positions
+                    bool l_continue = true;
+                    for(unsigned int l_tested_index = l_step + 1; l_continue && l_tested_index < l_nb_pieces; ++l_tested_index)
+                    {
+                        l_continue = l_stack[l_step + 1].check_mask(m_positions_check_mask[l_tested_index]);
+                    }
+
+                    if(l_continue)
+                    {
+                        ++l_step;
+                    }
+#ifdef DEBUG_POSITION_CHECK
+                    else
+                    {
+                        unsigned int l_fail_step_x;
+                        unsigned int l_fail_step_y;
+                        std::tie(l_fail_step_x, l_fail_step_y) = m_strategy_generator->get_position(l_step + 1);
+                        std::cout << "No more possible pieces for position[" << l_fail_step_x << ", " << l_fail_step_y << "] @step " << l_step << std::endl;
+                    }
+#endif // DEBUG_POSITION_CHECK
+                    continue;
                 }
+#ifdef DEBUG_POSITION_CHECK
+                else
+                {
+                    std::cout << "Skipping position[" << l_step_x << ", " << l_step_y << "] @step " << l_step << "  and count " << l_counter << std::endl;
+                }
+#endif // DEBUG_POSITION_CHECK
+
             }
             assert(l_step);
             --l_step;

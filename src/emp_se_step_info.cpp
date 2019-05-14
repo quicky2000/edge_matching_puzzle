@@ -18,6 +18,7 @@
 #include <emp_se_step_info.h>
 
 #include "emp_se_step_info.h"
+#include "emp_FSM_info.h"
 
 namespace edge_matching_puzzle
 {
@@ -59,6 +60,13 @@ namespace edge_matching_puzzle
     emp_se_step_info::get_variable_index() const
     {
         return m_variable_index;
+    }
+
+    //-------------------------------------------------------------------------
+    bool
+    emp_se_step_info::check_mask(const emp_types::bitfield & p_mask)
+    {
+        return m_available_variables.and_not_null(p_mask);
     }
 }
 // EOF

@@ -77,6 +77,11 @@ namespace edge_matching_puzzle
         std::vector<emp_types::bitfield> m_pieces_and_masks;
 
         /**
+         * Masks used to check if a position can still be used
+         */
+        std::vector<emp_types::bitfield> m_positions_check_mask;
+
+        /**
          * Graphical interface for situation display
          */
         emp_gui & m_gui;

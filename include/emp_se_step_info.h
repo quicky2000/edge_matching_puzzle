@@ -44,6 +44,14 @@ namespace edge_matching_puzzle
 
          unsigned int get_variable_index() const;
 
+         /**
+          * Method checking if applying a mask on variable bitfield result on
+          * a bitfield with only 0 bits
+          * @param p_mask mask to apply
+          * @return false if result has only 0 bits
+          */
+         bool check_mask(const emp_types::bitfield & p_mask);
+
       private:
 
         /**
