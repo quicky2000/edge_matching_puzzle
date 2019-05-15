@@ -52,6 +52,10 @@ namespace edge_matching_puzzle
           */
          bool check_mask(const emp_types::bitfield & p_mask);
 
+        void set_check_piece_index(unsigned int p_check_piece_index);
+
+        unsigned int get_check_piece_index() const;
+
       private:
 
         /**
@@ -68,6 +72,11 @@ namespace edge_matching_puzzle
          * Variable associated to this step
          */
         unsigned int m_variable_index;
+
+        /**
+         * Check piece index
+         */
+        unsigned int m_check_piece_index;
     };
 }
 #endif // _EMP_SE_STEP_INFO_H_

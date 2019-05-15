@@ -97,6 +97,17 @@ namespace edge_matching_puzzle
             assert(l_position_index < m_positions_check_mask.size());
             m_positions_check_mask[l_position_index].set(1, 1, l_id);
         }
+
+        // Prepare masks that will be used to check if a piece is still usable
+        m_pieces_check_mask.resize(m_info.get_width() * m_info.get_height(), std::make_pair(true, emp_types::bitfield(l_nb_variables)));
+        for(auto l_iter: m_variable_generator.get_variables())
+        {
+            // Position index is index in strategy generator sequence !
+            unsigned int l_index = l_iter->get_piece_id() - 1;
+            unsigned int l_id = l_iter->get_id();
+            assert(l_index < m_pieces_check_mask.size());
+            m_pieces_check_mask[l_index].second.set(1, 1, l_id);
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -150,7 +161,38 @@ namespace edge_matching_puzzle
 
                     if(l_continue)
                     {
-                        ++l_step;
+                        // Indicate that this piece should not be more checked
+                        unsigned int l_check_piece_index = l_variable.get_piece_id() - 1;
+                        //std::cout << "Selected : " << l_check_piece_index << " @step " << l_step << std::endl;
+                        assert(l_check_piece_index < m_pieces_check_mask.size());
+                        assert(m_pieces_check_mask[l_check_piece_index].first);
+                        m_pieces_check_mask[l_check_piece_index].first = false;
+
+                        // Check pieces
+                        l_continue = true;
+                        unsigned int l_tested_index = 0;
+                        for(; l_continue && l_tested_index < l_nb_pieces; ++l_tested_index)
+                        {
+                            if(m_pieces_check_mask[l_tested_index].first)
+                            {
+                                l_continue = l_stack[l_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second);
+                            }
+                        }
+                        if(l_continue)
+                        {
+                            // Store piece check index associated with this step
+                            // to be able to make pieces checkable again in case of rollback
+                            l_stack[l_step].set_check_piece_index(l_check_piece_index);
+                            ++l_step;
+                        }
+                        else
+                        {
+                            m_pieces_check_mask[l_check_piece_index].first = true;
+#ifdef DEBUG_PIECE_CHECK
+                            std::cout << "No more possible positions for piece " << l_tested_index + 1 << " after step " << l_step << std::endl;
+#endif // DEBUG_PIECE_CHECK
+                        }
+
                     }
 #ifdef DEBUG_POSITION_CHECK
                     else
@@ -173,6 +215,11 @@ namespace edge_matching_puzzle
             }
             assert(l_step);
             --l_step;
+            // Make piece that was used at this step checkable again
+            unsigned int l_piece_check_index = l_stack[l_step].get_check_piece_index();
+            assert(l_piece_check_index < m_pieces_check_mask.size());
+            assert(!m_pieces_check_mask[l_piece_check_index].first);
+            m_pieces_check_mask[l_piece_check_index].first = true;
         }
         std::cout << "Solution found after " << l_counter << " iterations" << std::endl;
     }

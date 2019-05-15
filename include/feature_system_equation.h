@@ -86,6 +86,14 @@ namespace edge_matching_puzzle
         std::vector<emp_types::bitfield> m_positions_check_mask;
 
         /**
+         * Masks used to check if a piece can still be used
+         * Boolean indicate if make is usable or not:
+         * true : mask can be used, piece still not used
+         * false: mask cannot be used, piece is used
+         */
+        std::vector<std::pair<bool,emp_types::bitfield> > m_pieces_check_mask;
+
+        /**
          * Graphical interface for situation display
          */
         emp_gui & m_gui;

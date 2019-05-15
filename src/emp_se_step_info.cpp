@@ -29,6 +29,7 @@ namespace edge_matching_puzzle
     :m_position_kind(p_kind)
     ,m_available_variables(p_nb_variables, true)
     ,m_variable_index{0}
+    ,m_check_piece_index{0}
     {
 
     }
@@ -68,5 +69,20 @@ namespace edge_matching_puzzle
     {
         return m_available_variables.and_not_null(p_mask);
     }
+
+    //-------------------------------------------------------------------------
+    void
+    emp_se_step_info::set_check_piece_index(unsigned int p_check_piece_index)
+    {
+        m_check_piece_index = p_check_piece_index;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    emp_se_step_info::get_check_piece_index() const
+    {
+        return m_check_piece_index;
+    }
+
 }
 // EOF
