@@ -31,26 +31,26 @@ namespace edge_matching_puzzle
         /**
          * Constructor
          */
-         emp_se_step_info(emp_types::t_kind p_kind
-                         ,unsigned int p_nb_variables
-                         );
+        emp_se_step_info(emp_types::t_kind p_kind
+                        ,unsigned int p_nb_variables
+                        );
 
-         void select_variable(unsigned int p_variable_index
-                             ,emp_se_step_info & p_previous_step
-                             ,const emp_types::bitfield & p_mask
-                             );
+        void select_variable(unsigned int p_variable_index
+                            ,emp_se_step_info & p_previous_step
+                            ,const emp_types::bitfield & p_mask
+                            );
 
-         bool get_next_variable(unsigned int & p_variable_index) const;
+        bool get_next_variable(unsigned int & p_variable_index) const;
 
-         unsigned int get_variable_index() const;
+        unsigned int get_variable_index() const;
 
-         /**
-          * Method checking if applying a mask on variable bitfield result on
-          * a bitfield with only 0 bits
-          * @param p_mask mask to apply
-          * @return false if result has only 0 bits
-          */
-         bool check_mask(const emp_types::bitfield & p_mask);
+        /**
+         * Method checking if applying a mask on variable bitfield result on
+         * a bitfield with only 0 bits
+         * @param p_mask mask to apply
+         * @return false if result has only 0 bits
+         */
+        bool check_mask(const emp_types::bitfield & p_mask);
 
         void set_check_piece_index(unsigned int p_check_piece_index);
 
