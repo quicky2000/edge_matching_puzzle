@@ -194,5 +194,21 @@ namespace edge_matching_puzzle
         return l_result;
     }
 
+#ifdef DEBUG
+    //-------------------------------------------------------------------------
+    void
+    feature_system_equation::print_bitfield(const emp_types::bitfield & p_bitfield)
+    {
+        for(unsigned int l_index = 0; l_index < p_bitfield.bitsize(); ++l_index)
+        {
+            assert(l_index < m_variable_generator.get_variables().size());
+            const simplex_variable & l_variable = *m_variable_generator.get_variables()[l_index];
+            unsigned int l_value;
+            p_bitfield.get(l_value, 1, l_index);
+            std::cout << "Bit[" << l_index << "] = " << l_value << " => " << l_variable << std::endl;
+        }
+    }
+#endif // 0
+
 }
 // EOF

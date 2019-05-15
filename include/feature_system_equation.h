@@ -58,6 +58,10 @@ namespace edge_matching_puzzle
                                            ,unsigned int p_step
                                            );
 
+#ifdef DEBUG
+        void print_bitfield(const emp_types::bitfield & p_bitfield);
+#endif // DEBUG
+
         /**
          * Strategy generator that will determine order of positions
          */
