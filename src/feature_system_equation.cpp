@@ -131,6 +131,7 @@ namespace edge_matching_puzzle
 
         unsigned int l_step = 0;
         uint64_t l_counter = 0;
+        unsigned int l_max_step = 0;
         while(l_step < l_nb_pieces)
         {
             ++l_counter;
@@ -138,9 +139,14 @@ namespace edge_matching_puzzle
             if(l_stack[l_step].get_next_variable(l_variable_index))
             {
                 l_stack[l_step + 1].select_variable(l_variable_index, l_stack[l_step], m_pieces_and_masks[l_variable_index]);
-                emp_FSM_situation l_situation = extract_situation(l_stack, l_step);
-                m_gui.display(l_situation);
-                m_gui.refresh();
+
+                if(l_step > l_max_step)
+                {
+                    l_max_step = l_step;
+                    emp_FSM_situation l_situation = extract_situation(l_stack, l_step);
+                    m_gui.display(l_situation);
+                    m_gui.refresh();
+                }
                 simplex_variable & l_variable = *m_variable_generator.get_variables()[l_variable_index];
                 unsigned int l_step_x;
                 unsigned int l_step_y;
