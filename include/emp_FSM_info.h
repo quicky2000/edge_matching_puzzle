@@ -94,6 +94,19 @@ namespace edge_matching_puzzle
                                        ,const unsigned int & p_y
                                        ) const;
 
+        /**
+         * Return number of border positions
+         * @return number of border positions
+         */
+        inline
+        unsigned int get_nb_borders() const;
+
+        /**
+         * Return number of center positions
+         * @return number of center positions
+         */
+        inline
+        unsigned int get_nb_centers() const;
 
       private:
 
@@ -188,6 +201,20 @@ namespace edge_matching_puzzle
       assert(p_x < m_width);
       assert(p_y < m_height);
       return m_width * p_y + p_x;
+  }
+
+  //-------------------------------------------------------------------------
+  unsigned int
+  emp_FSM_info::get_nb_borders() const
+  {
+      return 2 * ((m_width - 2) + (m_height - 2));
+  }
+
+  //-------------------------------------------------------------------------
+  unsigned int
+  emp_FSM_info::get_nb_centers() const
+  {
+      return (m_width - 2) * (m_height - 2);
   }
 
 }
