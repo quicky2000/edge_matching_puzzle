@@ -33,6 +33,8 @@ namespace edge_matching_puzzle
          */
         emp_se_step_info(emp_types::t_kind p_kind
                         ,unsigned int p_nb_variables
+                        ,unsigned int p_x
+                        ,unsigned int p_y
                         );
 
         void select_variable(unsigned int p_variable_index
@@ -56,6 +58,10 @@ namespace edge_matching_puzzle
 
         unsigned int get_check_piece_index() const;
 
+        unsigned int get_x() const;
+
+        unsigned int get_y() const;
+
       private:
 
         /**
@@ -77,6 +83,16 @@ namespace edge_matching_puzzle
          * Check piece index
          */
         unsigned int m_check_piece_index;
+
+        /**
+         * X position
+         */
+        unsigned int m_x;
+
+        /**
+         * X position
+         */
+        unsigned int m_y;
     };
 }
 #endif // _EMP_SE_STEP_INFO_H_

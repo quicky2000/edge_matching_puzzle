@@ -25,11 +25,15 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     emp_se_step_info::emp_se_step_info(emp_types::t_kind p_kind
                                       ,unsigned int p_nb_variables
+                                      ,unsigned int p_x
+                                      ,unsigned int p_y
                                       )
     :m_position_kind(p_kind)
     ,m_available_variables(p_nb_variables, true)
     ,m_variable_index{0}
     ,m_check_piece_index{0}
+    ,m_x{p_x}
+    ,m_y{p_y}
     {
 
     }
@@ -82,6 +86,20 @@ namespace edge_matching_puzzle
     emp_se_step_info::get_check_piece_index() const
     {
         return m_check_piece_index;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    emp_se_step_info::get_x() const
+    {
+        return m_x;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    emp_se_step_info::get_y() const
+    {
+        return m_y;
     }
 
 }

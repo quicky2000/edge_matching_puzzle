@@ -125,9 +125,14 @@ namespace edge_matching_puzzle
             unsigned int l_x;
             unsigned int l_y;
             std::tie(l_x, l_y) = m_strategy_generator->get_position(l_index);
-            l_stack.emplace_back(emp_se_step_info(m_info.get_position_kind(l_x, l_y), (unsigned int)m_variable_generator.get_variables().size()));
+            l_stack.emplace_back(emp_se_step_info(m_info.get_position_kind(l_x, l_y), (unsigned int)m_variable_generator.get_variables().size(), l_x, l_y));
         }
-        l_stack.emplace_back(emp_se_step_info(emp_types::t_kind::UNDEFINED, (unsigned int)m_variable_generator.get_variables().size()));
+        l_stack.emplace_back(emp_se_step_info(emp_types::t_kind::UNDEFINED
+                                             ,(unsigned int)m_variable_generator.get_variables().size()
+                                             ,std::numeric_limits<unsigned int>::max()
+                                             ,std::numeric_limits<unsigned int>::max()
+                                             )
+                            );
 
         unsigned int l_step = 0;
         uint64_t l_counter = 0;
@@ -148,10 +153,7 @@ namespace edge_matching_puzzle
                     m_gui.refresh();
                 }
                 simplex_variable & l_variable = *m_variable_generator.get_variables()[l_variable_index];
-                unsigned int l_step_x;
-                unsigned int l_step_y;
-                std::tie(l_step_x, l_step_y) = m_strategy_generator->get_position(l_step);
-                if(l_step_x == l_variable.get_x() && l_step_y == l_variable.get_y())
+                if(l_stack[l_step].get_x() == l_variable.get_x() && l_stack[l_step].get_y() == l_variable.get_y())
                 {
 #if 0
 
@@ -214,7 +216,7 @@ namespace edge_matching_puzzle
 #ifdef DEBUG_POSITION_CHECK
                 else
                 {
-                    std::cout << "Skipping position[" << l_step_x << ", " << l_step_y << "] @step " << l_step << "  and count " << l_counter << std::endl;
+                    std::cout << "Skipping position[" << l_stack[l_step].get_x() << ", " << l_stack[l_step].get_y() << "] @step " << l_step << "  and count " << l_counter << std::endl;
                 }
 #endif // DEBUG_POSITION_CHECK
 
