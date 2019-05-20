@@ -187,6 +187,7 @@ int main(int argc,char ** argv)
                                                    ,l_strategy_generator
                                                    ,l_info
                                                    ,l_initial_situation.get_value<std::string>()
+                                                   ,""
                                                    ,l_gui
                                                    );
         }

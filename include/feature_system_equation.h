@@ -42,6 +42,7 @@ namespace edge_matching_puzzle
                                ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
                                ,const emp_FSM_info & p_info
                                ,const std::string & p_initial_situation
+                               ,const std::string & p_hint_string
                                ,emp_gui & p_gui
                                );
 
@@ -63,14 +64,27 @@ namespace edge_matching_puzzle
 #endif // DEBUG
 
         /**
+         * Indicate that piece corresponding to this variable should no more
+         * be checked to detect if it cannot be used
+         * @param p_variable variable indicating piece and its location
+         * @return index in piece check list
+         */
+        unsigned int mark_checked(const simplex_variable & p_variable);
+
+        /**
          * Strategy generator that will determine order of positions
          */
         const std::unique_ptr<emp_strategy_generator> m_strategy_generator;
 
         /**
-         * Contains current situation
+         * Contains initial situation
          */
-        emp_FSM_situation m_situation;
+        emp_FSM_situation m_initial_situation;
+
+        /**
+         * Contains hint situation
+         */
+        emp_FSM_situation m_hint_situation;
 
         /**
          * Generate variables of equation system representing the puzzle

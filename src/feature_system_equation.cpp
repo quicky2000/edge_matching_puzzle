@@ -25,19 +25,29 @@ namespace edge_matching_puzzle
                                                     ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
                                                     ,const emp_FSM_info & p_info
                                                     ,const std::string & p_initial_situation
+                                                    ,const std::string & p_hint_string
                                                     ,emp_gui & p_gui
                                                     )
     : m_strategy_generator(std::move(p_strategy_generator))
     , m_variable_generator(p_db
                           ,*m_strategy_generator
                           ,p_info
-                          ,p_initial_situation
-                          ,m_situation
+                          ,p_hint_string
+                          ,m_hint_situation
                           )
     , m_gui(p_gui)
     , m_info(p_info)
     {
-        m_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
+        m_initial_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
+        m_hint_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
+
+        // Normally hint just done indication about piece position but not orientation
+        assert(m_hint_situation.to_string() == m_initial_situation.to_string());
+
+        if(!p_initial_situation.empty())
+        {
+            m_initial_situation.set(p_initial_situation);
+        }
 
         auto l_nb_variables = (unsigned int)m_variable_generator.get_variables().size();
 
@@ -114,11 +124,11 @@ namespace edge_matching_puzzle
     void
     feature_system_equation::run()
     {
-        m_gui.display(m_situation);
+        m_gui.display(m_initial_situation);
 
         std::vector<emp_se_step_info> l_stack;
 
-        // Determine for each position which piece match constraints
+        // Prepare stack
         unsigned int l_nb_pieces = m_info.get_height() * m_info.get_width();
         for(unsigned int l_index = 0; l_index < l_nb_pieces; ++l_index)
         {
@@ -134,7 +144,46 @@ namespace edge_matching_puzzle
                                              )
                             );
 
-        unsigned int l_step = 0;
+        // Set initial situation if provided
+        unsigned int l_index = 0;
+        bool l_continu = true;
+        while(l_continu && l_index < l_nb_pieces)
+        {
+            unsigned int l_x;
+            unsigned int l_y;
+            std::tie(l_x, l_y) = m_strategy_generator->get_position(l_index);
+            l_continu = m_initial_situation.contains_piece(l_x,l_y);
+            if(l_continu)
+            {
+                const emp_types::t_oriented_piece & l_oriented_piece = m_initial_situation.get_piece(l_x,l_y);
+                unsigned int l_variable_id = 0;
+                // Search variable correspoding to oriented piece in this position
+                for(auto l_iter:m_variable_generator.get_position_variables(l_index))
+                {
+                    if(l_oriented_piece == l_iter->get_oriented_piece())
+                    {
+                        l_variable_id = l_iter->get_id();
+                        break;
+                    }
+                }
+                unsigned int l_variable_index;
+                bool l_found = false;
+                while(!l_found && l_stack[l_index].get_next_variable(l_variable_index))
+                {
+                    l_found = l_variable_index == l_variable_id;
+                    l_stack[l_index + 1].select_variable(l_variable_index, l_stack[l_index], m_pieces_and_masks[l_variable_index]);
+                }
+                if(!l_found)
+                {
+                    throw quicky_exception::quicky_logic_exception("No variable corresponding to initial situation provided at step " + std::to_string(l_index), __LINE__, __FILE__);
+                }
+                simplex_variable & l_variable = *m_variable_generator.get_variables()[l_variable_index];
+                mark_checked(l_variable);
+                ++l_index;
+            }
+        }
+
+        unsigned int l_step = l_index;
         uint64_t l_counter = 0;
         unsigned int l_max_step = 0;
         while(l_step < l_nb_pieces)
@@ -170,11 +219,7 @@ namespace edge_matching_puzzle
                     if(l_continue)
                     {
                         // Indicate that this piece should not be more checked
-                        unsigned int l_check_piece_index = l_variable.get_piece_id() - 1;
-                        //std::cout << "Selected : " << l_check_piece_index << " @step " << l_step << std::endl;
-                        assert(l_check_piece_index < m_pieces_check_mask.size());
-                        assert(m_pieces_check_mask[l_check_piece_index].first);
-                        m_pieces_check_mask[l_check_piece_index].first = false;
+                        unsigned int l_check_piece_index = mark_checked(l_variable);
 
                         // Check pieces
                         l_continue = true;
@@ -238,7 +283,8 @@ namespace edge_matching_puzzle
                                                unsigned int p_step
                                               )
     {
-        emp_FSM_situation l_result{m_situation};
+        emp_FSM_situation l_result;
+        l_result.set_context(*(new emp_FSM_context(m_info.get_width() * m_info.get_height())));
         assert(p_step < (unsigned int)p_stack.size());
         for(unsigned int l_index = 0; l_index <= p_step; ++l_index)
         {
@@ -247,6 +293,17 @@ namespace edge_matching_puzzle
             l_result.set_piece(l_variable.get_x(), l_variable.get_y(), l_variable.get_oriented_piece());
         }
         return l_result;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    feature_system_equation::mark_checked(const simplex_variable & p_variable)
+    {
+        unsigned int l_check_piece_index = p_variable.get_piece_id() - 1;
+        assert(l_check_piece_index < m_pieces_check_mask.size());
+        assert(m_pieces_check_mask[l_check_piece_index].first);
+        m_pieces_check_mask[l_check_piece_index].first = false;
+        return l_check_piece_index;
     }
 
 #ifdef DEBUG
