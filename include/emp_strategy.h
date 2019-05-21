@@ -169,7 +169,7 @@ namespace edge_matching_puzzle
 
         std::unique_ptr<emp_strategy_generator> m_generator;
 
-        emp_situation_binary_dumper m_dumper;
+        emp_situation_binary_dumper m_solution_dumper;
 
         /**
          Bitfield used to store solution.
@@ -229,7 +229,7 @@ namespace edge_matching_puzzle
     , m_gui(p_gui)
 #endif // GUI
     , m_generator(std::move(p_generator))
-    , m_dumper(p_file_name,p_FSM_info,m_generator,true)
+    , m_solution_dumper(p_file_name,p_FSM_info,m_generator,true)
     , m_solution_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2))
     , m_nb_situation_explored(0)
     , m_nb_solutions(0)
@@ -454,7 +454,7 @@ namespace edge_matching_puzzle
                 {
                     ++m_nb_solutions;
                     compute_solution_bin_id(m_solution_bitfield);
-                    m_dumper.dump(m_solution_bitfield,m_nb_situation_explored);
+                    m_solution_dumper.dump(m_solution_bitfield,m_nb_situation_explored);
 #ifdef GUI_SOLUTIONS
                     display_on_gui(l_index);
 #endif // GUI_SOLUTIONS
@@ -514,7 +514,7 @@ namespace edge_matching_puzzle
             }
 #endif // WEBSERVER
         }
-        m_dumper.dump(m_nb_situation_explored);
+        m_solution_dumper.dump(m_nb_situation_explored);
         std::cout << "End of algorithm" << std::endl ;
         std::cout << "Total situations explored : "  << m_nb_situation_explored << std::endl ;
         std::cout << "Nb solutions : "  << m_nb_solutions << std::endl ;
