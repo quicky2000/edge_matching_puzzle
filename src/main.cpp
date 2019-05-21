@@ -72,6 +72,8 @@ int main(int argc,char ** argv)
         l_param_manager.add(l_initial_situation);
         parameter_manager::parameter_if l_strategy_param("strategy", true);
         l_param_manager.add(l_strategy_param);
+        parameter_manager::parameter_if l_hint_param("hint", true);
+        l_param_manager.add(l_hint_param);
 
         // Treating parameters
         l_param_manager.treat_parameters(argc,argv);
@@ -187,7 +189,7 @@ int main(int argc,char ** argv)
                                                    ,l_strategy_generator
                                                    ,l_info
                                                    ,l_initial_situation.get_value<std::string>()
-                                                   ,""
+                                                   ,l_hint_param.get_value<std::string>()
                                                    ,l_gui
                                                    );
         }
