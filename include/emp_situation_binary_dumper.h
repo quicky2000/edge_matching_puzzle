@@ -35,9 +35,9 @@ namespace edge_matching_puzzle
   public:
     inline emp_situation_binary_dumper(const std::string & p_name,
                                        const emp_FSM_info & p_FSM_info,
-                                       const std::unique_ptr<emp_strategy_generator> & p_generator = NULL,
+                                       const std::unique_ptr<emp_strategy_generator> & p_generator = nullptr,
                                        bool p_solution_dump=false);
-    inline ~emp_situation_binary_dumper(void);
+    inline ~emp_situation_binary_dumper();
     inline void dump(const emp_FSM_situation & p_situation);
     inline void dump(const uint64_t & p_total_number);
     template <typename T>
@@ -57,7 +57,7 @@ namespace edge_matching_puzzle
                                                            bool p_solution_dump):
     m_version(1),
     m_v1_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * (2 + (p_solution_dump ? p_FSM_info.get_piece_id_size() : p_FSM_info.get_dumped_piece_id_size()))),
-    m_solution_dump(p_solution_dump)
+    m_solution_dump((uint32_t)p_solution_dump)
     {
       m_file.open(p_name.c_str(),std::ofstream::binary);
       if(!m_file) throw quicky_exception::quicky_runtime_exception("Unable to create file \""+p_name+"\"",__LINE__,__FILE__);
@@ -68,7 +68,7 @@ namespace edge_matching_puzzle
 
       emp_basic_strategy_generator l_basic_generator(p_FSM_info.get_width(),p_FSM_info.get_height());
       l_basic_generator.generate();
-      const emp_strategy_generator & l_generator = p_generator.get() ? *p_generator : l_basic_generator;
+      const emp_strategy_generator & l_generator = p_generator ? *p_generator : l_basic_generator;
 
       for(unsigned int l_index = 0 ; l_index < p_FSM_info.get_width() * p_FSM_info.get_height() ; ++l_index)
         {
@@ -101,7 +101,7 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    emp_situation_binary_dumper::~emp_situation_binary_dumper(void)
+    emp_situation_binary_dumper::~emp_situation_binary_dumper()
       {
         if(m_file) m_file.close();
       }
