@@ -229,7 +229,7 @@ namespace edge_matching_puzzle
     , m_gui(p_gui)
 #endif // GUI
     , m_generator(std::move(p_generator))
-    , m_dumper(p_file_name,p_FSM_info,m_generator.get(),true)
+    , m_dumper(p_file_name,p_FSM_info,m_generator,true)
     , m_solution_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2))
     , m_nb_situation_explored(0)
     , m_nb_solutions(0)
@@ -494,7 +494,7 @@ namespace edge_matching_puzzle
                 std::cout << "Strategy entering in pause" << std::endl;
 #endif
                 {
-                    emp_situation_binary_dumper l_dumper(l_save_name[l_tic_toc], m_FSM_info, &m_generator,false);
+                    emp_situation_binary_dumper l_dumper(l_save_name[l_tic_toc], m_FSM_info, m_generator,false);
                     l_tic_toc = !l_tic_toc;
                     emp_types::bitfield l_partial_bitfield(m_size * (m_piece_db.get_dumped_piece_id_size() + 2));
                     compute_partial_bin_id(l_partial_bitfield,l_index - l_correct_index);

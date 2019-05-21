@@ -25,6 +25,7 @@
 #include "quicky_bitfield.h"
 #include <fstream>
 #include <iostream>
+#include <memory>
 
 namespace edge_matching_puzzle
 {
@@ -34,7 +35,7 @@ namespace edge_matching_puzzle
   public:
     inline emp_situation_binary_dumper(const std::string & p_name,
                                        const emp_FSM_info & p_FSM_info,
-                                       const emp_strategy_generator * const p_generator=NULL,
+                                       const std::unique_ptr<emp_strategy_generator> & p_generator = NULL,
                                        bool p_solution_dump=false);
     inline ~emp_situation_binary_dumper(void);
     inline void dump(const emp_FSM_situation & p_situation);
@@ -52,7 +53,7 @@ namespace edge_matching_puzzle
   //----------------------------------------------------------------------------
   emp_situation_binary_dumper::emp_situation_binary_dumper(const std::string & p_name,
                                                            const emp_FSM_info & p_FSM_info,
-                                                           const emp_strategy_generator * const p_generator,
+                                                           const std::unique_ptr<emp_strategy_generator> & p_generator,
                                                            bool p_solution_dump):
     m_version(1),
     m_v1_bitfield(p_FSM_info.get_width() * p_FSM_info.get_height() * (2 + (p_solution_dump ? p_FSM_info.get_piece_id_size() : p_FSM_info.get_dumped_piece_id_size()))),
@@ -67,11 +68,11 @@ namespace edge_matching_puzzle
 
       emp_basic_strategy_generator l_basic_generator(p_FSM_info.get_width(),p_FSM_info.get_height());
       l_basic_generator.generate();
-      const emp_strategy_generator * const l_generator = p_generator ? p_generator : & l_basic_generator;
+      const emp_strategy_generator & l_generator = p_generator.get() ? *p_generator : l_basic_generator;
 
       for(unsigned int l_index = 0 ; l_index < p_FSM_info.get_width() * p_FSM_info.get_height() ; ++l_index)
         {
-          const std::pair<uint32_t,uint32_t> & l_position = l_generator->get_position(l_index);
+          const std::pair<uint32_t,uint32_t> & l_position = l_generator.get_position(l_index);
           m_file.write((char*)&l_position.first,sizeof(l_position.first));
           m_file.write((char*)&l_position.second,sizeof(l_position.second));
         }
