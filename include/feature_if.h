@@ -21,11 +21,15 @@
 
 namespace edge_matching_puzzle
 {
-  class feature_if
-  {
-  public:
-    virtual void run(void)=0;
-    inline virtual ~feature_if(void){}
+    /**
+     * Interface class for features of edge_matching_puzzle
+     */
+    class feature_if
+    {
+      public:
+        virtual void run()=0;
+
+        virtual ~feature_if() = default;
   };
 }
 #endif // FEATURE_IF_H
