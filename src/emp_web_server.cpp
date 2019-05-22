@@ -18,7 +18,7 @@
 */
 
 #include "emp_web_server.h"
-#include "emp_strategy.h"
+#include "emp_advanced_feature_base.h"
 #include <sstream>
 
 namespace edge_matching_puzzle

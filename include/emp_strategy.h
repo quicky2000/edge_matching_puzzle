@@ -20,20 +20,11 @@
 #ifndef EMP_STRATEGY_H
 #define EMP_STRATEGY_H
 
-#include "emp_piece_db.h"
 #include "emp_position_strategy.h"
-#include "emp_strategy_generator.h"
 #include "emp_situation_binary_dumper.h"
-#include "feature_if.h"
-#include "emp_gui.h"
-#include "emp_web_server.h"
-#include <atomic>
-#include <thread>
-#include <chrono>
+#include "emp_advanced_feature_base.h"
 #include <memory>
 
-//#define WEBSERVER
-//#define SAVE_THREAD
 #define MAX_DISPLAY
 
 namespace edge_matching_puzzle
@@ -42,7 +33,7 @@ namespace edge_matching_puzzle
      The strategy objects contains all precomputed information necessary to
      determine all transitions at each step of the strategy
     **/
-    class emp_strategy: public feature_if
+    class emp_strategy: public emp_advanced_feature_base
     {
       public:
 
@@ -55,7 +46,7 @@ namespace edge_matching_puzzle
                     );
 
         inline
-        void run() override;
+        void specific_run() override;
 
         inline
         ~emp_strategy() override;
@@ -63,23 +54,14 @@ namespace edge_matching_puzzle
         inline
         void set_initial_state(const std::string & p_situation);
 
-        // Methods used by webserver when activated
-        inline
-        void pause();
-
-        inline
-        void restart();
-
-        inline
-        bool is_paused() const;
-
+        // Methods used by webserver
         inline
         void send_info(uint64_t & p_nb_situations
                       ,uint64_t & p_nb_solutions
                       ,unsigned int & p_shift
                       ,emp_types::t_binary_piece * p_pieces
                       ,const emp_FSM_info & p_FSM_info
-                      ) const;
+                      ) const override;
         // End of methods used by webserver
 
       private:
@@ -94,12 +76,6 @@ namespace edge_matching_puzzle
                               );
 
 
-#ifdef SAVE_THREAD
-        inline static
-        void periodic_save(const std::atomic<bool> & p_stop
-                          ,emp_strategy & p_strategy
-                          );
-#endif // SAVE_THREAD
         /**
          To compute bitfield representation needed when dumping solutions
         **/
@@ -113,7 +89,7 @@ namespace edge_matching_puzzle
         inline
         void compute_partial_bin_id(emp_types::bitfield & p_bitfield
                                    ,unsigned int p_max
-                                   ) const;
+                                   ) const override;
 
         /**
          Comput real available transitions for given index by taking account
@@ -127,8 +103,6 @@ namespace edge_matching_puzzle
         **/
         inline
         void display_on_gui(const unsigned int & p_index);
-
-        const emp_piece_db & m_piece_db;
 
         /**
          Number of positions strategy
@@ -160,15 +134,6 @@ namespace edge_matching_puzzle
         **/
         emp_types::bitfield m_corners;
 
-#ifdef GUI
-        /**
-         * Graphical interface
-         */
-        emp_gui &m_gui;
-#endif // GUI
-
-        std::unique_ptr<emp_strategy_generator> m_generator;
-
         emp_situation_binary_dumper m_solution_dumper;
 
         /**
@@ -186,24 +151,8 @@ namespace edge_matching_puzzle
          uint64_t m_nb_situation_explored;
          uint64_t m_nb_solutions;
 
-#ifdef WEBSERVER
-         emp_web_server * m_web_server;
-#endif // WEBSERVER
-
-         std::atomic<bool> m_pause_requested;
-
-         std::atomic<bool> m_paused;
-
          unsigned int m_start_index;
 
-#if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
-         const emp_FSM_info & m_FSM_info;
-#endif // defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
-
-#ifdef SAVE_THREAD
-        std::atomic<bool> m_stop_save_thread;
-        std::thread * m_save_thread;
-#endif // SAVE_THREAD
     };
 
     //----------------------------------------------------------------------------
@@ -213,9 +162,9 @@ namespace edge_matching_puzzle
                               ,const emp_FSM_info & p_FSM_info
                               ,const std::string & p_file_name
                               )
-    : m_piece_db(p_piece_db)
-    , m_size(p_generator->get_width() * p_generator->get_height())
-    //m_size(2 * (p_generator->get_width() + p_generator->get_height() - 2 )),
+    : emp_advanced_feature_base(p_generator, p_FSM_info, p_piece_db, p_gui)
+    , m_size(p_FSM_info.get_width() * p_FSM_info.get_height())
+    //m_size(2 * (p_FSM_info.get_width() + p_FSM_info.get_height() - 2 )),
     // We allocate a supplementaty emp_position_strategy that will contains
     // no information. it will be used by corners and borders pieces as 
     // neighbour for orientations that are outside
@@ -225,27 +174,11 @@ namespace edge_matching_puzzle
     , m_centers(4 * p_piece_db.get_nb_pieces(emp_types::t_kind::CENTER),true)
     , m_borders(4 * p_piece_db.get_nb_pieces(emp_types::t_kind::BORDER),true)
     , m_corners(4 * p_piece_db.get_nb_pieces(emp_types::t_kind::CORNER),true)
-#ifdef GUI
-    , m_gui(p_gui)
-#endif // GUI
-    , m_generator(std::move(p_generator))
-    , m_solution_dumper(p_file_name,p_FSM_info,m_generator,true)
-    , m_solution_bitfield(m_size * (m_piece_db.get_piece_id_size() + 2))
+    , m_solution_dumper(p_file_name,p_FSM_info,get_generator(),true)
+    , m_solution_bitfield(m_size * (p_piece_db.get_piece_id_size() + 2))
     , m_nb_situation_explored(0)
     , m_nb_solutions(0)
-#ifdef WEBSERVER
-    , m_web_server(new emp_web_server(12345,*this,p_gui,p_FSM_info))
-#endif //  WEBSERVER
-    , m_pause_requested(false)
-    , m_paused(false)
     , m_start_index(0)
-#if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
-    , m_FSM_info(p_FSM_info)
-#endif // defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
-#ifdef SAVE_THREAD
-    , m_stop_save_thread(false)
-    , m_save_thread(nullptr)
-#endif // SAVE_THREAD
     {
         uint32_t l_color_mask = (1u << p_piece_db.get_color_id_size()) - 1;
         std::cout << "Color id mask = 0x" << std::hex << l_color_mask << std::dec << std::endl ;
@@ -263,12 +196,12 @@ namespace edge_matching_puzzle
 
         for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
         {
-            std::pair<unsigned int,unsigned int> l_current_position = p_generator->get_position(l_index);
+            std::pair<unsigned int,unsigned int> l_current_position = get_generator()->get_position(l_index);
 
             // Compute kind of current position
             emp_types::t_kind l_kind = emp_types::t_kind::CENTER;
-            bool l_x_border = l_current_position.first == 0 || l_current_position.first == p_generator->get_width() - 1;
-            bool l_y_border = l_current_position.second == 0 || l_current_position.second == p_generator->get_height() - 1;
+            bool l_x_border = l_current_position.first == 0 || l_current_position.first == p_FSM_info.get_width() - 1;
+            bool l_y_border = l_current_position.second == 0 || l_current_position.second == p_FSM_info.get_height() - 1;
             if(l_x_border || l_y_border)
             {
                 if(!l_x_border || !l_y_border)
@@ -290,7 +223,7 @@ namespace edge_matching_puzzle
             //Compute neighbour access info
             if(l_current_position.second > 0)
             {
-                emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator->get_position_index(l_current_position.first,l_current_position.second - 1)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::SOUTH)));
+                emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[get_generator()->get_position_index(l_current_position.first,l_current_position.second - 1)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::SOUTH)));
                 m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::NORTH,l_access_info);
             }
             else
@@ -300,7 +233,7 @@ namespace edge_matching_puzzle
             }
             if(l_current_position.first > 0)
             {
-                emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator->get_position_index(l_current_position.first - 1,l_current_position.second)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::EAST)));
+                emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[get_generator()->get_position_index(l_current_position.first - 1,l_current_position.second)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::EAST)));
                 m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::WEST,l_access_info);
             }
             else
@@ -308,9 +241,9 @@ namespace edge_matching_puzzle
               emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[m_size]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::EAST)));
               m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::WEST,l_access_info);
             }
-            if(l_current_position.second < p_generator->get_height() - 1)
+            if(l_current_position.second < p_FSM_info.get_height() - 1)
             {
-              emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator->get_position_index(l_current_position.first,l_current_position.second + 1)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::NORTH)));
+              emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[get_generator()->get_position_index(l_current_position.first,l_current_position.second + 1)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::NORTH)));
               m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::SOUTH,l_access_info);
             }
             else
@@ -318,9 +251,9 @@ namespace edge_matching_puzzle
               emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[m_size]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::NORTH)));
               m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::SOUTH,l_access_info);
             }
-            if(l_current_position.first  < p_generator->get_width() - 1)
+            if(l_current_position.first  < p_FSM_info.get_width() - 1)
             {
-              emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[p_generator->get_position_index(l_current_position.first + 1,l_current_position.second)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::WEST)));
+              emp_position_strategy::t_neighbour_access l_access_info(&(m_positions_strategy[get_generator()->get_position_index(l_current_position.first + 1,l_current_position.second)]),l_color_mask << (p_piece_db.get_color_id_size() * (unsigned int)(emp_types::t_orientation::WEST)));
               m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::EAST,l_access_info);
             }
             else
@@ -329,9 +262,6 @@ namespace edge_matching_puzzle
               m_positions_strategy[l_index].set_neighbour_access(emp_types::t_orientation::EAST,l_access_info);
             }
         }
-#ifdef SAVE_THREAD
-        m_save_thread = new std::thread(periodic_save,std::ref(m_stop_save_thread),std::ref(*this));
-#endif // SAVE_THREAD
     }
 
     //---------------------------------------------------------------------------
@@ -339,9 +269,9 @@ namespace edge_matching_puzzle
     {
         for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
         {
-            unsigned int l_data = m_positions_strategy[l_index].get_piece_info() >> ( 4 * m_piece_db.get_color_id_size());
-            unsigned int l_offset = l_index * ( m_piece_db.get_piece_id_size() + 2);
-            p_bitfield.set(l_data,m_piece_db.get_piece_id_size() + 2,l_offset);
+            unsigned int l_data = m_positions_strategy[l_index].get_piece_info() >> ( 4 * get_piece_db().get_color_id_size());
+            unsigned int l_offset = l_index * ( get_piece_db().get_piece_id_size() + 2);
+            p_bitfield.set(l_data,get_piece_db().get_piece_id_size() + 2,l_offset);
         }
     }
 
@@ -350,10 +280,10 @@ namespace edge_matching_puzzle
     {
         for(unsigned int l_index = 0 ; l_index <= p_max ; ++l_index)
         {
-            unsigned int l_data = m_positions_strategy[l_index].get_piece_info() >> ( 4 * m_piece_db.get_color_id_size());
+            unsigned int l_data = m_positions_strategy[l_index].get_piece_info() >> ( 4 * get_piece_db().get_color_id_size());
             l_data += 4; // to add 1 to piece_id
-            unsigned int l_offset = l_index * ( m_piece_db.get_dumped_piece_id_size() + 2);
-            p_bitfield.set(l_data,m_piece_db.get_dumped_piece_id_size() + 2,l_offset);
+            unsigned int l_offset = l_index * ( get_piece_db().get_dumped_piece_id_size() + 2);
+            p_bitfield.set(l_data,get_piece_db().get_dumped_piece_id_size() + 2,l_offset);
         }
     }
 
@@ -362,20 +292,12 @@ namespace edge_matching_puzzle
     {
         assert(p_index <= m_size);
         emp_position_strategy & l_pos_strategy = m_positions_strategy[p_index];
-        l_pos_strategy.compute_available_transitions(m_piece_db.get_pieces(l_pos_strategy.compute_constraint()));
+        l_pos_strategy.compute_available_transitions(get_piece_db().get_pieces(l_pos_strategy.compute_constraint()));
     }
 
     //--------------------------------------------------------------------------
     emp_strategy::~emp_strategy()
     {
-#ifdef SAVE_THREAD
-        m_stop_save_thread = true;
-        m_save_thread->join();
-        delete m_save_thread;
-#endif // SAVE_THREAD
-#ifdef WEBSERVER
-        delete m_web_server;
-#endif // WEBSERVER
         for(unsigned int l_index = 0 ; l_index <= m_size; ++l_index)
         {
             m_positions_strategy[l_index].~emp_position_strategy();
@@ -388,8 +310,8 @@ namespace edge_matching_puzzle
     {
         for(unsigned int l_index = 0 ; l_index <= p_index ; ++l_index)
         {
-            const std::pair<unsigned int,unsigned int> & l_position = m_generator->get_position(l_index);
-            emp_types::t_binary_piece l_binary = (m_positions_strategy[l_index].get_piece_info() >> (4 * m_piece_db.get_color_id_size()));
+            const std::pair<unsigned int,unsigned int> & l_position = get_generator()->get_position(l_index);
+            emp_types::t_binary_piece l_binary = (m_positions_strategy[l_index].get_piece_info() >> (4 * get_piece_db().get_color_id_size()));
             emp_types::t_oriented_piece l_oriented_piece(1 + (l_binary >> 2),((emp_types::t_orientation)(l_binary & 0x3)));
             p_situation.set_piece(l_position.first,l_position.second,l_oriented_piece);
         }
@@ -402,19 +324,13 @@ namespace edge_matching_puzzle
         l_situation.set_context(*(new emp_FSM_context(m_size)));
         extract_situation(l_situation,p_index);
         std::cout << l_situation.to_string() << std::endl ;
-#ifdef GUI
-        m_gui.display(l_situation);
-        m_gui.refresh();
-#endif // GUI
+        get_gui().display(l_situation);
+        get_gui().refresh();
     }
 
     //--------------------------------------------------------------------------
-    void emp_strategy::run()
+    void emp_strategy::specific_run()
     {
-#ifdef WEBSERVER
-        m_web_server->start();
-#endif // WEBSERVER
-
 #ifdef MAX_DISPLAY
         unsigned int l_max = 0;
 #endif //MAX_DISPLAY
@@ -422,9 +338,7 @@ namespace edge_matching_puzzle
         compute_available_transitions(l_index);
         bool l_continu = true;
 #if defined SAVE_THREAD
-        bool l_tic_toc = false;
         bool l_correct_index = false;
-        std::string l_save_name[2] = {"save_tic.bin", "save_toc.bin"};
 #endif // SAVE_THREAD
         while(/*l_index < m_size && */ l_continu)
         {
@@ -435,10 +349,10 @@ namespace edge_matching_puzzle
             {
                 // Need to decrement the transition id because 0 indicate no transition and bit[0] correspond to l_next_transition = 1
                 --l_next_transition;
-                m_positions_strategy[l_index].set_piece_info(m_piece_db.get_piece(m_positions_strategy[l_index].get_kind(),l_next_transition));
+                m_positions_strategy[l_index].set_piece_info(get_piece_db().get_piece(m_positions_strategy[l_index].get_kind(),l_next_transition));
                 m_positions_strategy[l_index].select_piece(l_next_transition
 #ifdef HANDLE_IDENTICAL_PIECES
-                                                          ,m_piece_db.get_binary_identical_pieces(m_positions_strategy[l_index].get_kind(),l_next_transition)
+                                                          ,get_piece_db().get_binary_identical_pieces(m_positions_strategy[l_index].get_kind(),l_next_transition)
 #endif // HANDLE_IDENTICAL_PIECES
                                                           );
                 ++m_nb_situation_explored;
@@ -488,29 +402,9 @@ namespace edge_matching_puzzle
 	        }
 
 #if defined WEBSERVER || defined SAVE_THREAD
-            if(m_pause_requested)
+            if(is_pause_requested())
             {
-#if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
-                std::cout << "Strategy entering in pause" << std::endl;
-#endif
-                {
-                    emp_situation_binary_dumper l_dumper(l_save_name[l_tic_toc], m_FSM_info, m_generator,false);
-                    l_tic_toc = !l_tic_toc;
-                    emp_types::bitfield l_partial_bitfield(m_size * (m_piece_db.get_dumped_piece_id_size() + 2));
-                    compute_partial_bin_id(l_partial_bitfield,l_index - l_correct_index);
-                    l_dumper.dump(l_partial_bitfield, m_nb_situation_explored);
-                    // Dump pseudo total number of situation explored to have non truncated file
-                    l_dumper.dump(m_nb_situation_explored);
-                }
-                m_paused = true;
-                while(m_pause_requested)
-                {
-                    usleep(1);
-                }
-#if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
-                std::cout << "Strategy leaving pause" << std::endl;
-#endif
-                m_paused = false;
+                perform_save_action(l_index - l_correct_index, m_nb_situation_explored);
             }
 #endif // WEBSERVER
         }
@@ -535,14 +429,14 @@ namespace edge_matching_puzzle
         bool l_continu = true;
         while(l_continu && l_index < m_size)
         {
-            const std::pair<unsigned int,unsigned int> & l_position = m_generator->get_position(l_index);
+            const std::pair<unsigned int,unsigned int> & l_position = get_generator()->get_position(l_index);
             l_continu = l_initial_situation.contains_piece(l_position.first,l_position.second);
 
             if(l_continu)
             {
                 compute_available_transitions(l_index);
                 const emp_types::t_oriented_piece & l_oriented_piece = l_initial_situation.get_piece(l_position.first,l_position.second);
-                const unsigned int l_searched_transition = (m_piece_db.get_kind_index(l_oriented_piece.first) << 2) + (unsigned int)l_oriented_piece.second;
+                const unsigned int l_searched_transition = (get_piece_db().get_kind_index(l_oriented_piece.first) << 2) + (unsigned int)l_oriented_piece.second;
                 unsigned int l_next_transition = 0;
                 do
                 {
@@ -553,12 +447,12 @@ namespace edge_matching_puzzle
                     --l_next_transition;
                     m_positions_strategy[l_index].select_piece(l_next_transition
 #ifdef HANDLE_IDENTICAL_PIECES
-							                                  ,m_piece_db.get_binary_identical_pieces(m_positions_strategy[l_index].get_kind(),l_next_transition)
+							                                  ,get_piece_db().get_binary_identical_pieces(m_positions_strategy[l_index].get_kind(),l_next_transition)
 #endif // HANDLE_IDENTICAL_PIECES
 							                                  );
                 }
                 while(l_next_transition != l_searched_transition);
-                m_positions_strategy[l_index].set_piece_info(m_piece_db.get_piece(m_positions_strategy[l_index].get_kind(),l_searched_transition));
+                m_positions_strategy[l_index].set_piece_info(get_piece_db().get_piece(m_positions_strategy[l_index].get_kind(),l_searched_transition));
                 ++l_index;
             }
             else
@@ -573,24 +467,6 @@ namespace edge_matching_puzzle
     }
 
     //--------------------------------------------------------------------------
-    void emp_strategy::pause()
-    {
-        m_pause_requested = true;
-    }
-
-    //--------------------------------------------------------------------------
-    void emp_strategy::restart()
-    {
-        m_pause_requested = false;
-    }
-
-    //--------------------------------------------------------------------------
-    bool emp_strategy::is_paused()const
-    {
-        return m_paused;
-    }
-
-    //--------------------------------------------------------------------------
     void emp_strategy::send_info(uint64_t & p_nb_situations
                                 ,uint64_t & p_nb_solutions
                                 ,unsigned int & p_shift
@@ -600,34 +476,14 @@ namespace edge_matching_puzzle
     {
         p_nb_situations = m_nb_situation_explored;
         p_nb_solutions = m_nb_solutions;
-        p_shift = 4 * m_piece_db.get_color_id_size();
+        p_shift = 4 * get_piece_db().get_color_id_size();
         for(unsigned int l_index = 0 ; l_index < m_size ; ++l_index)
         {
-            const std::pair<unsigned int,unsigned int> & l_position = m_generator->get_position(l_index);
+            const std::pair<unsigned int,unsigned int> & l_position = get_generator()->get_position(l_index);
             p_pieces[p_FSM_info.get_width() * l_position.second + l_position.first] = m_positions_strategy[l_index].get_piece_info();
         }
     }
 
-#ifdef SAVE_THREAD
-    //--------------------------------------------------------------------------
-    void emp_strategy::periodic_save(const std::atomic<bool> & p_stop, emp_strategy & p_strategy)
-    {
-        std::cout << "Create save thread" << std::endl ;
-        while(!static_cast<bool>(p_stop))
-        {
-            std::this_thread::sleep_for(std::chrono::duration<int>(60));
-            //	std::cout << "Ask for save" << std::endl ;
-            p_strategy.pause();
-            //	std::cout << "Wait for save done" << std::endl ;
-            while(!p_strategy.is_paused())
-            {
-                usleep(1);
-            }
-            //	std::cout << "Save done" << std::endl ;
-            p_strategy.restart();
-        }
-    }
-#endif // SAVE_THREAD
 }
 #endif // EMP_STRATEGY_H
 //EOF

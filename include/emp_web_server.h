@@ -38,13 +38,13 @@
 
 namespace edge_matching_puzzle
 {
-  class emp_strategy;
+  class emp_advanced_feature_base;
 
   class emp_web_server
   {
   public:
     inline emp_web_server(const unsigned int & p_port,
-                          emp_strategy & p_strategy,
+                          emp_advanced_feature_base & p_strategy,
 			  const emp_gui & p_gui,
 			  const emp_FSM_info & p_FSM_info);
 
@@ -79,7 +79,7 @@ namespace edge_matching_puzzle
     // End of Microhttpd callbacks
     std::string m_empty_file_name;
     std::string m_picture_root;
-    emp_strategy & m_strategy;
+    emp_advanced_feature_base & m_strategy;
     const emp_FSM_info & m_info;
     emp_types::t_binary_piece * m_pieces;
     size_t m_picture_size;
@@ -91,7 +91,7 @@ namespace edge_matching_puzzle
 
   //----------------------------------------------------------------------------
   emp_web_server::emp_web_server(const unsigned int & p_port,
-                                 emp_strategy & p_strategy,
+                                 emp_advanced_feature_base & p_strategy,
 				 const emp_gui & p_gui,
 				 const emp_FSM_info & p_FSM_info):
     m_picture_root("pieces"),
