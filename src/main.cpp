@@ -125,10 +125,7 @@ int main(int argc,char ** argv)
         {
             l_strategy_generator.reset(emp_strategy_generator_factory::create("basic", l_info));
         }
-        else
-        {
-            throw quicky_exception::quicky_logic_exception("Should not occur", __LINE__, __FILE__);
-        }
+
         if(l_strategy_generator)
         {
             l_strategy_generator->generate();
