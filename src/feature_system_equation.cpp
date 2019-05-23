@@ -15,8 +15,13 @@
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
+#include <feature_system_equation.h>
+
 #include "feature_system_equation.h"
 #include "emp_se_step_info.h"
+
+//#define DEBUG_PIECE_CHECK
+//#define DEBUG_POSITION_CHECK
 
 namespace edge_matching_puzzle
 {
@@ -28,15 +33,13 @@ namespace edge_matching_puzzle
                                                     ,const std::string & p_hint_string
                                                     ,emp_gui & p_gui
                                                     )
-    : m_strategy_generator(std::move(p_strategy_generator))
+    : emp_advanced_feature_base(p_strategy_generator,  p_info, p_db, p_gui)
     , m_variable_generator(p_db
-                          ,*m_strategy_generator
+                          ,*get_generator()
                           ,p_info
                           ,p_hint_string
                           ,m_hint_situation
                           )
-    , m_gui(p_gui)
-    , m_info(p_info)
     {
         m_initial_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
         m_hint_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
@@ -98,18 +101,18 @@ namespace edge_matching_puzzle
         m_variable_generator.treat_piece_relations(l_lamda);
 
         // Prepare masks that will be used to check if a position is still usable
-        m_positions_check_mask.resize(m_info.get_width() * m_info.get_height(), emp_types::bitfield(l_nb_variables));
+        m_positions_check_mask.resize(get_info().get_width() * get_info().get_height(), emp_types::bitfield(l_nb_variables));
         for(auto l_iter: m_variable_generator.get_variables())
         {
             // Position index is index in strategy generator sequence !
-            unsigned int l_position_index = m_strategy_generator->get_position_index(l_iter->get_x(), l_iter->get_y());
+            unsigned int l_position_index = get_generator()->get_position_index(l_iter->get_x(), l_iter->get_y());
             unsigned int l_id = l_iter->get_id();
             assert(l_position_index < m_positions_check_mask.size());
             m_positions_check_mask[l_position_index].set(1, 1, l_id);
         }
 
         // Prepare masks that will be used to check if a piece is still usable
-        m_pieces_check_mask.resize(m_info.get_width() * m_info.get_height(), std::make_pair(true, emp_types::bitfield(l_nb_variables)));
+        m_pieces_check_mask.resize(get_info().get_width() * get_info().get_height(), std::make_pair(true, emp_types::bitfield(l_nb_variables)));
         for(auto l_iter: m_variable_generator.get_variables())
         {
             // Position index is index in strategy generator sequence !
@@ -122,22 +125,20 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    feature_system_equation::run()
+    feature_system_equation::specific_run()
     {
-        m_gui.display(m_initial_situation);
-
-        std::vector<emp_se_step_info> l_stack;
+        get_gui().display(m_initial_situation);
 
         // Prepare stack
-        unsigned int l_nb_pieces = m_info.get_height() * m_info.get_width();
+        unsigned int l_nb_pieces = get_info().get_height() * get_info().get_width();
         for(unsigned int l_index = 0; l_index < l_nb_pieces; ++l_index)
         {
             unsigned int l_x;
             unsigned int l_y;
-            std::tie(l_x, l_y) = m_strategy_generator->get_position(l_index);
-            l_stack.emplace_back(emp_se_step_info(m_info.get_position_kind(l_x, l_y), (unsigned int)m_variable_generator.get_variables().size(), l_x, l_y));
+            std::tie(l_x, l_y) = get_generator()->get_position(l_index);
+            m_stack.emplace_back(emp_se_step_info(get_info().get_position_kind(l_x, l_y), (unsigned int)m_variable_generator.get_variables().size(), l_x, l_y));
         }
-        l_stack.emplace_back(emp_se_step_info(emp_types::t_kind::UNDEFINED
+        m_stack.emplace_back(emp_se_step_info(emp_types::t_kind::UNDEFINED
                                              ,(unsigned int)m_variable_generator.get_variables().size()
                                              ,std::numeric_limits<unsigned int>::max()
                                              ,std::numeric_limits<unsigned int>::max()
@@ -151,7 +152,7 @@ namespace edge_matching_puzzle
         {
             unsigned int l_x;
             unsigned int l_y;
-            std::tie(l_x, l_y) = m_strategy_generator->get_position(l_index);
+            std::tie(l_x, l_y) = get_generator()->get_position(l_index);
             l_continu = m_initial_situation.contains_piece(l_x,l_y);
             if(l_continu)
             {
@@ -168,10 +169,10 @@ namespace edge_matching_puzzle
                 }
                 unsigned int l_variable_index;
                 bool l_found = false;
-                while(!l_found && l_stack[l_index].get_next_variable(l_variable_index))
+                while(!l_found && m_stack[l_index].get_next_variable(l_variable_index))
                 {
                     l_found = l_variable_index == l_variable_id;
-                    l_stack[l_index + 1].select_variable(l_variable_index, l_stack[l_index], m_pieces_and_masks[l_variable_index]);
+                    m_stack[l_index + 1].select_variable(l_variable_index, m_stack[l_index], m_pieces_and_masks[l_variable_index]);
                 }
                 if(!l_found)
                 {
@@ -183,37 +184,43 @@ namespace edge_matching_puzzle
             }
         }
 
-        unsigned int l_step = l_index;
-        uint64_t l_counter = 0;
+        m_step = l_index;
         unsigned int l_max_step = 0;
-        while(l_step < l_nb_pieces)
+        while(m_step < l_nb_pieces)
         {
-            ++l_counter;
-            unsigned int l_variable_index;
-            if(l_stack[l_step].get_next_variable(l_variable_index))
+#if defined WEBSERVER || defined SAVE_THREAD
+            if(is_pause_requested())
             {
-                l_stack[l_step + 1].select_variable(l_variable_index, l_stack[l_step], m_pieces_and_masks[l_variable_index]);
+                perform_save_action(m_step, m_counter);
+            }
+#endif
+            ++m_counter;
+            unsigned int l_variable_index;
+            if(m_stack[m_step].get_next_variable(l_variable_index))
+            {
+                m_stack[m_step + 1].select_variable(l_variable_index, m_stack[m_step], m_pieces_and_masks[l_variable_index]);
 
-                if(l_step > l_max_step)
+                if(m_step > l_max_step)
                 {
-                    l_max_step = l_step;
-                    emp_FSM_situation l_situation = extract_situation(l_stack, l_step);
-                    m_gui.display(l_situation);
-                    m_gui.refresh();
+                    l_max_step = m_step;
+                    emp_FSM_situation l_situation = extract_situation(m_stack, m_step);
+                    std::cout << "Step: " << m_step << " => " << l_situation.to_string() << std::endl;
+                    get_gui().display(l_situation);
+                    get_gui().refresh();
                 }
                 simplex_variable & l_variable = *m_variable_generator.get_variables()[l_variable_index];
-                if(l_stack[l_step].get_x() == l_variable.get_x() && l_stack[l_step].get_y() == l_variable.get_y())
+                if(m_stack[m_step].get_x() == l_variable.get_x() && m_stack[m_step].get_y() == l_variable.get_y())
                 {
 #if 0
 
-                    ++l_step;
+                    ++m_step;
                     continue;
 #endif // 0
                     // Check if there are no lock positions
                     bool l_continue = true;
-                    for(unsigned int l_tested_index = l_step + 1; l_continue && l_tested_index < l_nb_pieces; ++l_tested_index)
+                    for(unsigned int l_tested_index = m_step + 1; l_continue && l_tested_index < l_nb_pieces; ++l_tested_index)
                     {
-                        l_continue = l_stack[l_step + 1].check_mask(m_positions_check_mask[l_tested_index]);
+                        l_continue = m_stack[m_step + 1].check_mask(m_positions_check_mask[l_tested_index]);
                     }
 
                     if(l_continue)
@@ -228,21 +235,21 @@ namespace edge_matching_puzzle
                         {
                             if(m_pieces_check_mask[l_tested_index].first)
                             {
-                                l_continue = l_stack[l_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second);
+                                l_continue = m_stack[m_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second);
                             }
                         }
                         if(l_continue)
                         {
                             // Store piece check index associated with this step
                             // to be able to make pieces checkable again in case of rollback
-                            l_stack[l_step].set_check_piece_index(l_check_piece_index);
-                            ++l_step;
+                            m_stack[m_step].set_check_piece_index(l_check_piece_index);
+                            ++m_step;
                         }
                         else
                         {
                             m_pieces_check_mask[l_check_piece_index].first = true;
 #ifdef DEBUG_PIECE_CHECK
-                            std::cout << "No more possible positions for piece " << l_tested_index + 1 << " after step " << l_step << std::endl;
+                            std::cout << "No more possible positions for piece " << l_tested_index + 1 << " after step " << m_step << std::endl;
 #endif // DEBUG_PIECE_CHECK
                         }
 
@@ -252,8 +259,8 @@ namespace edge_matching_puzzle
                     {
                         unsigned int l_fail_step_x;
                         unsigned int l_fail_step_y;
-                        std::tie(l_fail_step_x, l_fail_step_y) = m_strategy_generator->get_position(l_step + 1);
-                        std::cout << "No more possible pieces for position[" << l_fail_step_x << ", " << l_fail_step_y << "] @step " << l_step << std::endl;
+                        std::tie(l_fail_step_x, l_fail_step_y) = m_strategy_generator->get_position(m_step + 1);
+                        std::cout << "No more possible pieces for position[" << l_fail_step_x << ", " << l_fail_step_y << "] @step " << m_step << std::endl;
                     }
 #endif // DEBUG_POSITION_CHECK
                     continue;
@@ -261,20 +268,20 @@ namespace edge_matching_puzzle
 #ifdef DEBUG_POSITION_CHECK
                 else
                 {
-                    std::cout << "Skipping position[" << l_stack[l_step].get_x() << ", " << l_stack[l_step].get_y() << "] @step " << l_step << "  and count " << l_counter << std::endl;
+                    std::cout << "Skipping position[" << m_stack[m_step].get_x() << ", " << m_stack[m_step].get_y() << "] @step " << m_step << "  and count " << m_counter << std::endl;
                 }
 #endif // DEBUG_POSITION_CHECK
 
             }
-            assert(l_step);
-            --l_step;
+            assert(m_step);
+            --m_step;
             // Make piece that was used at this step checkable again
-            unsigned int l_piece_check_index = l_stack[l_step].get_check_piece_index();
+            unsigned int l_piece_check_index = m_stack[m_step].get_check_piece_index();
             assert(l_piece_check_index < m_pieces_check_mask.size());
             assert(!m_pieces_check_mask[l_piece_check_index].first);
             m_pieces_check_mask[l_piece_check_index].first = true;
         }
-        std::cout << "Solution found after " << l_counter << " iterations" << std::endl;
+        std::cout << "Solution found after " << m_counter << " iterations" << std::endl;
     }
 
     //-------------------------------------------------------------------------
@@ -284,7 +291,7 @@ namespace edge_matching_puzzle
                                               )
     {
         emp_FSM_situation l_result;
-        l_result.set_context(*(new emp_FSM_context(m_info.get_width() * m_info.get_height())));
+        l_result.set_context(*(new emp_FSM_context(get_info().get_width() * get_info().get_height())));
         assert(p_step < (unsigned int)p_stack.size());
         for(unsigned int l_index = 0; l_index <= p_step; ++l_index)
         {
@@ -304,6 +311,48 @@ namespace edge_matching_puzzle
         assert(m_pieces_check_mask[l_check_piece_index].first);
         m_pieces_check_mask[l_check_piece_index].first = false;
         return l_check_piece_index;
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    feature_system_equation::send_info(uint64_t & p_nb_situations,
+                                       uint64_t & p_nb_solutions,
+                                       unsigned int & p_shift,
+                                       emp_types::t_binary_piece *p_pieces,
+                                       const emp_FSM_info & p_FSM_info
+                                      ) const
+    {
+        p_nb_situations = m_counter;
+        p_nb_solutions = 0;
+        p_shift = 4 * get_piece_db().get_color_id_size();
+        for(unsigned int l_index = 0 ; l_index < m_step; ++l_index)
+        {
+            const std::pair<unsigned int,unsigned int> & l_position = get_generator()->get_position(l_index);
+            unsigned int l_variable_index = m_stack[l_index].get_variable_index();
+            unsigned int l_piece_id = m_variable_generator.get_variables()[l_variable_index]->get_piece_id();
+            unsigned int l_kind_index = get_piece_db().get_kind_index(l_piece_id);
+            p_pieces[p_FSM_info.get_width() * l_position.second + l_position.first] = get_piece_db().get_piece(m_stack[l_index].get_kind(), (l_kind_index << 2) + (unsigned int)m_variable_generator.get_variables()[l_variable_index]->get_orientation());
+        }
+        for(unsigned int l_index = m_step ; l_index < get_info().get_width() * get_info().get_height(); ++l_index)
+        {
+            const std::pair<unsigned int,unsigned int> & l_position = get_generator()->get_position(l_index);
+            p_pieces[p_FSM_info.get_width() * l_position.second + l_position.first] = 0;
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    feature_system_equation::compute_partial_bin_id(emp_types::bitfield & p_bitfield
+                                                   , unsigned int p_max
+                                                   ) const
+    {
+        for(unsigned int l_index = 0 ; l_index <= p_max ; ++l_index)
+        {
+            unsigned int l_variable_index = m_stack[l_index].get_variable_index();
+            unsigned int l_piece_id = 4 * m_variable_generator.get_variables()[l_variable_index]->get_piece_id() + (unsigned int) m_variable_generator.get_variables()[l_variable_index]->get_orientation();
+            unsigned int l_offset = l_index * ( get_piece_db().get_dumped_piece_id_size() + 2);
+            p_bitfield.set(l_piece_id,get_piece_db().get_dumped_piece_id_size() + 2,l_offset);
+        }
     }
 
 #ifdef DEBUG

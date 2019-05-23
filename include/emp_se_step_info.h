@@ -62,6 +62,8 @@ namespace edge_matching_puzzle
 
         unsigned int get_y() const;
 
+        emp_types::t_kind get_kind() const;
+
       private:
 
         /**

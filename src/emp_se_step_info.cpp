@@ -102,5 +102,12 @@ namespace edge_matching_puzzle
         return m_y;
     }
 
+    //-------------------------------------------------------------------------
+    emp_types::t_kind
+    emp_se_step_info::get_kind() const
+    {
+        return m_position_kind;
+    }
+
 }
 // EOF

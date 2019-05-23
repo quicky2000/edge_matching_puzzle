@@ -18,7 +18,7 @@
 #ifndef _EMP_SYSTEM_EQUATION_H_
 #define _EMP_SYSTEM_EQUATION_H_
 
-#include "feature_if.h"
+#include "emp_advanced_feature_base.h"
 #include "emp_piece_db.h"
 #include "emp_FSM_info.h"
 #include "emp_gui.h"
@@ -35,7 +35,7 @@ namespace edge_matching_puzzle
     class emp_se_step_info;
     class emp_strategy_generator;
 
-    class feature_system_equation: public feature_if
+    class feature_system_equation: public emp_advanced_feature_base
     {
       public:
         feature_system_equation(const emp_piece_db & p_db
@@ -46,9 +46,19 @@ namespace edge_matching_puzzle
                                ,emp_gui & p_gui
                                );
 
-        // Method inherited from feature if
-        void run() override;
+        // Method inherited from emp_advanced_feature_base
+        void specific_run() override;
 
+        void send_info(uint64_t & p_nb_situations
+                      ,uint64_t & p_nb_solutions
+                      ,unsigned int & p_shift
+                      ,emp_types::t_binary_piece * p_pieces
+                      ,const emp_FSM_info & p_FSM_info
+                      ) const;
+
+        void compute_partial_bin_id(emp_types::bitfield & p_bitfield
+                                   ,unsigned int p_max
+                                   ) const;
         // End of method inherited from feature if
 
         ~feature_system_equation() override = default;
@@ -70,11 +80,6 @@ namespace edge_matching_puzzle
          * @return index in piece check list
          */
         unsigned int mark_checked(const simplex_variable & p_variable);
-
-        /**
-         * Strategy generator that will determine order of positions
-         */
-        const std::unique_ptr<emp_strategy_generator> m_strategy_generator;
 
         /**
          * Contains initial situation
@@ -107,15 +112,12 @@ namespace edge_matching_puzzle
          */
         std::vector<std::pair<bool,emp_types::bitfield> > m_pieces_check_mask;
 
-        /**
-         * Graphical interface for situation display
-         */
-        emp_gui & m_gui;
+        std::vector<emp_se_step_info> m_stack;
 
-        /**
-         * Puzzle information
-         */
-        const emp_FSM_info & m_info;
+        uint64_t m_counter = 0;
+
+        unsigned int m_step;
+
     };
 }
 #endif // _EMP_SYSTEM_EQUATION_H_
