@@ -162,6 +162,9 @@ namespace edge_matching_puzzle
         emp_web_server * m_web_server;
 #endif // WEBSERVER
 
+#ifdef PERFORMANCE_CHECK
+        unsigned int m_dump_counter = 0;
+#endif
     };
 
     //-------------------------------------------------------------------------
@@ -309,6 +312,12 @@ namespace edge_matching_puzzle
 #if defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
         std::cout << "Feature leaving pause" << std::endl;
 #endif //defined DEBUG_WEBSERVER || defined DEBUG_SAVE_THREAD
+
+#ifdef PERFORMANCE_CHECK
+        ++m_dump_counter;
+        std::cout << "Dump counter = " << m_dump_counter << std::endl;
+        if(2 == m_dump_counter) exit(0);
+#endif
     }
 
 #endif // SAVE_THREAD
