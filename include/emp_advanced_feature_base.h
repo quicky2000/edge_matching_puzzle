@@ -272,7 +272,7 @@ namespace edge_matching_puzzle
         std::cout << "Create save thread" << std::endl ;
         while(!static_cast<bool>(p_stop))
         {
-            std::this_thread::sleep_for(std::chrono::duration<int>(10));
+            std::this_thread::sleep_for(std::chrono::duration<int>(60));
             //	std::cout << "Ask for save" << std::endl ;
             p_strategy.pause();
             //	std::cout << "Wait for save done" << std::endl ;
