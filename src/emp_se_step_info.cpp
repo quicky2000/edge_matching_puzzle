@@ -71,7 +71,7 @@ namespace edge_matching_puzzle
     bool
     emp_se_step_info::check_mask(const emp_types::bitfield & p_mask)
     {
-        return m_available_variables.and_not_null(p_mask);
+        return m_available_variables.r_and_not_null(p_mask);
     }
 
     //-------------------------------------------------------------------------
