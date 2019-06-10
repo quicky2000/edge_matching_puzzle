@@ -52,7 +52,7 @@ namespace edge_matching_puzzle
          * @param p_mask mask to apply
          * @return false if result has only 0 bits
          */
-        bool check_mask(const emp_types::bitfield & p_mask);
+        bool check_mask(const emp_types::bitfield & p_mask, unsigned int p_variable_index);
 
         void set_check_piece_index(unsigned int p_check_piece_index);
 

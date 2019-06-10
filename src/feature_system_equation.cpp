@@ -220,7 +220,7 @@ namespace edge_matching_puzzle
                     bool l_continue = true;
                     for(unsigned int l_tested_index = m_step + 1; l_continue && l_tested_index < l_nb_pieces; ++l_tested_index)
                     {
-                        l_continue = m_stack[m_step + 1].check_mask(m_positions_check_mask[l_tested_index]);
+                        l_continue = m_stack[m_step + 1].check_mask(m_positions_check_mask[l_tested_index], l_variable_index + 1);
                     }
 
                     if(l_continue)
@@ -235,7 +235,7 @@ namespace edge_matching_puzzle
                         {
                             if(m_pieces_check_mask[l_tested_index].first)
                             {
-                                l_continue = m_stack[m_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second);
+                                l_continue = m_stack[m_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second, l_variable_index + 1);
                             }
                         }
                         if(l_continue)
