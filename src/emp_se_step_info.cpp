@@ -57,7 +57,8 @@ namespace edge_matching_puzzle
     {
         p_previous_step.m_available_variables.set(0, 1, p_variable_index);
         p_previous_step.m_variable_index = p_variable_index;
-        m_available_variables.apply_and(p_previous_step.m_available_variables, p_mask);
+        unsigned int l_min_index = m_variable_index < p_variable_index ? m_variable_index : p_variable_index;
+        m_available_variables.apply_and(p_previous_step.m_available_variables, p_mask, l_min_index);
     }
 
     //-------------------------------------------------------------------------
