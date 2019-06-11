@@ -42,7 +42,7 @@ namespace edge_matching_puzzle
     bool
     emp_se_step_info::get_next_variable(unsigned int & p_variable_index) const
     {
-        p_variable_index = (unsigned int)m_available_variables.ffs(); 
+        p_variable_index = (unsigned int)m_available_variables.ffs(p_variable_index);
         // Remove one because 0 mean no variable available, n mean variable
         // n-1 available
         return p_variable_index-- != 0;

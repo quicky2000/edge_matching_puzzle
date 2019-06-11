@@ -186,6 +186,7 @@ namespace edge_matching_puzzle
 
         m_step = l_index;
         unsigned int l_max_step = 0;
+        unsigned int l_variable_index = 0;
         while(m_step < l_nb_pieces)
         {
 #if defined WEBSERVER || defined SAVE_THREAD
@@ -195,7 +196,6 @@ namespace edge_matching_puzzle
             }
 #endif
             ++m_counter;
-            unsigned int l_variable_index;
             if(m_stack[m_step].get_next_variable(l_variable_index))
             {
                 m_stack[m_step + 1].select_variable(l_variable_index, m_stack[m_step], m_pieces_and_masks[l_variable_index]);
@@ -275,6 +275,7 @@ namespace edge_matching_puzzle
             }
             assert(m_step);
             --m_step;
+            l_variable_index = m_stack[m_step].get_variable_index();
             // Make piece that was used at this step checkable again
             unsigned int l_piece_check_index = m_stack[m_step].get_check_piece_index();
             assert(l_piece_check_index < m_pieces_check_mask.size());
