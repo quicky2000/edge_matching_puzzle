@@ -37,13 +37,16 @@ namespace edge_matching_puzzle
                         ,unsigned int p_y
                         );
 
+        inline
         void select_variable(unsigned int p_variable_index
                             ,emp_se_step_info & p_previous_step
                             ,const emp_types::bitfield & p_mask
                             );
 
+        inline
         bool get_next_variable(unsigned int & p_variable_index) const;
 
+        inline
         unsigned int get_variable_index() const;
 
         /**
@@ -52,16 +55,22 @@ namespace edge_matching_puzzle
          * @param p_mask mask to apply
          * @return false if result has only 0 bits
          */
+        inline
         bool check_mask(const emp_types::bitfield & p_mask, unsigned int p_variable_index);
 
+        inline
         void set_check_piece_index(unsigned int p_check_piece_index);
 
+        inline
         unsigned int get_check_piece_index() const;
 
+        inline
         unsigned int get_x() const;
 
+        inline
         unsigned int get_y() const;
 
+        inline
         emp_types::t_kind get_kind() const;
 
       private:
@@ -96,5 +105,79 @@ namespace edge_matching_puzzle
          */
         unsigned int m_y;
     };
+
+
+    //-------------------------------------------------------------------------
+    bool
+    emp_se_step_info::get_next_variable(unsigned int & p_variable_index) const
+    {
+        p_variable_index = (unsigned int)m_available_variables.ffs(p_variable_index);
+        // Remove one because 0 mean no variable available, n mean variable
+        // n-1 available
+        return p_variable_index-- != 0;
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    emp_se_step_info::select_variable(unsigned int p_variable_index
+                                     ,emp_se_step_info & p_previous_step
+                                     ,const emp_types::bitfield & p_mask
+                                     )
+    {
+        p_previous_step.m_available_variables.set(0, 1, p_variable_index);
+        p_previous_step.m_variable_index = p_variable_index;
+        unsigned int l_min_index = m_variable_index < p_variable_index ? m_variable_index : p_variable_index;
+        m_available_variables.apply_and(p_previous_step.m_available_variables, p_mask, l_min_index);
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    emp_se_step_info::get_variable_index() const
+    {
+        return m_variable_index;
+    }
+
+    //-------------------------------------------------------------------------
+    bool
+    emp_se_step_info::check_mask(const emp_types::bitfield & p_mask, unsigned int p_variable_index)
+    {
+        return m_available_variables.r_and_not_null(p_mask, p_variable_index);
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    emp_se_step_info::set_check_piece_index(unsigned int p_check_piece_index)
+    {
+        m_check_piece_index = p_check_piece_index;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    emp_se_step_info::get_check_piece_index() const
+    {
+        return m_check_piece_index;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    emp_se_step_info::get_x() const
+    {
+        return m_x;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    emp_se_step_info::get_y() const
+    {
+        return m_y;
+    }
+
+    //-------------------------------------------------------------------------
+    emp_types::t_kind
+    emp_se_step_info::get_kind() const
+    {
+        return m_position_kind;
+    }
+
 }
 #endif // _EMP_SE_STEP_INFO_H_
