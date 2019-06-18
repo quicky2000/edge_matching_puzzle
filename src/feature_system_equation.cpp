@@ -167,7 +167,7 @@ namespace edge_matching_puzzle
                         break;
                     }
                 }
-                unsigned int l_variable_index;
+                unsigned int l_variable_index = 0;
                 bool l_found = false;
                 while(!l_found && m_stack[l_index].get_next_variable(l_variable_index))
                 {
