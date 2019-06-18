@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <atomic>
 
 namespace edge_matching_puzzle
 {
@@ -82,6 +83,35 @@ namespace edge_matching_puzzle
         unsigned int mark_checked(const simplex_variable & p_variable);
 
         /**
+         * Method executed by worker thread
+         * @param p_id thread id
+         */
+        void worker_run(unsigned int p_id);
+
+        /**
+         * Method to launch a worker thread
+         * @param p_this reference on object containing info to be treated by
+         * thread
+         * @param p_thread_id thread id
+         */
+        static
+        void launch_worker(feature_system_equation & p_this
+                          ,unsigned int p_thread_id
+                          );
+
+        /**
+         * Type representing tasks to execute by worker threads
+         */
+        typedef enum class thread_cmd {WAIT=0, START_AND, START_CHECK_POSITION, START_CHECK_PIECE, STOP} t_thread_cmd;
+
+        /**
+         * Method driving worker threads to execute task
+         * Return when task has been executed
+         * @param p_cmd command indicating task to execute
+         */
+        void execute_task(t_thread_cmd p_cmd);
+
+        /**
          * Contains initial situation
          */
         emp_FSM_situation m_initial_situation;
@@ -118,6 +148,49 @@ namespace edge_matching_puzzle
 
         unsigned int m_step;
 
+        /**
+         * Number of pieces in puzzle
+         */
+        unsigned int m_nb_pieces;
+
+
+        /**
+         * Index of variable to be applied at current step
+         */
+        unsigned int m_variable_index = 0;
+
+        /**
+         * Number of computing threads
+         */
+        unsigned int m_nb_worker_thread = 4;
+
+        /**
+         * Variable used to pass commands to threads
+         */
+        std::atomic<unsigned int> m_thread_cmd{(unsigned int)t_thread_cmd::WAIT};
+
+        /**
+         * Variable counting number of thread whose task is started
+         */
+        std::atomic<unsigned int> m_started_thread_counter{0};
+
+        /**
+         * Variable counting number of thread whose task is terminated
+         */
+        std::atomic<unsigned int> m_finished_thread_counter{0};
+
+        /**
+         * Variable counting number of thread ready to start a new task
+         */
+        std::atomic<unsigned int> m_ready_thread_counter{0};
+
+        /**
+         * Operator displaying name of thread command
+         * @param p_stream stream on which thread command is displayed
+         * @param p_cmd thread command whose name will be displayed
+         * @return stream on which thread command is displayed
+         */
+        friend std::ostream & operator<<(std::ostream & p_stream, feature_system_equation::t_thread_cmd p_cmd);
     };
 }
 #endif // _EMP_SYSTEM_EQUATION_H_

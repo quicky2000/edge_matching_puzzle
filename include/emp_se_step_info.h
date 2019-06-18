@@ -38,10 +38,10 @@ namespace edge_matching_puzzle
                         );
 
         inline
-        void select_variable(unsigned int p_variable_index
-                            ,emp_se_step_info & p_previous_step
-                            ,const emp_types::bitfield & p_mask
-                            );
+        void
+        select_variable(unsigned int p_variable_index,
+                        emp_se_step_info & p_previous_step
+                       );
 
         inline
         bool get_next_variable(unsigned int & p_variable_index) const;
@@ -72,6 +72,14 @@ namespace edge_matching_puzzle
 
         inline
         emp_types::t_kind get_kind() const;
+
+        inline
+        void apply_and(unsigned int p_variable_index
+                      ,emp_se_step_info & p_previous_step
+                      ,const emp_types::bitfield & p_mask
+                      ,unsigned int p_thread_id
+                      ,unsigned int p_nb_thread
+                      );
 
       private:
 
@@ -121,13 +129,28 @@ namespace edge_matching_puzzle
     void
     emp_se_step_info::select_variable(unsigned int p_variable_index
                                      ,emp_se_step_info & p_previous_step
-                                     ,const emp_types::bitfield & p_mask
                                      )
     {
         p_previous_step.m_available_variables.set(0, 1, p_variable_index);
         p_previous_step.m_variable_index = p_variable_index;
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    emp_se_step_info::apply_and(unsigned int p_variable_index
+                               ,emp_se_step_info & p_previous_step
+                               ,const emp_types::bitfield & p_mask
+                               ,unsigned int p_thread_id
+                               ,unsigned int p_nb_thread
+                               )
+    {
         unsigned int l_min_index = m_variable_index < p_variable_index ? m_variable_index : p_variable_index;
-        m_available_variables.apply_and(p_previous_step.m_available_variables, p_mask, l_min_index);
+        m_available_variables.apply_and(p_previous_step.m_available_variables
+                                       ,p_mask
+                                       ,l_min_index
+                                       ,p_thread_id
+                                       ,p_nb_thread
+                                       );
     }
 
     //-------------------------------------------------------------------------
