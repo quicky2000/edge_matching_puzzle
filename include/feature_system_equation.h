@@ -185,6 +185,11 @@ namespace edge_matching_puzzle
         std::atomic<unsigned int> m_ready_thread_counter{0};
 
         /**
+         *
+         */
+        std::atomic<bool> m_continu_check;
+
+        /**
          * Operator displaying name of thread command
          * @param p_stream stream on which thread command is displayed
          * @param p_cmd thread command whose name will be displayed

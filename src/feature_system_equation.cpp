@@ -229,28 +229,20 @@ namespace edge_matching_puzzle
                     continue;
 #endif // 0
                     // Check if there are no lock positions
-                    bool l_continue = true;
-                    for(unsigned int l_tested_index = m_step + 1; l_continue && l_tested_index < m_nb_pieces; ++l_tested_index)
-                    {
-                        l_continue = m_stack[m_step + 1].check_mask(m_positions_check_mask[l_tested_index], m_variable_index + 1);
-                    }
+                    m_continu_check.store(true, std::memory_order_release);
 
-                    if(l_continue)
+                    // Thread management
+                    execute_task(t_thread_cmd::START_CHECK_POSITION);
+
+                    if(m_continu_check.load(std::memory_order_acquire))
                     {
                         // Indicate that this piece should not be more checked
                         unsigned int l_check_piece_index = mark_checked(l_variable);
 
-                        // Check pieces
-                        l_continue = true;
-                        unsigned int l_tested_index = 0;
-                        for(; l_continue && l_tested_index < m_nb_pieces; ++l_tested_index)
-                        {
-                            if(m_pieces_check_mask[l_tested_index].first)
-                            {
-                                l_continue = m_stack[m_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second, m_variable_index + 1);
-                            }
-                        }
-                        if(l_continue)
+                        // Thread management
+                        execute_task(t_thread_cmd::START_CHECK_PIECE);
+
+                        if(m_continu_check.load(std::memory_order_acquire))
                         {
                             // Store piece check index associated with this step
                             // to be able to make pieces checkable again in case of rollback
@@ -417,9 +409,34 @@ namespace edge_matching_puzzle
                                                  );
                     break;
                 case t_thread_cmd::START_CHECK_POSITION:
+                    for(unsigned int l_tested_index = m_step + 1 + p_id; m_continu_check.load(std::memory_order_acquire) && l_tested_index < m_nb_pieces; l_tested_index += m_nb_worker_thread)
+                    {
+                        if(!m_stack[m_step + 1].check_mask(m_positions_check_mask[l_tested_index], m_variable_index + 1))
+                        {
+                            m_continu_check.store(false, std::memory_order_release);
+                            break;
+                        }
+                    }
                     break;
                 case t_thread_cmd::START_CHECK_PIECE:
-                    break;
+                {
+                    // Check pieces
+                    unsigned int l_tested_index = 0;
+                    for (; m_continu_check.load(std::memory_order_acquire) && l_tested_index < m_nb_pieces;
+                           ++l_tested_index
+                            )
+                    {
+                        if (m_pieces_check_mask[l_tested_index].first)
+                        {
+                            if (!m_stack[m_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second, m_variable_index + 1))
+                            {
+                                m_continu_check.store(false, std::memory_order_release);
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
                 default:
                     throw quicky_exception::quicky_logic_exception("Unknown thread command " + std::to_string((unsigned int)l_cmd), __LINE__, __FILE__);
             }
