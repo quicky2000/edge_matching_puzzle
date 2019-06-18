@@ -19,6 +19,7 @@
 
 #include "feature_system_equation.h"
 #include "emp_se_step_info.h"
+#include <thread>
 
 //#define DEBUG_PIECE_CHECK
 //#define DEBUG_POSITION_CHECK
@@ -40,6 +41,7 @@ namespace edge_matching_puzzle
                           ,p_hint_string
                           ,m_hint_situation
                           )
+    ,m_nb_pieces(p_info.get_height() * p_info.get_width())
     {
         m_initial_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
         m_hint_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
@@ -130,8 +132,7 @@ namespace edge_matching_puzzle
         get_gui().display(m_initial_situation);
 
         // Prepare stack
-        unsigned int l_nb_pieces = get_info().get_height() * get_info().get_width();
-        for(unsigned int l_index = 0; l_index < l_nb_pieces; ++l_index)
+        for(unsigned int l_index = 0; l_index < m_nb_pieces; ++l_index)
         {
             unsigned int l_x;
             unsigned int l_y;
@@ -148,7 +149,7 @@ namespace edge_matching_puzzle
         // Set initial situation if provided
         unsigned int l_index = 0;
         bool l_continu = true;
-        while(l_continu && l_index < l_nb_pieces)
+        while(l_continu && l_index < m_nb_pieces)
         {
             unsigned int l_x;
             unsigned int l_y;
@@ -172,7 +173,9 @@ namespace edge_matching_puzzle
                 while(!l_found && m_stack[l_index].get_next_variable(l_variable_index))
                 {
                     l_found = l_variable_index == l_variable_id;
-                    m_stack[l_index + 1].select_variable(l_variable_index, m_stack[l_index], m_pieces_and_masks[l_variable_index]);
+                    m_stack[l_index + 1].select_variable(l_variable_index, m_stack[l_index]);
+                    m_stack[l_index + 1].apply_and(l_variable_index, m_stack[l_index], m_pieces_and_masks[l_variable_index], 0, 1);
+
                 }
                 if(!l_found)
                 {
@@ -184,10 +187,16 @@ namespace edge_matching_puzzle
             }
         }
 
+        // Create worker threads
+        std::vector<std::thread *> l_threads;
+        for(unsigned int l_thread_index = 0; l_thread_index < m_nb_worker_thread; ++l_thread_index)
+        {
+            l_threads.emplace_back(new std::thread(feature_system_equation::launch_worker,std::ref(*this), l_thread_index));
+        }
+
         m_step = l_index;
         unsigned int l_max_step = 0;
-        unsigned int l_variable_index = 0;
-        while(m_step < l_nb_pieces)
+        while(m_step < m_nb_pieces)
         {
 #if defined WEBSERVER || defined SAVE_THREAD
             if(is_pause_requested())
@@ -196,9 +205,12 @@ namespace edge_matching_puzzle
             }
 #endif
             ++m_counter;
-            if(m_stack[m_step].get_next_variable(l_variable_index))
+            if(m_stack[m_step].get_next_variable(m_variable_index))
             {
-                m_stack[m_step + 1].select_variable(l_variable_index, m_stack[m_step], m_pieces_and_masks[l_variable_index]);
+                m_stack[m_step + 1].select_variable(m_variable_index, m_stack[m_step]);
+
+                // Thread management
+                execute_task(t_thread_cmd::START_AND);
 
                 if(m_step > l_max_step)
                 {
@@ -208,7 +220,7 @@ namespace edge_matching_puzzle
                     get_gui().display(l_situation);
                     get_gui().refresh();
                 }
-                simplex_variable & l_variable = *m_variable_generator.get_variables()[l_variable_index];
+                simplex_variable & l_variable = *m_variable_generator.get_variables()[m_variable_index];
                 if(m_stack[m_step].get_x() == l_variable.get_x() && m_stack[m_step].get_y() == l_variable.get_y())
                 {
 #if 0
@@ -218,9 +230,9 @@ namespace edge_matching_puzzle
 #endif // 0
                     // Check if there are no lock positions
                     bool l_continue = true;
-                    for(unsigned int l_tested_index = m_step + 1; l_continue && l_tested_index < l_nb_pieces; ++l_tested_index)
+                    for(unsigned int l_tested_index = m_step + 1; l_continue && l_tested_index < m_nb_pieces; ++l_tested_index)
                     {
-                        l_continue = m_stack[m_step + 1].check_mask(m_positions_check_mask[l_tested_index], l_variable_index + 1);
+                        l_continue = m_stack[m_step + 1].check_mask(m_positions_check_mask[l_tested_index], m_variable_index + 1);
                     }
 
                     if(l_continue)
@@ -231,11 +243,11 @@ namespace edge_matching_puzzle
                         // Check pieces
                         l_continue = true;
                         unsigned int l_tested_index = 0;
-                        for(; l_continue && l_tested_index < l_nb_pieces; ++l_tested_index)
+                        for(; l_continue && l_tested_index < m_nb_pieces; ++l_tested_index)
                         {
                             if(m_pieces_check_mask[l_tested_index].first)
                             {
-                                l_continue = m_stack[m_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second, l_variable_index + 1);
+                                l_continue = m_stack[m_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second, m_variable_index + 1);
                             }
                         }
                         if(l_continue)
@@ -275,7 +287,7 @@ namespace edge_matching_puzzle
             }
             assert(m_step);
             --m_step;
-            l_variable_index = m_stack[m_step].get_variable_index();
+            m_variable_index = m_stack[m_step].get_variable_index();
             // Make piece that was used at this step checkable again
             unsigned int l_piece_check_index = m_stack[m_step].get_check_piece_index();
             assert(l_piece_check_index < m_pieces_check_mask.size());
@@ -283,6 +295,12 @@ namespace edge_matching_puzzle
             m_pieces_check_mask[l_piece_check_index].first = true;
         }
         std::cout << "Solution found after " << m_counter << " iterations" << std::endl;
+        m_thread_cmd.store((unsigned int)t_thread_cmd::STOP, std::memory_order_release);
+        for(auto l_iter: l_threads)
+        {
+            l_iter->join();
+            delete l_iter;
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -354,6 +372,148 @@ namespace edge_matching_puzzle
             unsigned int l_offset = l_index * ( get_piece_db().get_dumped_piece_id_size() + 2);
             p_bitfield.set(l_piece_id,get_piece_db().get_dumped_piece_id_size() + 2,l_offset);
         }
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    feature_system_equation::worker_run(unsigned int p_id)
+    {
+#ifdef DEBUG_MULTITHREAD
+        std::cout << "Thread " << p_id << " starting" << std::endl;
+#endif // DEBUG_MULTITHREAD
+        t_thread_cmd l_cmd;
+        while(t_thread_cmd::STOP != (l_cmd = (t_thread_cmd)m_thread_cmd.load(std::memory_order_acquire)))
+        {
+            // Wait end of wait to start AND
+#ifdef DEBUG_MULTITHREAD
+            std::cout << "Thread " << p_id << " ready for new task" << std::endl;
+#endif // DEBUG_MULTITHREAD
+            while(t_thread_cmd::WAIT == l_cmd)
+            {
+                std::this_thread::yield();
+                l_cmd = (t_thread_cmd)m_thread_cmd.load(std::memory_order_acquire);
+            }
+#ifdef DEBUG_MULTITHREAD
+            std::cout << "Thread " << p_id << " receive command \"" << l_cmd << "\"" << std::endl;
+#endif // DEBUG_MULTITHREAD
+            if(t_thread_cmd::STOP == l_cmd)
+            {
+                break;
+            }
+#ifdef DEBUG_MULTITHREAD
+            std::cout << "Thread " << p_id << " start task" << std::endl;
+#endif // DEBUG_MULTITHREAD
+            // Indicate task is started
+            m_started_thread_counter += 1;
+            // Perform task
+            switch(l_cmd)
+            {
+                case t_thread_cmd::START_AND:
+                    m_stack[m_step + 1].apply_and(m_variable_index
+                                                 ,m_stack[m_step]
+                                                 ,m_pieces_and_masks[m_variable_index]
+                                                 ,p_id
+                                                 ,m_nb_worker_thread
+                                                 );
+                    break;
+                case t_thread_cmd::START_CHECK_POSITION:
+                    break;
+                case t_thread_cmd::START_CHECK_PIECE:
+                    break;
+                default:
+                    throw quicky_exception::quicky_logic_exception("Unknown thread command " + std::to_string((unsigned int)l_cmd), __LINE__, __FILE__);
+            }
+
+#ifdef DEBUG_MULTITHREAD
+            std::cout << "Thread " << p_id << " task finished" << std::endl;
+#endif // DEBUG_MULTITHREAD
+            // Indicate task is terminated
+            m_finished_thread_counter += 1;
+
+            // Wait WAIT
+            while(t_thread_cmd::WAIT != (t_thread_cmd)m_thread_cmd.load(std::memory_order_acquire))
+            {
+                std::this_thread::yield();
+            }
+            // Indicate thread is ready to receive a new task
+            m_ready_thread_counter += 1;
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    feature_system_equation::launch_worker(feature_system_equation & p_this,
+                                           unsigned int p_thread_id
+                                          )
+    {
+        p_this.worker_run(p_thread_id);
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    feature_system_equation::execute_task(feature_system_equation::t_thread_cmd p_cmd)
+    {
+#ifdef DEBUG_MULTITHREAD
+        std::cout << "Launch " << p_cmd << std::endl;
+#endif // DEBUG_MULTITHREAD
+        m_thread_cmd.store((unsigned int)p_cmd, std::memory_order_release);
+#ifdef DEBUG_MULTITHREAD
+        std::cout << "Wait for all threads to be started" << std::endl;
+#endif // DEBUG_MULTITHREAD
+        while(m_started_thread_counter.load(std::memory_order_acquire) != m_nb_worker_thread)
+        {
+            std::this_thread::yield();
+        }
+#ifdef DEBUG_MULTITHREAD
+        std::cout << "All threads started" << std::endl;
+#endif // DEBUG_MULTITHREAD
+        m_started_thread_counter.store(0, std::memory_order_release);
+        m_thread_cmd.store((unsigned int)t_thread_cmd::WAIT, std::memory_order_release);
+#ifdef DEBUG_MULTITHREAD
+        std::cout << "Wait end of task execution" << std::endl;
+#endif // DEBUG_MULTITHREAD
+        while(m_finished_thread_counter.load(std::memory_order_acquire) != m_nb_worker_thread)
+        {
+            std::this_thread::yield();
+        }
+        m_finished_thread_counter.store(0, std::memory_order_release);
+#ifdef DEBUG_MULTITHREAD
+        std::cout << "Task execution terminated" << std::endl;
+#endif // DEBUG_MULTITHREAD
+        while(m_ready_thread_counter.load(std::memory_order_acquire) != m_nb_worker_thread)
+        {
+            std::this_thread::yield();
+        }
+#ifdef DEBUG_MULTITHREAD
+        std::cout << "All thread ready" << std::endl;
+#endif // DEBUG_MULTITHREAD
+        m_ready_thread_counter.store(0, std::memory_order_release);
+    }
+
+    //-------------------------------------------------------------------------
+    std::ostream & operator<<(std::ostream & p_stream, feature_system_equation::t_thread_cmd p_cmd)
+    {
+        switch(p_cmd)
+        {
+            case feature_system_equation::t_thread_cmd::WAIT:
+                p_stream << "WAIT";
+                break;
+            case feature_system_equation::t_thread_cmd::START_AND:
+                p_stream << "START_AND";
+                break;
+            case feature_system_equation::t_thread_cmd::START_CHECK_POSITION:
+                p_stream << "START_CHECK_POSITION";
+                break;
+            case feature_system_equation::t_thread_cmd::START_CHECK_PIECE:
+                p_stream << "START_CHECK_PIECE";
+                break;
+            case feature_system_equation::t_thread_cmd::STOP:
+                p_stream << "STOP";
+                break;
+            default:
+                throw quicky_exception::quicky_logic_exception("Unknown thread command " + std::to_string((unsigned int)p_cmd), __LINE__, __FILE__);
+        }
+        return p_stream;
     }
 
 #ifdef DEBUG
