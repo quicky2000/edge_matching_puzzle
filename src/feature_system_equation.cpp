@@ -191,6 +191,7 @@ namespace edge_matching_puzzle
         std::vector<std::thread *> l_threads;
         for(unsigned int l_thread_index = 0; l_thread_index < m_nb_worker_thread; ++l_thread_index)
         {
+            m_thread_cmd[l_thread_index] = t_thread_cmd::WAIT;
             l_threads.emplace_back(new std::thread(feature_system_equation::launch_worker,std::ref(*this), l_thread_index));
         }
 
@@ -295,7 +296,7 @@ namespace edge_matching_puzzle
             m_pieces_check_mask[l_piece_check_index].first = true;
         }
         std::cout << "Solution found after " << m_counter << " iterations" << std::endl;
-        m_thread_cmd.store((unsigned int)t_thread_cmd::STOP, std::memory_order_release);
+        execute_task(t_thread_cmd::STOP);
         for(auto l_iter: l_threads)
         {
             l_iter->join();
@@ -381,32 +382,28 @@ namespace edge_matching_puzzle
 #ifdef DEBUG_MULTITHREAD
         std::cout << "Thread " << p_id << " starting" << std::endl;
 #endif // DEBUG_MULTITHREAD
-        t_thread_cmd l_cmd;
-        while(t_thread_cmd::STOP != (l_cmd = (t_thread_cmd)m_thread_cmd.load(std::memory_order_acquire)))
+        do
         {
-            // Wait end of wait to start AND
 #ifdef DEBUG_MULTITHREAD
             std::cout << "Thread " << p_id << " ready for new task" << std::endl;
 #endif // DEBUG_MULTITHREAD
-            while(t_thread_cmd::WAIT == l_cmd)
             {
-                std::this_thread::yield();
-                l_cmd = (t_thread_cmd)m_thread_cmd.load(std::memory_order_acquire);
+                std::unique_lock<std::mutex> l_lock(m_mutex_start);
+                t_thread_cmd * l_cmd = m_thread_cmd;
+                m_condition_variable_start.wait(l_lock
+                                               , [=] {return t_thread_cmd::WAIT != l_cmd[p_id];}
+                                               );
+                l_lock.unlock();
             }
+
 #ifdef DEBUG_MULTITHREAD
-            std::cout << "Thread " << p_id << " receive command \"" << l_cmd << "\"" << std::endl;
+            std::cout << "Thread " << p_id << " receive command \"" << m_thread_cmd[p_id] << "\"" << std::endl;
 #endif // DEBUG_MULTITHREAD
-            if(t_thread_cmd::STOP == l_cmd)
-            {
-                break;
-            }
 #ifdef DEBUG_MULTITHREAD
             std::cout << "Thread " << p_id << " start task" << std::endl;
 #endif // DEBUG_MULTITHREAD
-            // Indicate task is started
-            m_started_thread_counter += 1;
             // Perform task
-            switch(l_cmd)
+            switch(m_thread_cmd[p_id])
             {
                 case t_thread_cmd::START_AND:
                     m_stack[m_step + 1].apply_and(m_variable_index
@@ -415,29 +412,36 @@ namespace edge_matching_puzzle
                                                  ,p_id
                                                  ,m_nb_worker_thread
                                                  );
+                    m_thread_cmd[p_id] = t_thread_cmd::WAIT;
                     break;
                 case t_thread_cmd::START_CHECK_POSITION:
+                    m_thread_cmd[p_id] = t_thread_cmd::WAIT;
                     break;
                 case t_thread_cmd::START_CHECK_PIECE:
+                    m_thread_cmd[p_id] = t_thread_cmd::WAIT;
+                    break;
+                case t_thread_cmd::STOP:
                     break;
                 default:
-                    throw quicky_exception::quicky_logic_exception("Unknown thread command " + std::to_string((unsigned int)l_cmd), __LINE__, __FILE__);
+                    throw quicky_exception::quicky_logic_exception("Unknown thread command " + std::to_string((unsigned int)m_thread_cmd[p_id]), __LINE__, __FILE__);
             }
 
 #ifdef DEBUG_MULTITHREAD
             std::cout << "Thread " << p_id << " task finished" << std::endl;
 #endif // DEBUG_MULTITHREAD
             // Indicate task is terminated
-            m_finished_thread_counter += 1;
-
-            // Wait WAIT
-            while(t_thread_cmd::WAIT != (t_thread_cmd)m_thread_cmd.load(std::memory_order_acquire))
+            if(m_finished_thread_counter.fetch_add(1, std::memory_order_release) == m_nb_worker_thread - 1)
             {
-                std::this_thread::yield();
+#ifdef DEBUG_MULTITHREAD
+                std::cout << "Thread " << p_id << " notify end of task" << std::endl;
+#endif // DEBUG_MULTITHREAD
+                std::lock_guard<std::mutex> l_lock(m_mutex_end);
+                m_condition_variable_end.notify_one();
             }
-            // Indicate thread is ready to receive a new task
-            m_ready_thread_counter += 1;
-        }
+        } while(t_thread_cmd::STOP != m_thread_cmd[p_id]);
+#ifdef DEBUG_MULTITHREAD
+        std::cout << "Thread " << p_id << " terminate" << std::endl;
+#endif // DEBUG_MULTITHREAD
     }
 
     //-------------------------------------------------------------------------
@@ -456,38 +460,32 @@ namespace edge_matching_puzzle
 #ifdef DEBUG_MULTITHREAD
         std::cout << "Launch " << p_cmd << std::endl;
 #endif // DEBUG_MULTITHREAD
-        m_thread_cmd.store((unsigned int)p_cmd, std::memory_order_release);
-#ifdef DEBUG_MULTITHREAD
-        std::cout << "Wait for all threads to be started" << std::endl;
-#endif // DEBUG_MULTITHREAD
-        while(m_started_thread_counter.load(std::memory_order_acquire) != m_nb_worker_thread)
         {
-            std::this_thread::yield();
+            std::lock_guard<std::mutex> l_lock(m_mutex_start);
+            for(unsigned int l_thread_index = 0; l_thread_index < m_nb_worker_thread; ++l_thread_index)
+            {
+                m_thread_cmd[l_thread_index] = p_cmd;
+            }
         }
 #ifdef DEBUG_MULTITHREAD
-        std::cout << "All threads started" << std::endl;
+        std::cout << "Notify threads to start" << std::endl;
 #endif // DEBUG_MULTITHREAD
-        m_started_thread_counter.store(0, std::memory_order_release);
-        m_thread_cmd.store((unsigned int)t_thread_cmd::WAIT, std::memory_order_release);
+        m_condition_variable_start.notify_all();
 #ifdef DEBUG_MULTITHREAD
         std::cout << "Wait end of task execution" << std::endl;
 #endif // DEBUG_MULTITHREAD
-        while(m_finished_thread_counter.load(std::memory_order_acquire) != m_nb_worker_thread)
         {
-            std::this_thread::yield();
+            std::unique_lock<std::mutex> l_lock(m_mutex_end);
+            std::atomic<unsigned int> & l_finished_thread_counter = m_finished_thread_counter;
+            m_condition_variable_end.wait(l_lock
+                                         , [&] {return l_finished_thread_counter == m_nb_worker_thread;}
+                                         );
+            l_lock.unlock();
         }
         m_finished_thread_counter.store(0, std::memory_order_release);
 #ifdef DEBUG_MULTITHREAD
         std::cout << "Task execution terminated" << std::endl;
 #endif // DEBUG_MULTITHREAD
-        while(m_ready_thread_counter.load(std::memory_order_acquire) != m_nb_worker_thread)
-        {
-            std::this_thread::yield();
-        }
-#ifdef DEBUG_MULTITHREAD
-        std::cout << "All thread ready" << std::endl;
-#endif // DEBUG_MULTITHREAD
-        m_ready_thread_counter.store(0, std::memory_order_release);
     }
 
     //-------------------------------------------------------------------------

@@ -30,6 +30,8 @@
 #include <vector>
 #include <memory>
 #include <atomic>
+#include <mutex>
+#include <condition_variable>
 
 namespace edge_matching_puzzle
 {
@@ -162,17 +164,13 @@ namespace edge_matching_puzzle
         /**
          * Number of computing threads
          */
-        unsigned int m_nb_worker_thread = 4;
+        static const unsigned int m_nb_worker_thread = 4;
+        static_assert(!((m_nb_worker_thread - 1) & m_nb_worker_thread), "Nb worker thread must be a power of 2");
 
         /**
          * Variable used to pass commands to threads
          */
-        std::atomic<unsigned int> m_thread_cmd{(unsigned int)t_thread_cmd::WAIT};
-
-        /**
-         * Variable counting number of thread whose task is started
-         */
-        std::atomic<unsigned int> m_started_thread_counter{0};
+        t_thread_cmd m_thread_cmd[m_nb_worker_thread];
 
         /**
          * Variable counting number of thread whose task is terminated
@@ -180,9 +178,26 @@ namespace edge_matching_puzzle
         std::atomic<unsigned int> m_finished_thread_counter{0};
 
         /**
-         * Variable counting number of thread ready to start a new task
+         * Mutex used to protect condition variable used to synchronize threads
+         * start operation
          */
-        std::atomic<unsigned int> m_ready_thread_counter{0};
+        std::mutex m_mutex_start;
+
+        /**
+         * Condition variable used to synchronize threads start operation
+         */
+        std::condition_variable m_condition_variable_start;
+
+        /**
+         * Mutex used to protect condition variable used to indicate threads
+         * end task
+         */
+        std::mutex m_mutex_end;
+
+        /**
+         * Condition variable used to indicate threads are started
+         */
+        std::condition_variable m_condition_variable_end;
 
         /**
          * Operator displaying name of thread command
