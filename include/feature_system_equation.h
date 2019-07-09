@@ -54,11 +54,11 @@ namespace edge_matching_puzzle
                       ,unsigned int & p_shift
                       ,emp_types::t_binary_piece * p_pieces
                       ,const emp_FSM_info & p_FSM_info
-                      ) const;
+                      ) const override;
 
         void compute_partial_bin_id(emp_types::bitfield & p_bitfield
                                    ,unsigned int p_max
-                                   ) const;
+                                   ) const override;
         // End of method inherited from feature if
 
         ~feature_system_equation() override = default;
