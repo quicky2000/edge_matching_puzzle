@@ -33,12 +33,22 @@
 #include <mutex>
 #include <condition_variable>
 
+//#define USE_KILL_SYNCHRO
+#ifdef USE_KILL_SYNCHRO
+#include <csetjmp>
+#include "multi_thread_signal_handler.h"
+#endif // USE_KILL_SYNCHRO
+
+
 namespace edge_matching_puzzle
 {
     class emp_se_step_info;
     class emp_strategy_generator;
 
     class feature_system_equation: public emp_advanced_feature_base
+#ifdef USE_KILL_SYNCHRO
+                                 , public quicky_utils::multi_thread_signal_handler_listener_if
+#endif // USE_KILL_SYNCHRO
     {
       public:
         feature_system_equation(const emp_piece_db & p_db
@@ -101,6 +111,19 @@ namespace edge_matching_puzzle
                           ,unsigned int p_thread_id
                           );
 
+#ifdef USE_KILL_SYNCHRO
+        void
+        handle_signal(int p_signal
+                     ,unsigned int p_thread_index
+                     ) override;
+
+        /**
+         * Send a signal to all worker thread finishing by the emitter one
+         * @param p_thread_index thread index of emitter
+         */
+        void kill_all(unsigned int p_thread_index);
+#endif // USE_KILL_SYNCHRO
+
         /**
          * Type representing tasks to execute by worker threads
          */
@@ -112,6 +135,16 @@ namespace edge_matching_puzzle
          * @param p_cmd command indicating task to execute
          */
         void execute_task(t_thread_cmd p_cmd);
+
+        /**
+         * Inidicate to main thread that task is terminated
+         * @param p_thread_id Thread Id
+         */
+        void finish_task(
+#ifdef DEBUG_MULTITHREAD
+                         unsigned int p_thread_id
+#endif // DEBUG_MULTITHREAD
+                        );
 
         /**
          * Contains initial situation
@@ -168,6 +201,11 @@ namespace edge_matching_puzzle
         static_assert(!((m_nb_worker_thread - 1) & m_nb_worker_thread), "Nb worker thread must be a power of 2");
 
         /**
+         * Threads
+         */
+        std::array<std::thread *, m_nb_worker_thread> m_threads;
+
+        /**
          * Variable used to pass commands to threads
          */
         t_thread_cmd m_thread_cmd[m_nb_worker_thread];
@@ -203,6 +241,19 @@ namespace edge_matching_puzzle
          *
          */
         std::atomic<bool> m_continu_check;
+
+#ifdef USE_KILL_SYNCHRO
+        /**
+         * Buffer used by stejmp longjmp for thread synchronisation
+         */
+        std::array<std::jmp_buf, m_nb_worker_thread>  m_jump_buffer;
+
+        /**
+         * Thread Ids
+         */
+        std::array<std::thread::id, m_nb_worker_thread> m_thread_ids;
+
+#endif // USE_KILL_SYNCHRO
 
         /**
          * Operator displaying name of thread command
