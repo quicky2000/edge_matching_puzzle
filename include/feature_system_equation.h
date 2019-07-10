@@ -39,6 +39,9 @@
 #include "multi_thread_signal_handler.h"
 #endif // USE_KILL_SYNCHRO
 
+#ifdef USE_PIPE_SYNCHRO
+#include <unistd.h>
+#endif // USE_PIPE_SYNCHRO
 
 namespace edge_matching_puzzle
 {
@@ -134,16 +137,24 @@ namespace edge_matching_puzzle
          * Return when task has been executed
          * @param p_cmd command indicating task to execute
          */
-        void execute_task(t_thread_cmd p_cmd);
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+        bool
+#else // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
+        void
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
+        execute_task(t_thread_cmd p_cmd);
 
         /**
          * Inidicate to main thread that task is terminated
          * @param p_thread_id Thread Id
          */
         void finish_task(
-#ifdef DEBUG_MULTITHREAD
+#if defined(USE_PIPE_SYNCHRO) || defined(DEBUG_MULTITHREAD)
                          unsigned int p_thread_id
-#endif // DEBUG_MULTITHREAD
+#endif // USE_PIPE_SYNCHRO || DEBUG_MULTITHREAD
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+                        ,bool p_continu
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
                         );
 
         /**
@@ -205,6 +216,11 @@ namespace edge_matching_puzzle
          */
         std::array<std::thread *, m_nb_worker_thread> m_threads;
 
+#ifdef USE_PIPE_SYNCHRO
+        std::array<int, 2 * m_nb_worker_thread> m_cmd_pipe_fd;
+
+        std::array<int, 2 * m_nb_worker_thread> m_return_pipe_fd;
+#else // USE_PIPE_SYNCHRO
         /**
          * Variable used to pass commands to threads
          */
@@ -237,11 +253,14 @@ namespace edge_matching_puzzle
          */
         std::condition_variable m_condition_variable_end;
 
+#endif // USE_PIPE_SYNCHRO
+
+#if !(defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO))
         /**
          *
          */
         std::atomic<bool> m_continu_check;
-
+#endif // !(USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO)
 #ifdef USE_KILL_SYNCHRO
         /**
          * Buffer used by stejmp longjmp for thread synchronisation

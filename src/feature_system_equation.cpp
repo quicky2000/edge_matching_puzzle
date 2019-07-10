@@ -191,9 +191,32 @@ namespace edge_matching_puzzle
 #ifdef USE_KILL_SYNCHRO
         quicky_utils::multi_thread_signal_handler<m_nb_worker_thread>::create_unique_instance(*this, m_thread_ids, {SIGUSR1});
 #endif // USE_KILL_SYNCHRO
+#ifdef USE_PIPE_SYNCHRO
         for(unsigned int l_thread_index = 0; l_thread_index < m_nb_worker_thread; ++l_thread_index)
         {
+            if (pipe(&m_cmd_pipe_fd[2 * l_thread_index]))
+            {
+                throw quicky_exception::quicky_runtime_exception(
+                        "Error when creating command pipe for thread " + std::to_string(l_thread_index),
+                        __LINE__,
+                        __FILE__
+                                                                );
+            }
+            if (pipe(&m_return_pipe_fd[2 * l_thread_index]))
+            {
+                throw quicky_exception::quicky_runtime_exception(
+                        "Error when creating return pipe for thread " + std::to_string(l_thread_index),
+                        __LINE__,
+                        __FILE__
+                                                                );
+            }
+        }
+#endif // USE_PIPE_SYNCHRO
+        for(unsigned int l_thread_index = 0; l_thread_index < m_nb_worker_thread; ++l_thread_index)
+        {
+#ifndef USE_PIPE_SYNCHRO
             m_thread_cmd[l_thread_index] = t_thread_cmd::WAIT;
+#endif // USE_PIPE_SYNCHRO
             m_threads[l_thread_index] = new std::thread(feature_system_equation::launch_worker,std::ref(*this), l_thread_index);
 #ifdef USE_KILL_SYNCHRO
             m_thread_ids[l_thread_index] = m_threads[l_thread_index]->get_id();
@@ -234,21 +257,41 @@ namespace edge_matching_puzzle
                     ++m_step;
                     continue;
 #endif // 0
+#if !defined(USE_PIPE_SYNCHRO) || !defined(USE_KILL_SYNCHRO)
                     // Check if there are no lock positions
                     m_continu_check.store(true, std::memory_order_release);
+#endif // !(USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO)
 
                     // Thread management
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+                    bool l_result =
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
                     execute_task(t_thread_cmd::START_CHECK_POSITION);
 
-                    if(m_continu_check.load(std::memory_order_acquire))
+                    if(
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+                      l_result
+#else // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
+                      m_continu_check.load(std::memory_order_acquire)
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
+                      )
                     {
                         // Indicate that this piece should not be more checked
                         unsigned int l_check_piece_index = mark_checked(l_variable);
 
                         // Thread management
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+                        l_result =
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
                         execute_task(t_thread_cmd::START_CHECK_PIECE);
 
-                        if(m_continu_check.load(std::memory_order_acquire))
+                        if(
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+                           l_result
+#else // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
+                           m_continu_check.load(std::memory_order_acquire)
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
+                          )
                         {
                             // Store piece check index associated with this step
                             // to be able to make pieces checkable again in case of rollback
@@ -383,37 +426,60 @@ namespace edge_matching_puzzle
         assert(m_jump_buffer.size() > p_id);
         if(setjmp(m_jump_buffer[p_id]))
         {
+#ifndef USE_PIPE_SYNCHRO
             // In case thread was not started before receiving signal
             m_thread_cmd[p_id] = t_thread_cmd::WAIT;
+#endif // USE_PIPE_SYNCHRO
             finish_task(
-#ifdef DEBUG_MULTITHREAD
+#if defined(DEBUG_MULTITHREAD) || defined(USE_PIPE_SYNCHRO)
                         p_id
-#endif // DEBUG_MULTITHREAD
+#endif // DEBUG_MULTITHREAD || USE_PIPE_SYNCHRO
+#ifdef USE_PIPE_SYNCHRO
+                       ,false
+#endif // USE_PIPE_SYNCHRO
                        );
         }
 #endif // USE_KILL_SYNCHRO
+
+#ifdef USE_PIPE_SYNCHRO
+        t_thread_cmd l_thread_cmd;
+#ifdef USE_KILL_SYNCHRO
+        bool l_continu = true;
+#endif // USE_KILL_SYNCHRO
+#else // USE_PIPE_SYNCHRO
+        t_thread_cmd & l_thread_cmd = m_thread_cmd[p_id];
+#endif // USE_PIPE_SYNCHRO
+
         do
         {
 #ifdef DEBUG_MULTITHREAD
             std::cout << "Thread " << p_id << " ready for new task" << std::endl;
 #endif // DEBUG_MULTITHREAD
+
+#ifdef USE_PIPE_SYNCHRO
+            size_t l_size = read(m_cmd_pipe_fd[2 * p_id], &l_thread_cmd, sizeof(l_thread_cmd));
+            assert(sizeof(l_thread_cmd) == l_size);
+#ifdef USE_KILL_SYNCHRO
+            l_continu = true;
+#endif // USE_KILL_SYNCHRO
+#else // USE_PIPE_SYNCHRO
             {
                 std::unique_lock<std::mutex> l_lock(m_mutex_start);
-                t_thread_cmd * l_cmd = m_thread_cmd;
                 m_condition_variable_start.wait(l_lock
-                                               , [=] {return t_thread_cmd::WAIT != l_cmd[p_id];}
+                                               , [&] {return t_thread_cmd::WAIT != l_thread_cmd;}
                                                );
                 l_lock.unlock();
             }
-
+#endif // USE_PIPE_SYNCHRO
 #ifdef DEBUG_MULTITHREAD
-            std::cout << "Thread " << p_id << " receive command \"" << m_thread_cmd[p_id] << "\"" << std::endl;
+            std::cout << "Thread " << p_id << " receive command \"" << l_thread_cmd << "\"" << std::endl;
 #endif // DEBUG_MULTITHREAD
+
 #ifdef DEBUG_MULTITHREAD
             std::cout << "Thread " << p_id << " start task" << std::endl;
 #endif // DEBUG_MULTITHREAD
             // Perform task
-            switch(m_thread_cmd[p_id])
+            switch(l_thread_cmd)
             {
                 case t_thread_cmd::START_AND:
                     m_stack[m_step + 1].apply_and(m_variable_index
@@ -422,10 +488,14 @@ namespace edge_matching_puzzle
                                                  ,p_id
                                                  ,m_nb_worker_thread
                                                  );
-                    m_thread_cmd[p_id] = t_thread_cmd::WAIT;
+#ifndef USE_PIPE_SYNCHRO
+                    l_thread_cmd = t_thread_cmd::WAIT;
+#endif // USE_PIPE_SYNCHRO
                     break;
                 case t_thread_cmd::START_CHECK_POSITION:
-                    m_thread_cmd[p_id] = t_thread_cmd::WAIT;
+#ifndef USE_PIPE_SYNCHRO
+                    l_thread_cmd = t_thread_cmd::WAIT;
+#endif // USE_PIPE_SYNCHRO
                     for(unsigned int l_tested_index = m_step + 1 + p_id;
 #ifndef USE_KILL_SYNCHRO
                         m_continu_check.load(std::memory_order_acquire) &&
@@ -436,7 +506,11 @@ namespace edge_matching_puzzle
                     {
                         if(!m_stack[m_step + 1].check_mask(m_positions_check_mask[l_tested_index], m_variable_index + 1))
                         {
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+                            l_continu = false;
+#else // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
                             m_continu_check.store(false, std::memory_order_release);
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
 #ifdef USE_KILL_SYNCHRO
                             kill_all(p_id);
 #endif // USE_KILL_SYNCHRO
@@ -446,7 +520,9 @@ namespace edge_matching_puzzle
                     break;
                 case t_thread_cmd::START_CHECK_PIECE:
                 {
-                    m_thread_cmd[p_id] = t_thread_cmd::WAIT;
+#ifndef USE_PIPE_SYNCHRO
+                    l_thread_cmd = t_thread_cmd::WAIT;
+#endif // USE_PIPE_SYNCHRO
                     // Check pieces
                     unsigned int l_tested_index = 0;
                     for (;
@@ -461,7 +537,11 @@ namespace edge_matching_puzzle
                         {
                             if (!m_stack[m_step + 1].check_mask(m_pieces_check_mask[l_tested_index].second, m_variable_index + 1))
                             {
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+                                l_continu = false;
+#else // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
                                 m_continu_check.store(false, std::memory_order_release);
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
 #ifdef USE_KILL_SYNCHRO
                                 kill_all(p_id);
 #endif // USE_KILL_SYNCHRO
@@ -474,14 +554,17 @@ namespace edge_matching_puzzle
                 case t_thread_cmd::STOP:
                     break;
                 default:
-                    throw quicky_exception::quicky_logic_exception("Unknown thread command " + std::to_string((unsigned int)m_thread_cmd[p_id]), __LINE__, __FILE__);
+                    throw quicky_exception::quicky_logic_exception("Unknown thread command " + std::to_string((unsigned int) l_thread_cmd), __LINE__, __FILE__);
             }
             finish_task(
-#ifdef DEBUG_MULTITHREAD
+#if defined(USE_PIPE_SYNCHRO) || defined(DEBUG_MULTITHREAD)
                         p_id
-#endif // DEBUG_MULTITHREAD
+#endif // USE_PIPE_SYNCHRO || DEBUG_MULTITHREAD
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+                       ,l_continu
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
                        );
-        } while(t_thread_cmd::STOP != m_thread_cmd[p_id]);
+        } while(t_thread_cmd::STOP != l_thread_cmd);
 #ifdef DEBUG_MULTITHREAD
         std::cout << "Thread " << p_id << " terminate" << std::endl;
 #endif // DEBUG_MULTITHREAD
@@ -490,15 +573,27 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     void
     feature_system_equation::finish_task(
-#ifdef DEBUG_MULTITHREAD
+#if defined(USE_PIPE_SYNCHRO) || defined(DEBUG_MULTITHREAD)
                                          unsigned int p_thread_id
-#endif // DEBUG_MULTITHREAD
+#endif // USE_PIPE_SYNCHRO && DEBUG_MULTITHREAD
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+                                        ,bool p_continu
+#endif // DEBUG_MULTITHREAD && USE_KILL_SYNCHR
                                         )
     {
 #ifdef DEBUG_MULTITHREAD
         std::cout << "Thread " << p_thread_id << " task finished" << std::endl;
 #endif // DEBUG_MULTITHREAD
         // Indicate task is terminated
+
+#ifdef USE_PIPE_SYNCHRO
+#ifdef USE_KILL_SYNCHRO
+        write(m_return_pipe_fd[ 2 * p_thread_id + 1], &p_continu, sizeof(p_continu));
+#else // USE_KILL_SYNCHRO
+        bool l_continu = true;
+        write(m_return_pipe_fd[ 2 * p_thread_id + 1], &l_continu, sizeof(l_continu));
+#endif // USE_KILL_SYNCHRO
+#else // USE_PIPE_SYNCHRO
         if(m_finished_thread_counter.fetch_add(1, std::memory_order_release) == m_nb_worker_thread - 1)
         {
 #ifdef DEBUG_MULTITHREAD
@@ -507,6 +602,7 @@ namespace edge_matching_puzzle
             std::lock_guard<std::mutex> l_lock(m_mutex_end);
             m_condition_variable_end.notify_one();
         }
+#endif // USE_PIPE_SYNCHRO
     }
 
     //-------------------------------------------------------------------------
@@ -519,12 +615,23 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+    bool
+#else // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
     void
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
     feature_system_equation::execute_task(feature_system_equation::t_thread_cmd p_cmd)
     {
 #ifdef DEBUG_MULTITHREAD
         std::cout << "Launch " << p_cmd << std::endl;
 #endif // DEBUG_MULTITHREAD
+
+#ifdef USE_PIPE_SYNCHRO
+        for(unsigned int l_thread_index = 0; l_thread_index < m_nb_worker_thread; ++l_thread_index)
+        {
+            write(m_cmd_pipe_fd[2 * l_thread_index + 1], &p_cmd, sizeof(p_cmd));
+        }
+#else // USE_PIPE_SYNCHRO
         {
             std::lock_guard<std::mutex> l_lock(m_mutex_start);
             for(unsigned int l_thread_index = 0; l_thread_index < m_nb_worker_thread; ++l_thread_index)
@@ -536,9 +643,23 @@ namespace edge_matching_puzzle
         std::cout << "Notify threads to start" << std::endl;
 #endif // DEBUG_MULTITHREAD
         m_condition_variable_start.notify_all();
+#endif // USE_PIPE_SYNCHRO
 #ifdef DEBUG_MULTITHREAD
         std::cout << "Wait end of task execution" << std::endl;
 #endif // DEBUG_MULTITHREAD
+#ifdef USE_PIPE_SYNCHRO
+#ifdef USE_KILL_SYNCHRO
+        bool l_result{true};
+#endif // USE_KILL_SYNCHRO
+        bool l_continu;
+        for(unsigned int l_thread_index = 0; l_thread_index < m_nb_worker_thread; ++l_thread_index)
+        {
+            read(m_return_pipe_fd[2 * l_thread_index], &l_continu, sizeof(l_continu));
+#ifdef USE_KILL_SYNCHRO
+            l_result &= l_continu;
+#endif // USE_KILL_SYNCHRO
+        }
+#else // USE_PIPE_SYNCHRO
         {
             std::unique_lock<std::mutex> l_lock(m_mutex_end);
             std::atomic<unsigned int> & l_finished_thread_counter = m_finished_thread_counter;
@@ -553,9 +674,13 @@ namespace edge_matching_puzzle
             l_lock.unlock();
         }
         m_finished_thread_counter.store(0, std::memory_order_release);
+#endif // USE_PIPE_SYNCHRO
 #ifdef DEBUG_MULTITHREAD
         std::cout << "Task execution terminated" << std::endl;
 #endif // DEBUG_MULTITHREAD
+#if defined(USE_PIPE_SYNCHRO) && defined(USE_KILL_SYNCHRO)
+        return l_result;
+#endif // USE_PIPE_SYNCHRO && USE_KILL_SYNCHRO
     }
 
 #ifdef USE_KILL_SYNCHRO
