@@ -1,0 +1,4 @@
+exe_file:edge_matching_puzzle
+args:<test_location>/../../doc/example/3_3.txt <test_location>/../../doc/example/ressources dump_solutions
+expected_stdout_string:Total situations explored : 36
+#EOF

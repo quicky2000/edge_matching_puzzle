@@ -1,0 +1,28 @@
+exe_file:edge_matching_puzzle
+args:<test_location>/../../doc/example/4_4.txt <test_location>/../../doc/example/ressources display_solutions --enable_gui=false
+expected_stdout_string:Final situation : " 1N 2N12E16E 8S 6E10W15E 5N11E 7W 3W13N14N 9E 4W"
+expected_stdout_string:Situations explored : 347
+expected_stdout_string:Final situation : " 1N 2N15S16E 8S 7S10E12N 5N11E 6S 3W13N14N 9E 4W"
+expected_stdout_string:Situations explored : 830
+expected_stdout_string:Final situation : " 1N 3N 9W 4N 8S10N 7E14E15W 6N11E 5S16W12W 2S13E"
+expected_stdout_string:Situations explored : 987
+expected_stdout_string:Final situation : " 1N 3N12E16E 2E 7W10S 9S15W 6N11E14E 4S 8W 5E13E"
+expected_stdout_string:Situations explored : 1213
+expected_stdout_string:Final situation : " 1N 3N12E16E 8S10N 7E14E15W 6N11E 5S 4S 9E 2S13E"
+expected_stdout_string:Situations explored : 1273
+expected_stdout_string:Final situation : " 1N 3N12E16E 9N 6W10W15E 2E11N 7N 8N13N 5E14N 4W"
+expected_stdout_string:Situations explored : 1368
+expected_stdout_string:Final situation : " 1N 3N14S16E 9N 6W 7S15E 2E11N10E 8N13N 5E12W 4W"
+expected_stdout_string:Situations explored : 1647
+expected_stdout_string:Final situation : " 1N 3N15S16E 8S10N 7N12N14W 6S11S 5S 4S 9E 2S13E"
+expected_stdout_string:Situations explored : 1844
+expected_stdout_string:Final situation : " 1N 5W 3N 4N 2E11N10E 9S12S 7S 6N14E16W15N 8W13E"
+expected_stdout_string:Situations explored : 2122
+expected_stdout_string:Final situation : " 1N 8E12E16E 2E 6S10S 9S15W 7E11E14E 4S 3S 5E13E"
+expected_stdout_string:Situations explored : 2565
+expected_stdout_string:Final situation : " 1N 8E15S16E 2E 6S 7N 9S12S10W11S14E 4S 3S 5E13E"
+expected_stdout_string:Situations explored : 3158
+expected_stdout_string:Final situation : " 1N 8E15S16E 3E10S 6W12N14W 7W11S 5S 4S 9E 2S13E"
+expected_stdout_string:Situations explored : 3214
+expected_stdout_string:Total situations explored : 3283
+#EOF

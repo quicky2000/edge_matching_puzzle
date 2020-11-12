@@ -56,4 +56,5 @@ before_install:
 script:
   - generate_makefile edge_matching_puzzle
   - make
+  - run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests
 #EOF

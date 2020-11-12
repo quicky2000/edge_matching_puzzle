@@ -1,0 +1,35 @@
+exe_file:edge_matching_puzzle
+args:<test_location>/../../doc/example/4_4.txt <test_location>/../../doc/example/ressources new_strategy --enable_gui=false
+expected_stdout_string:New max : 1
+expected_stdout_string: 1N 2N------------------------------------------
+expected_stdout_string:New max : 2
+expected_stdout_string: 1N 2N 9W---------------------------------------
+expected_stdout_string:New max : 3
+expected_stdout_string: 1N 2N 9W 4N------------------------------------
+expected_stdout_string:New max : 4
+expected_stdout_string: 1N 2N 9W 4N---------12N------------------------
+expected_stdout_string:New max : 5
+expected_stdout_string: 1N 2N 9W 4N---------12N--------- 3W------------
+expected_stdout_string:New max : 6
+expected_stdout_string: 1N 2N 9W 4N---------12N--------- 5S---------13E
+expected_stdout_string:New max : 7
+expected_stdout_string: 1N 2N 9W 4N---------12N--------- 5S------ 3S13E
+expected_stdout_string:New max : 8
+expected_stdout_string: 1N 2N 9W 4N---------12N--------- 5S---14N 3S13E
+expected_stdout_string:New max : 9
+expected_stdout_string: 1N 2N 9W 4N---------12N--------- 5S16W14N 3S13E
+expected_stdout_string:New max : 10
+expected_stdout_string: 1N 2N 9W 4N---------12N15W------ 5S16W14N 3S13E
+expected_stdout_string:New max : 11
+expected_stdout_string: 1N 2N 9W 4N 8S------12N15W------ 5S16W14N 3S13E
+expected_stdout_string:New max : 12
+expected_stdout_string: 1N 2N 9W 4N 8S 6E---12N15W------ 5S16W14N 3S13E
+expected_stdout_string:New max : 13
+expected_stdout_string: 1N 2N 9W 4N 8S 7S10S12N15W------ 5S16W14N 3S13E
+expected_stdout_string:New max : 14
+expected_stdout_string: 1N 2N12E13S 8S 6E10W 3W15W--- 7N 9S16W 5E14N 4W
+expected_stdout_string:New max : 15
+expected_stdout_string: 1N 2N12E16E 8S 6E10W15E 5N11E 7W 3W13N14N 9E 4W
+expected_stdout_string:Total situations explored : 3284
+expected_stdout_string:Nb solutions : 12
+#EOF

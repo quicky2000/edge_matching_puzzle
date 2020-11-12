@@ -1,0 +1,61 @@
+Nunber of invalid situations per level : 
+1	:0
+2	:0
+3	:0
+4	:16
+5	:0
+6	:0
+7	:0
+8	:304
+9	:0
+10	:48
+11	:256
+12	:2816
+13	:48
+14	:496
+15	:1248
+16	:176
+17	:172
+18	:4138
+19	:584
+20	:2408
+21	:287
+22	:819
+23	:162
+24	:29
+25	:0
+
+Nunber of intermediate situations per level : 
+1	:1
+2	:4
+3	:12
+4	:24
+5	:40
+6	:140
+7	:392
+8	:624
+9	:688
+10	:1720
+11	:2968
+12	:2032
+13	:1984
+14	:2336
+15	:1408
+16	:1232
+17	:2716
+18	:1982
+19	:1820
+20	:896
+21	:703
+22	:177
+23	:30
+24	:1
+25	:0
+
+Total final situations : 1
+
+Total invalid situations : 14007
+
+Total intermediate situations : 23930
+
+Total situations : 37938

@@ -1,0 +1,3 @@
+exe_file:edge_matching_puzzle
+args:<test_location>/../../doc/example/4_4.txt <test_location>/../../doc/example/ressources compute_stats
+#EOF

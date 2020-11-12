@@ -1,0 +1,20 @@
+exe_file:edge_matching_puzzle
+args:<test_location>/../../doc/example/4_4.txt <test_location>/../../doc/example/ressources system_equation --enable_gui=false
+expected_stdout_string:Nb variables : 144
+expected_stdout_string:Step: 1 =>  1N 2N------------------------------------------
+expected_stdout_string:Step: 2 =>  1N 2N 9W---------------------------------------
+expected_stdout_string:Step: 3 =>  1N 2N 9W 4N------------------------------------
+expected_stdout_string:Step: 4 =>  1N 2N 9W 4N 3E---------------------------------
+expected_stdout_string:Step: 5 =>  1N 2N 9W 4N 3E11S------------------------------
+expected_stdout_string:Step: 6 =>  1N 2N 9W 4N 3E11S 6S---------------------------
+expected_stdout_string:Step: 7 =>  1N 2N 9W 4N 3E11S 6S15E------------------------
+expected_stdout_string:Step: 8 =>  1N 2N 9W 4N 3E11S 6S15E 5N---------------------
+expected_stdout_string:Step: 9 =>  1N 2N 9W 4N 3E11S 6S15E12S 7S------------------
+expected_stdout_string:Step: 10 =>  1N 2N 9W 4N 8S 6E10W15E 5N11E 7W---------------
+expected_stdout_string:Step: 11 =>  1N 2N 9W 4N 8S 6E10W15E 5N11E 7W 3W------------
+expected_stdout_string:Step: 12 =>  1N 2N12E13S 8S 6E10W 3W14W11E 7W15E 4S---------
+expected_stdout_string:Step: 13 =>  1N 2N12E16E 8S 6E10W15E 5N11E 7W 3W13N14N------
+expected_stdout_string:Step: 14 =>  1N 2N12E16E 8S 6E10W15E 5N11E 7W 3W13N14N 9E---
+expected_stdout_string:Step: 15 =>  1N 2N12E16E 8S 6E10W15E 5N11E 7W 3W13N14N 9E 4W
+expected_stdout_string:Solution found after 154 iterations
+#EOF

@@ -1,0 +1,13 @@
+exe_file:edge_matching_puzzle
+args:<test_location>/../../doc/example/3_3.txt <test_location>/../../doc/example/ressources system_equation --enable_gui=false
+expected_stdout_string:Nb variables : 36
+expected_stdout_string:Step: 1 => 1N2N--------------
+expected_stdout_string:Step: 2 => 1N2N3N------------
+expected_stdout_string:Step: 3 => 1N2N3N4N----------
+expected_stdout_string:Step: 4 => 1N2N3N4N5S--------
+expected_stdout_string:Step: 5 => 1N2N3N6S5W8E------
+expected_stdout_string:Step: 6 => 1N2N3N6S5W8E7N----
+expected_stdout_string:Step: 7 => 1N2N3N6S5W8E9W4E--
+expected_stdout_string:Step: 8 => 1N2N3N6S5W8E9W4E7E
+expected_stdout_string:Solution found after 13 iterations
+#EOF

@@ -1,0 +1,21 @@
+exe_file:edge_matching_puzzle
+args:<test_location>/../../doc/example/3_3.txt <test_location>/../../doc/example/ressources new_strategy --enable_gui=false
+expected_stdout_string:New max : 1
+expected_stdout_string:1N2N--------------
+expected_stdout_string:New max : 2
+expected_stdout_string:1N2N3N------------
+expected_stdout_string:New max : 3
+expected_stdout_string:1N2N3N----8E------
+expected_stdout_string:New max : 4
+expected_stdout_string:1N2N3N----8E----7E
+expected_stdout_string:New max : 5
+expected_stdout_string:1N2N3N----8E--4E7E
+expected_stdout_string:New max : 6
+expected_stdout_string:1N2N3N----8E9W4E7E
+expected_stdout_string:New max : 7
+expected_stdout_string:1N2N3N6S--8E9W4E7E
+expected_stdout_string:New max : 8
+expected_stdout_string:1N2N3N6S5W8E9W4E7E
+expected_stdout_string:Total situations explored : 37
+expected_stdout_string:Nb solutions : 2
+#EOF

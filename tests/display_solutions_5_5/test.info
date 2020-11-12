@@ -1,0 +1,7 @@
+exe_file:edge_matching_puzzle
+args:<test_location>/../../doc/example/5_5.txt <test_location>/../../doc/example/ressources display_solutions --enable_gui=false
+expected_stdout_string:Final situation : " 1N15E 3N10E21S20S18W17E 7S 4W 2E 9E 8S14N 6S23W13E19E12W16S 5E22N11E24N25N"
+expected_stdout_string:Situations explored : 13432
+expected_stdout_string:End of algorithm
+expected_stdout_string:Total situations explored : 37937
+#EOF
