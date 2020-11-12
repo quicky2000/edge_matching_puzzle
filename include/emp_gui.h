@@ -41,6 +41,7 @@ namespace edge_matching_puzzle
                , const unsigned int & p_puzzle_height
                , const std::string & p_ressources
                , const std::vector<emp_piece> & p_pieces
+               , bool p_enable_gui
                );
 
         inline
@@ -79,14 +80,18 @@ namespace edge_matching_puzzle
         unsigned int m_piece_size;
         const unsigned int m_separator_size;
         const unsigned int m_nb_pieces;
+        const bool m_gui_enabled;
     };
 
     //----------------------------------------------------------------------------
     emp_gui::~emp_gui(void)
     {
-        for(unsigned int l_index = 0; l_index < m_nb_pieces; ++l_index)
+        if(m_gui_enabled)
         {
-            delete m_pieces_pictures[l_index];
+            for(unsigned int l_index = 0; l_index < m_nb_pieces; ++l_index)
+            {
+                delete m_pieces_pictures[l_index];
+            }
         }
         delete[] m_pieces_pictures;
     }
@@ -96,6 +101,7 @@ namespace edge_matching_puzzle
                     , const unsigned int & p_puzzle_height
                     , const std::string & p_ressources
                     , const std::vector<emp_piece> & p_pieces
+                    , bool p_enable_gui
                     )
     : simple_gui()
     , m_puzzle_width(p_puzzle_width)
@@ -104,109 +110,113 @@ namespace edge_matching_puzzle
     , m_piece_size(0)
     , m_separator_size(2)
     , m_nb_pieces(p_pieces.size())
+    , m_gui_enabled(p_enable_gui)
     {
-        // Get screen characteristics
-        uint32_t l_screen_width;
-        uint32_t l_screen_height;
-        uint32_t l_screen_bits_per_pixel;
-      
-        this->get_screen_info(l_screen_width,l_screen_height,l_screen_bits_per_pixel);
-        std::cout << "Resolution = " << l_screen_width << " * " << l_screen_height << " : " << l_screen_bits_per_pixel << " bits/pixel" << std::endl;
-        if(!l_screen_width || !l_screen_height)
+        if(m_gui_enabled)
         {
-            l_screen_width = 800;
-            l_screen_height = 600;
-        }
-        // Get available ressources
-        std::vector<std::string> l_file_list;
-        quicky_utils::quicky_files::list_content(p_ressources,l_file_list);
+            // Get screen characteristics
+            uint32_t l_screen_width;
+            uint32_t l_screen_height;
+            uint32_t l_screen_bits_per_pixel;
 
-        if(!l_file_list.size())
-        {
-            throw quicky_exception::quicky_logic_exception("Unable to find any files in \"" + p_ressources + "\"",__LINE__,__FILE__);
-        }
-
-        for(std::vector<std::string>::const_iterator l_iter = l_file_list.begin();
-            l_iter != l_file_list.end();
-            ++l_iter
-           )
-        {
-            uint32_t l_ressource_size = strtoul(l_iter->c_str(),NULL,10);
-            if((l_ressource_size < ( l_screen_height - m_separator_size * (p_puzzle_height - 1))/ p_puzzle_height) &&
-               (l_ressource_size < (l_screen_width - m_separator_size * (p_puzzle_width - 1)) / p_puzzle_width) &&
-               l_ressource_size > m_piece_size
-              )
+            this->get_screen_info(l_screen_width,l_screen_height,l_screen_bits_per_pixel);
+            std::cout << "Resolution = " << l_screen_width << " * " << l_screen_height << " : " << l_screen_bits_per_pixel << " bits/pixel" << std::endl;
+            if(!l_screen_width || !l_screen_height)
             {
-                m_piece_size = l_ressource_size;
+                l_screen_width = 800;
+                l_screen_height = 600;
             }
-        }
-        if(!m_piece_size)
-        {
-            throw quicky_exception::quicky_logic_exception("Unable to find correct ressources for this resolution",__LINE__,__FILE__);
-        }
-        std::cout << "Best fit ressource is " << m_piece_size << std::endl;
-        for(unsigned int l_index = 0; l_index < p_pieces.size(); ++l_index)
-        {
-            m_pieces_pictures[l_index] = new lib_bmp::my_bmp(m_piece_size,m_piece_size,24);
-        }
-        this->create_window(p_puzzle_width * m_piece_size + (p_puzzle_width - 1) * m_separator_size
-                           ,p_puzzle_height * m_piece_size + (p_puzzle_height - 1) * m_separator_size
-                           );
+            // Get available ressources
+            std::vector<std::string> l_file_list;
+            quicky_utils::quicky_files::list_content(p_ressources,l_file_list);
 
-        std::map<emp_types::t_color_id,lib_bmp::my_bmp *> l_colors_pictures;
+            if(!l_file_list.size())
+            {
+                throw quicky_exception::quicky_logic_exception("Unable to find any files in \"" + p_ressources + "\"",__LINE__,__FILE__);
+            }
 
-        for(auto l_piece : p_pieces)
-        {
-            for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH;
-                l_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
-                ++l_orient_index
+            for(std::vector<std::string>::const_iterator l_iter = l_file_list.begin();
+                l_iter != l_file_list.end();
+                ++l_iter
                )
             {
-                emp_types::t_orientation l_orientation = (emp_types::t_orientation)l_orient_index;
-                emp_types::t_color_id l_color_id = l_piece.get_color(l_orientation);
-                std::map<emp_types::t_color_id,lib_bmp::my_bmp*>::const_iterator l_iter = l_colors_pictures.find(l_color_id);
-                if(l_colors_pictures.end() == l_iter)
+                uint32_t l_ressource_size = strtoul(l_iter->c_str(),NULL,10);
+                if((l_ressource_size < ( l_screen_height - m_separator_size * (p_puzzle_height - 1))/ p_puzzle_height) &&
+                   (l_ressource_size < (l_screen_width - m_separator_size * (p_puzzle_width - 1)) / p_puzzle_width) &&
+                   l_ressource_size > m_piece_size
+                  )
                 {
-                    std::stringstream l_stream;
-                    l_stream << l_color_id;
-                    std::stringstream l_stream2;
-                    l_stream2 << m_piece_size;
-                    std::string l_file_name = p_ressources+"/"+l_stream2.str()+"/"+(l_color_id ? l_stream.str():"Border")+".bmp";
-                    std::cout << "Loading color " << l_color_id << " from file \"" << l_file_name << "\"" << std::endl;
-                    l_iter = l_colors_pictures.insert(std::map<emp_types::t_color_id,lib_bmp::my_bmp *>::value_type(l_color_id, new lib_bmp::my_bmp(l_file_name))).first;
+                    m_piece_size = l_ressource_size;
                 }
+            }
+            if(!m_piece_size)
+            {
+                throw quicky_exception::quicky_logic_exception("Unable to find correct ressources for this resolution",__LINE__,__FILE__);
+            }
+            std::cout << "Best fit ressource is " << m_piece_size << std::endl;
+            for(unsigned int l_index = 0; l_index < p_pieces.size(); ++l_index)
+            {
+                m_pieces_pictures[l_index] = new lib_bmp::my_bmp(m_piece_size,m_piece_size,24);
+            }
+            this->create_window(p_puzzle_width * m_piece_size + (p_puzzle_width - 1) * m_separator_size
+                               ,p_puzzle_height * m_piece_size + (p_puzzle_height - 1) * m_separator_size
+                               );
 
-                for(unsigned int l_index_height = 0; l_index_height < m_piece_size / 2; ++l_index_height)
+            std::map<emp_types::t_color_id,lib_bmp::my_bmp *> l_colors_pictures;
+
+            for(auto l_piece : p_pieces)
+            {
+                for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH;
+                    l_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
+                    ++l_orient_index
+                   )
                 {
-                    for(unsigned int l_index_width = l_index_height; l_index_width < m_piece_size -l_index_height; ++l_index_width)
+                    emp_types::t_orientation l_orientation = (emp_types::t_orientation)l_orient_index;
+                    emp_types::t_color_id l_color_id = l_piece.get_color(l_orientation);
+                    std::map<emp_types::t_color_id,lib_bmp::my_bmp*>::const_iterator l_iter = l_colors_pictures.find(l_color_id);
+                    if(l_colors_pictures.end() == l_iter)
                     {
-                        switch(l_orientation)
+                        std::stringstream l_stream;
+                        l_stream << l_color_id;
+                        std::stringstream l_stream2;
+                        l_stream2 << m_piece_size;
+                        std::string l_file_name = p_ressources+"/"+l_stream2.str()+"/"+(l_color_id ? l_stream.str():"Border")+".bmp";
+                        std::cout << "Loading color " << l_color_id << " from file \"" << l_file_name << "\"" << std::endl;
+                        l_iter = l_colors_pictures.insert(std::map<emp_types::t_color_id,lib_bmp::my_bmp *>::value_type(l_color_id, new lib_bmp::my_bmp(l_file_name))).first;
+                    }
+
+                    for(unsigned int l_index_height = 0; l_index_height < m_piece_size / 2; ++l_index_height)
+                    {
+                        for(unsigned int l_index_width = l_index_height; l_index_width < m_piece_size - l_index_height; ++l_index_width)
                         {
-                            case emp_types::t_orientation::NORTH:
-                                m_pieces_pictures[l_piece.get_id() - 1]->set_pixel_color(l_index_width,l_index_height,l_iter->second->get_pixel_color(l_index_width,l_index_height));
-                                break;
-                            case emp_types::t_orientation::EAST:
-                                m_pieces_pictures[l_piece.get_id() - 1]->set_pixel_color(m_piece_size - 1 - l_index_height,l_index_width,l_iter->second->get_pixel_color(l_index_width,l_index_height));
-                                break;
-                            case emp_types::t_orientation::SOUTH:
-                                m_pieces_pictures[l_piece.get_id() - 1]->set_pixel_color(m_piece_size - 1 - l_index_width, m_piece_size - 1 - l_index_height,l_iter->second->get_pixel_color(l_index_width,l_index_height));
-                                break;
-                            case emp_types::t_orientation::WEST:
-                                m_pieces_pictures[l_piece.get_id() - 1]->set_pixel_color(l_index_height, m_piece_size - 1 - l_index_width,l_iter->second->get_pixel_color(l_index_width,l_index_height));
-                                break;
-                            default:
-                                throw quicky_exception::quicky_logic_exception("Unsupported orientation \""+emp_types::orientation2string(l_orientation)+"\"",__LINE__,__FILE__);
-                                break;
+                            switch(l_orientation)
+                            {
+                                case emp_types::t_orientation::NORTH:
+                                    m_pieces_pictures[l_piece.get_id() - 1]->set_pixel_color(l_index_width,l_index_height,l_iter->second->get_pixel_color(l_index_width,l_index_height));
+                                    break;
+                                case emp_types::t_orientation::EAST:
+                                    m_pieces_pictures[l_piece.get_id() - 1]->set_pixel_color(m_piece_size - 1 - l_index_height,l_index_width,l_iter->second->get_pixel_color(l_index_width,l_index_height));
+                                    break;
+                                case emp_types::t_orientation::SOUTH:
+                                    m_pieces_pictures[l_piece.get_id() - 1]->set_pixel_color(m_piece_size - 1 - l_index_width, m_piece_size - 1 - l_index_height,l_iter->second->get_pixel_color(l_index_width,l_index_height));
+                                    break;
+                                case emp_types::t_orientation::WEST:
+                                    m_pieces_pictures[l_piece.get_id() - 1]->set_pixel_color(l_index_height, m_piece_size - 1 - l_index_width,l_iter->second->get_pixel_color(l_index_width,l_index_height));
+                                    break;
+                                default:
+                                    throw quicky_exception::quicky_logic_exception("Unsupported orientation \""+emp_types::orientation2string(l_orientation)+"\"",__LINE__,__FILE__);
+                                    break;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Free memory used by color pictures
-        for(auto l_color_picture: l_colors_pictures)
-        {
-            delete l_color_picture.second;
+            // Free memory used by color pictures
+            for(auto l_color_picture: l_colors_pictures)
+            {
+                delete l_color_picture.second;
+            }
         }
     }
 
@@ -217,9 +227,12 @@ namespace edge_matching_puzzle
                            , const emp_types::t_orientation & p_orientation
                            )
     {
-        lock();
-        set_piece_without_lock(p_x,p_y,p_id,p_orientation);
-        unlock();
+        if(m_gui_enabled)
+        {
+            lock();
+            set_piece_without_lock(p_x, p_y, p_id, p_orientation);
+            unlock();
+        }
     }
 
     //--------------------------------------------------------------------------
@@ -299,23 +312,26 @@ namespace edge_matching_puzzle
     //--------------------------------------------------------------------------
     void emp_gui::display(const emp_FSM_situation & p_situation)
     {
-        lock();
-        for(unsigned int l_x = 0; l_x < m_puzzle_width; ++l_x)
+        if(m_gui_enabled)
         {
-            for(unsigned int l_y = 0; l_y < m_puzzle_height; ++l_y)
+            lock();
+            for(unsigned int l_x = 0; l_x < m_puzzle_width; ++l_x)
             {
-                if(p_situation.contains_piece(l_x,l_y))
+                for(unsigned int l_y = 0; l_y < m_puzzle_height; ++l_y)
                 {
-                    const emp_types::t_oriented_piece & l_piece = p_situation.get_piece(l_x,l_y);
-                    set_piece_without_lock(l_x,l_y,l_piece.first,l_piece.second);
-                }
-                else
-                {
-                    clear_piece_without_lock(l_x,l_y);
+                    if(p_situation.contains_piece(l_x,l_y))
+                    {
+                        const emp_types::t_oriented_piece & l_piece = p_situation.get_piece(l_x,l_y);
+                        set_piece_without_lock(l_x,l_y,l_piece.first,l_piece.second);
+                    }
+                    else
+                    {
+                        clear_piece_without_lock(l_x,l_y);
+                    }
                 }
             }
-        } 
-        unlock();
+            unlock();
+        }
     }
 
     //--------------------------------------------------------------------------

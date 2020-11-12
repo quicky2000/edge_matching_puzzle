@@ -74,6 +74,8 @@ int main(int argc,char ** argv)
         l_param_manager.add(l_strategy_param);
         parameter_manager::parameter_if l_hint_param("hint", true);
         l_param_manager.add(l_hint_param);
+        parameter_manager::parameter_if l_enable_gui_param("enable_gui", true);
+        l_param_manager.add(l_enable_gui_param);
 
         // Treating parameters
         l_param_manager.treat_parameters(argc,argv);
@@ -99,7 +101,8 @@ int main(int argc,char ** argv)
             throw quicky_exception::quicky_logic_exception("Inconsistency between puzzle dimensions (" + l_stream_width.str() + "*" + l_stream_height.str() + ") and piece number (" + l_stream_nb_pieces.str() + ")",__LINE__,__FILE__);
         }
 
-        emp_gui l_gui(l_width,l_height,l_ressources_path.get_value<std::string>(), l_pieces);
+        bool l_enable_gui = l_enable_gui_param.value_set() ? l_enable_gui_param.get_value<bool>() : true;
+        emp_gui l_gui(l_width,l_height,l_ressources_path.get_value<std::string>(), l_pieces, l_enable_gui);
 
         emp_piece_db l_piece_db(l_pieces, l_width, l_height);
         emp_FSM_info l_info(l_width, l_height, l_piece_db.get_piece_id_size(), l_piece_db.get_dumped_piece_id_size());
