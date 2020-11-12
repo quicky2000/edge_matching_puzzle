@@ -235,6 +235,10 @@ namespace edge_matching_puzzle
 	}
 #endif // RESTART_FROM_KNOWN_STATE
 
+        if(m_enumerator->get_word_size() != 56)
+        {
+            throw quicky_exception::quicky_logic_exception("Algorithm hardcoded for Eternity2 !", __LINE__, __FILE__);
+        }
 #ifndef DISPLAY_ALL_SOLUTIONS
       std::atomic<bool> l_display_solution(false);
       std::atomic<bool> l_stop_thread(false);
@@ -242,10 +246,6 @@ namespace edge_matching_puzzle
 #else // DISPLAY_ALL_SOLUTIONS
       bool l_display_solution = true;
 #endif // DISPLAY_ALL_SOLUTIONS
-      if(m_enumerator->get_word_size() != 56)
-	{
-	  throw quicky_exception::quicky_logic_exception("Algorithm hardcoded for Eternity2 !", __LINE__, __FILE__);
-	}
       sequential_border_backtracker l_border_backtracker;
       bool l_solution_found = true;
       while(l_continu && m_enumerator->generate())
