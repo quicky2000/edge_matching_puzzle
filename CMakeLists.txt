@@ -55,11 +55,14 @@ set(MY_SOURCE_FILES
     include/feature_simplex.h
     include/light_border_pieces_db.h
     include/octet_array.h
+    include/piece_position_info.h
     include/precomputed_constraint.h
     include/precomputed_transition_info.h
     include/sequential_border_backtracker.h
     include/simplex_variable.h
+    include/situation_capability.h
     include/emp_variable_generator.h
+    include/feature_CUDA_backtracker.h
     src/border_backtracker.cpp
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp
@@ -73,6 +76,7 @@ set(MY_SOURCE_FILES
     src/feature_display_max.cpp
     src/feature_display_solutions.cpp
     src/feature_dump_solutions.cpp
+    src/feature_CUDA_backtracker.cpp
     include/feature_system_equation.h
     src/feature_system_equation.cpp
     include/emp_se_step_info.h
@@ -86,6 +90,7 @@ set(MY_SOURCE_FILES
 if(${ENABLE_CUDA_CODE})
     set (MY_CPP_FLAGS -DENABLE_CUDA_CODE)
     set (MY_SOURCE_FILES ${MY_SOURCE_FILES}
+         src/CUDA_backtracker.cu
         )
 else(${ENABLE_CUDA_CODE})
     set (MY_CPP_FLAGS -pedantic)
@@ -108,6 +113,7 @@ LIST(APPEND DEPENDANCY_LIST "parameter_manager")
 LIST(APPEND DEPENDANCY_LIST "EXT_microhttpd")
 LIST(APPEND DEPENDANCY_LIST "combinatorics")
 LIST(APPEND DEPENDANCY_LIST "simplex")
+LIST(APPEND DEPENDANCY_LIST "my_cuda")
 
 #------------------------------
 #- Generic part

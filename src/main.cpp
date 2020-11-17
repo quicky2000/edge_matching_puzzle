@@ -36,6 +36,7 @@
 #include "feature_display_dump.h"
 #include "feature_display_situation.h"
 #include "feature_system_equation.h"
+#include "feature_CUDA_backtracker.h"
 
 #include "emp_strategy_generator_factory.h"
 #include "emp_strategy.h"
@@ -201,6 +202,10 @@ int main(int argc,char ** argv)
                 l_strategy->set_initial_state(l_initial_situation.get_value<std::string>());
             }
             l_feature = l_strategy;
+        }
+        else if("CUDA_backtracker" == l_feature_name)
+        {
+            l_feature = new feature_CUDA_backtracker();
         }
         else
         {
