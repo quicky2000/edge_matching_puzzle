@@ -46,10 +46,10 @@ namespace edge_matching_puzzle
         const emp_types::t_color_id & get_center_color()const;
 
         inline
-        const emp_types::t_orientation get_center_orientation()const;
+        emp_types::t_orientation get_center_orientation()const;
 
         inline
-        const emp_types::t_orientation get_border_orientation()const;
+        emp_types::t_orientation get_border_orientation()const;
 
       private:
         inline
@@ -108,13 +108,13 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const emp_types::t_orientation emp_piece_border::get_center_orientation()const
+    emp_types::t_orientation emp_piece_border::get_center_orientation()const
     {
         return m_center_orientation;
     }
 
     //----------------------------------------------------------------------------
-    const emp_types::t_orientation emp_piece_border::get_border_orientation()const
+    emp_types::t_orientation emp_piece_border::get_border_orientation()const
     {
         return m_border_orientation;
     }

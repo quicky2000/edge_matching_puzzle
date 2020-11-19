@@ -46,7 +46,7 @@ namespace edge_matching_puzzle
         const char & orientation2short_string(const t_orientation & p_orientation);
 
         inline static
-        const t_orientation short_string2orientation(const char & p_char);
+        t_orientation short_string2orientation(const char & p_char);
 
         typedef quicky_utils::quicky_bitfield<uint64_t> bitfield;
 
@@ -78,7 +78,7 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const emp_types::t_orientation emp_types::short_string2orientation(const char & p_char)
+    emp_types::t_orientation emp_types::short_string2orientation(const char & p_char)
     {
         switch(p_char)
         {

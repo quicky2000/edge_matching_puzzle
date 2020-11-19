@@ -47,20 +47,20 @@ namespace edge_matching_puzzle
          Accessor to number of pieces of each kind
         **/
         inline
-        const unsigned int & get_nb_pieces(const emp_types::t_kind & p_kind) const;
+        unsigned int get_nb_pieces(const emp_types::t_kind & p_kind) const;
 
         /**
          Return the number of bits necessary to code color id including a special
          code for border color
         **/
         inline
-        const unsigned int & get_color_id_size() const;
+        unsigned int get_color_id_size() const;
 
         /**
          Return the number of bits necessary to code piece id with ids starting at 0
         **/
         inline
-        const unsigned int & get_piece_id_size() const;
+        unsigned int get_piece_id_size() const;
 
         /**
          Return the number of bits necessary to code piece id with id == 0 mean no piece
@@ -146,13 +146,13 @@ namespace edge_matching_puzzle
          Get pieces identical to a given piece
         **/
         inline
-        const std::set<emp_types::t_piece_id> * const get_identical_pieces(const emp_types::t_piece_id & p_id) const;
+        const std::set<emp_types::t_piece_id> * get_identical_pieces(const emp_types::t_piece_id & p_id) const;
 
         /**
          Return index of piece in its kind category
         **/
         inline
-        const unsigned int get_kind_index(const emp_types::t_piece_id & p_id) const;
+        unsigned int get_kind_index(const emp_types::t_piece_id & p_id) const;
 
         /**
          Indicate if a method has a color_kind_index ( ie is used)
@@ -166,7 +166,7 @@ namespace edge_matching_puzzle
          for example is color is both on corner and border method with return color index in corner kind
         **/
         inline
-        const unsigned int get_color_kind_index(const emp_types::t_color_id & p_id) const;
+        unsigned int get_color_kind_index(const emp_types::t_color_id & p_id) const;
 
         /**
          Return index of color in the specified kind category
@@ -174,23 +174,23 @@ namespace edge_matching_puzzle
          @param p_kind color category
         */
         inline
-        const unsigned int get_color_kind_index(const emp_types::t_color_id & p_id
-                                               ,const emp_types::t_kind & p_kind
-						                       ) const;
+        unsigned int get_color_kind_index(const emp_types::t_color_id & p_id
+                                         ,const emp_types::t_kind & p_kind
+                                         ) const;
 
         /**
          Return color kind
         **/
         inline
-        const emp_types::t_kind get_color_kind(const emp_types::t_color_id & p_id) const;
+        emp_types::t_kind get_color_kind(const emp_types::t_color_id & p_id) const;
 
         /**
          Return color id from its kind and kind index
         **/
         inline
-        const emp_types::t_color_id get_color_id(const emp_types::t_kind & p_kind
-                                                ,const unsigned int & p_index
-                                                ) const;
+        emp_types::t_color_id get_color_id(const emp_types::t_kind & p_kind
+                                          ,const unsigned int & p_index
+                                          ) const;
 
         /**
          Return a map containing for earch center color of border pieces the number of occurence of this colors
@@ -422,7 +422,7 @@ namespace edge_matching_puzzle
 
     //----------------------------------------------------------------------------
     inline
-    const unsigned int & emp_piece_db::get_nb_pieces(const emp_types::t_kind & p_kind) const
+    unsigned int emp_piece_db::get_nb_pieces(const emp_types::t_kind & p_kind) const
     {
         assert(p_kind <= emp_types::t_kind::CORNER);
         return m_nb_pieces[(unsigned int)p_kind];
@@ -1163,13 +1163,13 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const unsigned int & emp_piece_db::get_color_id_size() const
+    unsigned int emp_piece_db::get_color_id_size() const
     {
         return m_color_id_size;
     }
 
     //----------------------------------------------------------------------------
-    const unsigned int & emp_piece_db::get_piece_id_size() const
+    unsigned int emp_piece_db::get_piece_id_size() const
     {
         return m_coded_piece_id_size;
     }
@@ -1505,7 +1505,7 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const std::set<emp_types::t_piece_id> * const emp_piece_db::get_identical_pieces(const emp_types::t_piece_id & p_id) const
+    const std::set<emp_types::t_piece_id> * emp_piece_db::get_identical_pieces(const emp_types::t_piece_id & p_id) const
     {
         auto l_iter = m_identical_pieces_db.find(p_id);
         return (m_identical_pieces_db.end() == l_iter ? nullptr : &(l_iter->second));
@@ -1528,7 +1528,7 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const unsigned int emp_piece_db::get_kind_index(const emp_types::t_piece_id & p_id) const
+    unsigned int emp_piece_db::get_kind_index(const emp_types::t_piece_id & p_id) const
     {
         assert(p_id <= m_pieces.size());
         assert(p_id);
@@ -1543,7 +1543,7 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const unsigned int emp_piece_db::get_color_kind_index(const emp_types::t_color_id & p_id)const
+    unsigned int emp_piece_db::get_color_kind_index(const emp_types::t_color_id & p_id)const
     {
         assert(p_id < m_border_color_id);
         assert(0xDEAD != m_color_id2kind_index[p_id]);
@@ -1551,9 +1551,9 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const unsigned int emp_piece_db::get_color_kind_index(const emp_types::t_color_id & p_id
-                                                         ,const emp_types::t_kind & p_kind
-                                                         ) const
+    unsigned int emp_piece_db::get_color_kind_index(const emp_types::t_color_id & p_id
+                                                   ,const emp_types::t_kind & p_kind
+                                                   ) const
     {
         assert(p_id < m_border_color_id);
         assert(emp_types::t_kind::UNDEFINED != p_kind);
@@ -1562,7 +1562,7 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const emp_types::kind emp_piece_db::get_color_kind(const emp_types::t_color_id & p_id) const
+    emp_types::kind emp_piece_db::get_color_kind(const emp_types::t_color_id & p_id) const
     {
         assert(m_border_color_id);
         assert(p_id <= m_border_color_id);
@@ -1570,9 +1570,9 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    const emp_types::t_color_id emp_piece_db::get_color_id(const emp_types::t_kind & p_kind
-                                                          ,const unsigned int & p_index
-							                              ) const
+    emp_types::t_color_id emp_piece_db::get_color_id(const emp_types::t_kind & p_kind
+                                                    ,const unsigned int & p_index
+                                                    ) const
     {
         assert(p_kind < emp_types::t_kind::UNDEFINED);
         assert(p_index < m_nb_color_kinds[(unsigned int)p_kind]);
