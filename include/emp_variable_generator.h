@@ -85,10 +85,10 @@ namespace edge_matching_puzzle
                                           ,const std::vector<simplex_variable*> & p_variables_pos2
                                           ,bool p_horizontal
                                           ,T & p_lambda
-                                          );
+                                          ) const;
 
         template <typename T>
-        void treat_piece_relations(T & p_lambda);
+        void treat_piece_relations(T & p_lambda) const;
 
         /**
           * Destructor
@@ -562,7 +562,7 @@ namespace edge_matching_puzzle
                                                          ,const std::vector<simplex_variable *> & p_variables_pos2
                                                          ,bool p_horizontal
                                                          ,T & p_lambda
-                                                         )
+                                                         ) const
     {
         emp_types::t_orientation l_border1 = p_horizontal ? emp_types::t_orientation::EAST : emp_types::t_orientation::SOUTH;
         emp_types::t_orientation l_border2 = p_horizontal ? emp_types::t_orientation::WEST : emp_types::t_orientation::NORTH;
@@ -588,7 +588,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     template <typename T>
     void
-    emp_variable_generator::treat_piece_relations(T & p_lambda)
+    emp_variable_generator::treat_piece_relations(T & p_lambda) const
     {
         for(unsigned int l_y = 0;
             l_y < m_info.get_height();
