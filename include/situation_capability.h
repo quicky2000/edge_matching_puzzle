@@ -43,6 +43,9 @@ namespace edge_matching_puzzle
      */
     template <unsigned int SIZE>
     class situation_capability
+#ifdef __NVCC__
+    : public CUDA_memory_managed_item
+#endif // __NVCC__
     {
 
         friend
@@ -76,6 +79,8 @@ namespace edge_matching_puzzle
 #else // __NVCC__
         piece_position_info m_capability[SIZE];
 #endif // __NVCC__
+
+        static_assert(!(SIZE % 2),"Situation capability size is odd whereas it should be even");
     };
 
     //-------------------------------------------------------------------------

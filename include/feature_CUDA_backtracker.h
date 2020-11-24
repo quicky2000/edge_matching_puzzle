@@ -20,6 +20,10 @@
 #define EMP_SITUATION_UTILS_H
 
 #include "feature_if.h"
+#include "emp_piece_db.h"
+#include "emp_FSM_info.h"
+#include "emp_variable_generator.h"
+
 #include <memory>
 
 namespace edge_matching_puzzle
@@ -32,17 +36,41 @@ namespace edge_matching_puzzle
     {
       public:
 
+        feature_CUDA_backtracker( const emp_piece_db & p_piece_deb
+                                , const emp_FSM_info & p_info
+                                , std::unique_ptr<emp_strategy_generator> & p_strategy_generator
+                                );
+
         void run() override ;
+
+      private:
+
+        const emp_piece_db & m_piece_db;
+
+        const emp_FSM_info & m_info;
+
+        /**
+         * Contains initial situation
+         * Should be declared before variable generator to be fully built
+         */
+        emp_FSM_situation m_initial_situation;
+
+        /**
+         * Generate variables of equation system representing the puzzle
+         */
+        emp_variable_generator m_variable_generator;
+
+        const emp_strategy_generator & m_strategy_generator;
 
     };
 
     /**
      * Launch CUDA kernels
      */
-    void launch( unsigned int p_nb_transition
-               , const situation_capability<512> & p_situation
-               , const std::shared_ptr< situation_capability<512>[]> & p_results
-               , const std::shared_ptr<situation_capability<512>[]> & p_transitions
+    void launch( const emp_piece_db & p_piece_db
+               , const emp_FSM_info & p_info
+               , const emp_variable_generator & p_variable_generator
+               , const emp_strategy_generator & p_strategy_generator
                );
 }
 #endif //EMP_SITUATION_UTILS_H

@@ -19,6 +19,9 @@
 #ifndef EMP_PIECE_POSITION_INFO_H
 #define EMP_PIECE_POSITION_INFO_H
 
+#ifdef __NVCC__
+#include "CUDA_memory_managed_item.h"
+#endif // __NVCC__
 #include "emp_types.h"
 #include <array>
 #include <cassert>
@@ -169,7 +172,7 @@ namespace edge_matching_puzzle
 #ifndef __NVCC__
         assert(p_index < m_info.size());
 #else // __NVCC__
-        assert(p_index < 32);
+        //assert(p_index < 32);
 #endif // __NVCC__
         return m_info[p_index];
     }
@@ -186,7 +189,7 @@ namespace edge_matching_puzzle
 #ifndef __NVCC__
         assert(p_index < m_info.size());
 #else // __NVCC__
-        assert(p_index < 32);
+        //assert(p_index < 32);
 #endif // __NVCC__
         m_info[p_index] = p_word;
 
