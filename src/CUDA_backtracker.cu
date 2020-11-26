@@ -19,7 +19,7 @@
 #include "feature_CUDA_backtracker.h"
 #include "CUDA_backtracker_stack.h"
 #include "my_cuda.h"
-#include "quicky_exception.h"
+#include "transition_manager.h"
 #include <chrono>
 
 namespace edge_matching_puzzle
@@ -64,7 +64,7 @@ namespace edge_matching_puzzle
     template <unsigned int NB_PIECES>
     __global__
     void kernel_and_info( CUDA_backtracker_stack<NB_PIECES> * p_stacks
-                        , situation_capability<2 * NB_PIECES> ** p_transition_capability
+                        , const transition_manager<NB_PIECES> & p_transition_capability
                         , unsigned int p_nb_stack
                         )
     {
@@ -125,7 +125,7 @@ namespace edge_matching_puzzle
             }
             // Apply vector related to variable_id
             const situation_capability<NB_PIECES * 2> & l_situation_capability = l_stack.get_available_variables(l_stack_step);
-            const situation_capability<NB_PIECES * 2> & l_transition_capability = *(p_transition_capability[l_variable_id]);
+            const situation_capability<NB_PIECES * 2> & l_transition_capability = p_transition_capability.get_transition(l_variable_id);
             situation_capability<NB_PIECES * 2> & l_result_capability = l_stack.get_available_variables(l_stack_step + 1);
 
             bool l_situation_valid = true;
@@ -212,18 +212,17 @@ namespace edge_matching_puzzle
 	    {
 	        for(auto l_var_iter: p_variable_generator.get_variables())
 	        {
+		        std::cout << "Variable : " << *l_var_iter << std::endl;
+	            std::cout << "Before " << l_stacks[l_stack_index].get_available_variables(0) << std::endl;
                 unsigned int l_position_index = p_strategy_generator.get_position_index(l_var_iter->get_x(), l_var_iter->get_y());
                 l_stacks[l_stack_index].get_available_variables(0).get_capability(l_position_index).set_bit(l_var_iter->get_piece_id() - 1, l_var_iter->get_orientation());
                 l_stacks[l_stack_index].get_available_variables(0).get_capability(256 + l_var_iter->get_piece_id() - 1).set_bit(l_position_index, l_var_iter->get_orientation());
+	            std::cout << "After " << l_stacks[l_stack_index].get_available_variables(0) << std::endl;
 	        }
 	    }
 
         // Allocate an array to do the link between theorical variables and real variables
-        situation_capability<512> ** l_transitions_correspondancy;
-        cudaMallocManaged(&l_transitions_correspondancy, l_raw_variable_nb * sizeof(situation_capability<512> *));
-        gpuErrChk(cudaGetLastError());
-        cudaMemset(l_transitions_correspondancy, (int)l_raw_variable_nb * sizeof(situation_capability<512> *), 0x0);
-        gpuErrChk(cudaGetLastError());
+        auto l_transition_manager = new transition_manager<256>(l_raw_variable_nb);
 
         // Allocate transition vectors for real variables
         // All transition vector bits are set to 1 by default as they will be
@@ -232,29 +231,29 @@ namespace edge_matching_puzzle
         for(auto l_var_iter: p_variable_generator.get_variables())
         {
             unsigned int l_raw_variable_id = compute_raw_variable_id(*l_var_iter, p_info);
-            l_transitions_correspondancy[l_raw_variable_id] = new situation_capability<512>();
+            l_transition_manager->create_transition(l_raw_variable_id);
 
             unsigned int l_position_index = p_strategy_generator.get_position_index(l_var_iter->get_x(), l_var_iter->get_y());
 
             // Mask bits corresponding to other variables with same position
-            l_transitions_correspondancy[l_raw_variable_id]->get_capability(l_position_index).clear();
+            l_transition_manager->get_transition(l_raw_variable_id).get_capability(l_position_index).clear();
 
             // Mask bits corresponding to other variables with same piece id
-            l_transitions_correspondancy[l_raw_variable_id]->get_capability(256 + l_var_iter->get_piece_id() - 1).clear();
+            l_transition_manager->get_transition(l_raw_variable_id).get_capability(256 + l_var_iter->get_piece_id() - 1).clear();
         }
 
-        auto l_lamda = [=, & l_transitions_correspondancy, & p_strategy_generator, & p_info](const simplex_variable & p_var1
-                                                                                            , const simplex_variable & p_var2
-                                                                                            )
+        auto l_lamda = [=, & l_transition_manager, & p_strategy_generator, & p_info]( const simplex_variable & p_var1
+                                                                                    , const simplex_variable & p_var2
+                                                                                    )
         {
             unsigned int l_raw_id1 = compute_raw_variable_id(p_var1, p_info);
             unsigned int l_position_index2 = p_strategy_generator.get_position_index(p_var2.get_x(), p_var2.get_y());
-            l_transitions_correspondancy[l_raw_id1]->get_capability(l_position_index2).clear_bit(p_var2.get_piece_id() - 1, p_var2.get_orientation());
-            l_transitions_correspondancy[l_raw_id1]->get_capability(256 + p_var2.get_piece_id() - 1).clear_bit(l_position_index2, p_var2.get_orientation());
+            l_transition_manager->get_transition(l_raw_id1).get_capability(l_position_index2).clear_bit(p_var2.get_piece_id() - 1, p_var2.get_orientation());
+            l_transition_manager->get_transition(l_raw_id1).get_capability(256 + p_var2.get_piece_id() - 1).clear_bit(l_position_index2, p_var2.get_orientation());
             unsigned int l_position_index1 = p_strategy_generator.get_position_index(p_var1.get_x(), p_var1.get_y());
             unsigned int l_raw_id2 = compute_raw_variable_id(p_var2, p_info);
-            l_transitions_correspondancy[l_raw_id2]->get_capability(l_position_index1).clear_bit(p_var1.get_piece_id() - 1, p_var1.get_orientation());
-            l_transitions_correspondancy[l_raw_id2]->get_capability(256 + p_var1.get_piece_id() - 1).clear_bit(l_position_index1, p_var1.get_orientation());
+            l_transition_manager->get_transition(l_raw_id2).get_capability(l_position_index1).clear_bit(p_var1.get_piece_id() - 1, p_var1.get_orientation());
+            l_transition_manager->get_transition(l_raw_id2).get_capability(256 + p_var1.get_piece_id() - 1).clear_bit(l_position_index1, p_var1.get_orientation());
         };
 
         // Mask variables due to incompatible borders
@@ -268,18 +267,13 @@ namespace edge_matching_puzzle
         // Reset CUDA error status
         cudaGetLastError();
         std::cout << "Launch kernels" << std::endl;
-        kernel_and_info<256><<<l_grid_info,l_block_info>>>(l_stacks, l_transitions_correspondancy, l_nb_stack);
+        kernel_and_info<256><<<l_grid_info,l_block_info>>>(l_stacks, *l_transition_manager, l_nb_stack);
         cudaDeviceSynchronize();
         gpuErrChk(cudaGetLastError());
 
         auto l_run_end = std::chrono::steady_clock::now();
 
-        for(auto l_var_iter: p_variable_generator.get_variables())
-        {
-            unsigned int l_raw_variable_id = compute_raw_variable_id(*l_var_iter,p_info);
-            cudaFree(l_transitions_correspondancy[l_raw_variable_id]);
-        }
-        cudaFree(l_transitions_correspondancy);
+        delete l_transition_manager;
 
         auto l_total_end = std::chrono::steady_clock::now();
         auto l_elapsed_seconds = l_total_end - l_start;

@@ -63,6 +63,7 @@ set(MY_SOURCE_FILES
     include/situation_capability.h
     include/emp_variable_generator.h
     include/feature_CUDA_backtracker.h
+    include/transition_manager.h
     src/border_backtracker.cpp
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp
