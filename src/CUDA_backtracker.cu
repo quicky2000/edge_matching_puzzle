@@ -170,94 +170,17 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
-    unsigned int compute_raw_variable_id( unsigned int p_x
-            , unsigned int p_y
-            , unsigned int p_piece_index
-            , emp_types::t_orientation p_orientation
-            , const emp_FSM_info & p_info
-                                        )
+    template<unsigned int NB_PIECES>
+    void template_launch( const emp_piece_db & p_piece_db
+                        , const emp_FSM_info & p_info
+                        , const emp_variable_generator & p_variable_generator
+                        , const emp_strategy_generator & p_strategy_generator
+                        )
     {
-        unsigned int l_nb_pieces = p_info.get_width() * p_info.get_height();
-        unsigned int l_position_index = p_x + p_y * p_info.get_width();
-        return l_position_index * l_nb_pieces * 4 + p_piece_index * 4 + (unsigned int)p_orientation;
-    }
-
-    //-------------------------------------------------------------------------
-    unsigned int compute_raw_variable_id( const simplex_variable & p_var
-                                        , const emp_FSM_info & p_info
-                                        )
-    {
-        return compute_raw_variable_id(p_var.get_x(), p_var.get_y(), p_var.get_piece_id() - 1, p_var.get_orientation(), p_info);
-    }
-
-    //-------------------------------------------------------------------------
-    void launch( const emp_piece_db & p_piece_db
-               , const emp_FSM_info & p_info
-               , const emp_variable_generator & p_variable_generator
-               , const emp_strategy_generator & p_strategy_generator
-               )
-    {
-        unsigned int l_raw_variable_nb = p_info.get_width() * p_info.get_height() * p_info.get_width() * p_info.get_height() * 4;
-        unsigned int l_variable_nb = p_piece_db.get_nb_pieces(emp_types::t_kind::CORNER) * p_piece_db.get_nb_pieces(emp_types::t_kind::CORNER);
-        l_variable_nb += p_piece_db.get_nb_pieces(emp_types::t_kind::BORDER) * p_piece_db.get_nb_pieces(emp_types::t_kind::BORDER);
-        l_variable_nb += p_piece_db.get_nb_pieces(emp_types::t_kind::CENTER) * p_piece_db.get_nb_pieces(emp_types::t_kind::CENTER) * 4;
-
-        std::cout << "Max variables nb: " << l_raw_variable_nb << std::endl;
-        std::cout << "Nb variables: " << l_variable_nb << std::endl;
         unsigned int l_nb_stack = 1;
-        auto * l_stacks = new CUDA_backtracker_stack<256>[l_nb_stack];
-
-	    // Init first step of stack
-	    for(unsigned int l_stack_index = 0; l_stack_index < l_nb_stack; ++l_stack_index)
-	    {
-	        for(auto l_var_iter: p_variable_generator.get_variables())
-	        {
-		        std::cout << "Variable : " << *l_var_iter << std::endl;
-	            std::cout << "Before " << l_stacks[l_stack_index].get_available_variables(0) << std::endl;
-                unsigned int l_position_index = p_strategy_generator.get_position_index(l_var_iter->get_x(), l_var_iter->get_y());
-                l_stacks[l_stack_index].get_available_variables(0).get_capability(l_position_index).set_bit(l_var_iter->get_piece_id() - 1, l_var_iter->get_orientation());
-                l_stacks[l_stack_index].get_available_variables(0).get_capability(256 + l_var_iter->get_piece_id() - 1).set_bit(l_position_index, l_var_iter->get_orientation());
-	            std::cout << "After " << l_stacks[l_stack_index].get_available_variables(0) << std::endl;
-	        }
-	    }
-
-        // Allocate an array to do the link between theorical variables and real variables
-        auto l_transition_manager = new transition_manager<256>(l_raw_variable_nb);
-
-        // Allocate transition vectors for real variables
-        // All transition vector bits are set to 1 by default as they will be
-        // used with and operator
-        piece_position_info::set_init_value(std::numeric_limits<uint32_t>::max());
-        for(auto l_var_iter: p_variable_generator.get_variables())
-        {
-            unsigned int l_raw_variable_id = compute_raw_variable_id(*l_var_iter, p_info);
-            l_transition_manager->create_transition(l_raw_variable_id);
-
-            unsigned int l_position_index = p_strategy_generator.get_position_index(l_var_iter->get_x(), l_var_iter->get_y());
-
-            // Mask bits corresponding to other variables with same position
-            l_transition_manager->get_transition(l_raw_variable_id).get_capability(l_position_index).clear();
-
-            // Mask bits corresponding to other variables with same piece id
-            l_transition_manager->get_transition(l_raw_variable_id).get_capability(256 + l_var_iter->get_piece_id() - 1).clear();
-        }
-
-        auto l_lamda = [=, & l_transition_manager, & p_strategy_generator, & p_info]( const simplex_variable & p_var1
-                                                                                    , const simplex_variable & p_var2
-                                                                                    )
-        {
-            unsigned int l_raw_id1 = compute_raw_variable_id(p_var1, p_info);
-            unsigned int l_position_index2 = p_strategy_generator.get_position_index(p_var2.get_x(), p_var2.get_y());
-            l_transition_manager->get_transition(l_raw_id1).get_capability(l_position_index2).clear_bit(p_var2.get_piece_id() - 1, p_var2.get_orientation());
-            l_transition_manager->get_transition(l_raw_id1).get_capability(256 + p_var2.get_piece_id() - 1).clear_bit(l_position_index2, p_var2.get_orientation());
-            unsigned int l_position_index1 = p_strategy_generator.get_position_index(p_var1.get_x(), p_var1.get_y());
-            unsigned int l_raw_id2 = compute_raw_variable_id(p_var2, p_info);
-            l_transition_manager->get_transition(l_raw_id2).get_capability(l_position_index1).clear_bit(p_var1.get_piece_id() - 1, p_var1.get_orientation());
-            l_transition_manager->get_transition(l_raw_id2).get_capability(256 + p_var1.get_piece_id() - 1).clear_bit(l_position_index1, p_var1.get_orientation());
-        };
-
-        // Mask variables due to incompatible borders
-        p_variable_generator.treat_piece_relations(l_lamda);
+        CUDA_backtracker_stack<NB_PIECES> * l_stacks;
+        const transition_manager<NB_PIECES> * l_transition_manager;
+        std::tie(l_stacks, l_transition_manager) = feature_CUDA_backtracker::prepare_data_structure<NB_PIECES>(l_nb_stack, p_info, p_variable_generator, p_strategy_generator);
 
         dim3 l_block_info(32, 1);
         dim3 l_grid_info(1);
@@ -267,17 +190,27 @@ namespace edge_matching_puzzle
         // Reset CUDA error status
         cudaGetLastError();
         std::cout << "Launch kernels" << std::endl;
-        kernel_and_info<256><<<l_grid_info,l_block_info>>>(l_stacks, *l_transition_manager, l_nb_stack);
+        kernel_and_info<NB_PIECES><<<l_grid_info,l_block_info>>>(l_stacks, *l_transition_manager, l_nb_stack);
         cudaDeviceSynchronize();
         gpuErrChk(cudaGetLastError());
 
-        auto l_run_end = std::chrono::steady_clock::now();
-
         delete l_transition_manager;
+        delete[] l_stacks;
 
         auto l_total_end = std::chrono::steady_clock::now();
         auto l_elapsed_seconds = l_total_end - l_start;
         std::cout << "Total elapsed time: " << l_elapsed_seconds.count() << "s" << std::endl;
+    }
+    //-------------------------------------------------------------------------
+    void launch( const emp_piece_db & p_piece_db
+               , const emp_FSM_info & p_info
+               , const emp_variable_generator & p_variable_generator
+               , const emp_strategy_generator & p_strategy_generator
+               )
+    {
+        assert(3 == p_info.get_width());
+        assert(3 == p_info.get_height());
+        template_launch<9>(p_piece_db, p_info, p_variable_generator, p_strategy_generator);
     }
 
 }
