@@ -144,7 +144,7 @@ namespace edge_matching_puzzle
     {
         for(unsigned int l_index = 0; l_index < SIZE; ++l_index)
         {
-            p_stream << "[" << l_index << "] =>" << p_capability.m_capability[l_index] << std::endl;
+            p_stream << "[" << l_index << "] =>" << std::endl << p_capability.m_capability[l_index] << std::endl;
         }
         p_stream << std::endl;
         return p_stream;

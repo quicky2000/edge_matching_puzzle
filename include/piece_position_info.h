@@ -28,6 +28,7 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <iomanip>
 
 namespace edge_matching_puzzle
 {
@@ -285,6 +286,27 @@ namespace edge_matching_puzzle
     inline
     std::ostream & operator<<(std::ostream & p_stream, const piece_position_info & p_info)
     {
+#ifndef RAW_DISPLAY
+        for(unsigned int l_orientation_index = static_cast<unsigned int>(emp_types::t_orientation::NORTH);
+            l_orientation_index <= static_cast<unsigned int>(emp_types::t_orientation::WEST);
+            ++l_orientation_index
+           )
+        {
+            p_stream << "|";
+            for (unsigned int l_index = 0; l_index < 8; ++l_index)
+            {
+                p_stream << " " << emp_types::orientation2short_string(static_cast<emp_types::t_orientation>(l_orientation_index)) << "  " << std::setw(3) << (32 * (l_index + 1) - 1) << "-" << std::setw(3) << (32 * l_index) << " |";
+            }
+            p_stream << std::endl;
+            p_stream << "|";
+            for (unsigned int l_index = 0; l_index < 8; ++l_index)
+            {
+                p_stream << " 0x" << std::hex << std::setfill('0') << std::setw(8) << p_info.m_info[8 * l_orientation_index + l_index] << std::dec << " |";
+            }
+            p_stream << std::setfill(' ') << std::endl;
+        }
+#else // RAW DISPLAY
+        p_stream << std::endl;
         for(unsigned int l_index = 0; l_index < 32; ++l_index)
         {
             if(0 == (l_index % 4))
@@ -293,6 +315,7 @@ namespace edge_matching_puzzle
             }
             p_stream << "\t[" << l_index << "] = 0x" << std::hex << p_info.m_info[l_index] << std::dec;
         }
+#endif // RAW_DISPLAY
         return p_stream;
     }
 
