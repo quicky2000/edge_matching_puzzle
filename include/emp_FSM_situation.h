@@ -27,7 +27,7 @@
 #include <map>
 #include <sstream>
 #include <iomanip>
-
+#include <algorithm>
 
 namespace edge_matching_puzzle
 {
@@ -85,7 +85,7 @@ namespace edge_matching_puzzle
         void set(const std::string & p_string);
 
         inline
-        const unsigned int get_level()const;
+        unsigned int get_level()const;
 
         inline
         void compute_string_id(std::string & p_id)const;
@@ -94,7 +94,7 @@ namespace edge_matching_puzzle
         void compute_bin_id(emp_types::bitfield & p_bitfield)const;
 
         static inline
-        const unsigned int & get_nb_bits();
+        unsigned int get_nb_bits();
 
         inline
         ~emp_FSM_situation() override;
@@ -126,13 +126,13 @@ namespace edge_matching_puzzle
     };
 
     //----------------------------------------------------------------------------
-    const unsigned int emp_FSM_situation::get_level() const
+    unsigned int emp_FSM_situation::get_level() const
     {
         return m_content_size;
     }
 
     //----------------------------------------------------------------------------
-    const unsigned int & emp_FSM_situation::get_nb_bits()
+    unsigned int emp_FSM_situation::get_nb_bits()
     {
         return m_situation_nb_bits;
     }
@@ -149,7 +149,7 @@ namespace edge_matching_puzzle
     ,m_content_size(0)
     ,m_used_positions(m_info->get_width() * m_info->get_height())
     {
-        memset(m_content, 0, m_info->get_width() * m_info->get_height() * sizeof(emp_types::t_oriented_piece));
+        std::transform(&m_content[0], &m_content[0] + m_info->get_width() * m_info->get_height(), m_content, [](emp_types::t_oriented_piece){return emp_types::t_oriented_piece {0, emp_types::t_orientation::NORTH }; });
         assert(m_info);
     }
 
@@ -160,7 +160,7 @@ namespace edge_matching_puzzle
     ,m_content_size(p_situation.m_content_size)
     ,m_used_positions(p_situation.m_used_positions)
     {
-        memcpy(m_content, p_situation.m_content, m_info->get_width() * m_info->get_height() * sizeof(emp_types::t_oriented_piece));
+        std::copy(&p_situation.m_content[0], &p_situation.m_content[0] + m_info->get_width() * m_info->get_height(), m_content);
     }
 
     //----------------------------------------------------------------------------
@@ -343,7 +343,7 @@ namespace edge_matching_puzzle
     {
         m_used_positions.reset();
         m_content_size = 0;
-        memset(m_content,0,m_info->get_width() * m_info->get_height() * sizeof(emp_types::t_oriented_piece));
+        std::transform(&m_content[0], &m_content[0] + m_info->get_width() * m_info->get_height(), m_content, [](emp_types::t_oriented_piece){return emp_types::t_oriented_piece {0, emp_types::t_orientation::NORTH }; });
         this->get_context()->clear();
     }
 
@@ -384,6 +384,7 @@ namespace edge_matching_puzzle
         // Updating context
         this->get_context()->use_piece(p_piece.first);
     }
+
 }
 #endif // EMP_FSM_SITUATION_H
 //EOF
