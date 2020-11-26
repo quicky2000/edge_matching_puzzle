@@ -215,7 +215,8 @@ namespace edge_matching_puzzle
         unsigned int l_nb_stack = 1;
         CUDA_backtracker_stack<NB_PIECES> * l_stacks;
         const transition_manager<NB_PIECES> * l_transition_manager;
-        std::tie(l_stacks, l_transition_manager) = feature_CUDA_backtracker::prepare_data_structure<NB_PIECES>(l_nb_stack, p_info, p_variable_generator, p_strategy_generator);
+        std::map<unsigned int, unsigned int> l_variable_translator;
+        std::tie(l_stacks, l_transition_manager) = feature_CUDA_backtracker::prepare_data_structure<NB_PIECES>(l_nb_stack, p_info, p_variable_generator, p_strategy_generator, l_variable_translator);
 
         dim3 l_block_info(32, 1);
         dim3 l_grid_info(1);
@@ -229,6 +230,17 @@ namespace edge_matching_puzzle
         cudaDeviceSynchronize();
         gpuErrChk(cudaGetLastError());
 
+        auto l_variables = p_variable_generator.get_variables();
+        emp_FSM_situation l_situation;
+        l_situation.set_context(*new emp_FSM_context(NB_PIECES));
+        for(unsigned int l_step_index = 0; l_step_index < p_info.get_height() * p_info.get_width(); ++l_step_index)
+        {
+            auto l_iter = l_variable_translator.find(l_stacks[0].get_variable_index(l_step_index));
+            assert(l_variable_translator.end() != l_iter);
+            simplex_variable & l_variable = *l_variables.at(l_iter->second);
+            l_situation.set_piece(l_variable.get_x(), l_variable.get_y(), l_variable.get_oriented_piece());
+        }
+        std::cout << l_situation.to_string() <<std::endl;
         delete l_transition_manager;
         delete[] l_stacks;
 

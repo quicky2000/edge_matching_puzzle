@@ -29,6 +29,7 @@
 
 #include <memory>
 #include <tuple>
+#include <map>
 
 namespace edge_matching_puzzle
 {
@@ -54,6 +55,7 @@ namespace edge_matching_puzzle
                               , const emp_FSM_info & p_info
                               , const emp_variable_generator & p_variable_generator
                               , const emp_strategy_generator & p_strategy_generator
+			      , std::map<unsigned int, unsigned int> & p_variable_translator
                               );
 
       private:
@@ -106,6 +108,7 @@ namespace edge_matching_puzzle
                                                     , const emp_FSM_info & p_info
                                                     , const emp_variable_generator & p_variable_generator
                                                     , const emp_strategy_generator & p_strategy_generator
+						    , std::map<unsigned int, unsigned int> & p_variable_translator
                                                     )
     {
         //unsigned int l_raw_variable_nb = p_info.get_width() * p_info.get_height() * p_info.get_width() * p_info.get_height() * 4;
@@ -138,6 +141,7 @@ namespace edge_matching_puzzle
         for(auto l_var_iter: p_variable_generator.get_variables())
         {
             unsigned int l_raw_variable_id = compute_raw_variable_id(*l_var_iter, p_info);
+            p_variable_translator.insert(std::make_pair(l_raw_variable_id, l_var_iter->get_id()));
             l_transition_manager->create_transition(l_raw_variable_id);
 
             unsigned int l_position_index = p_strategy_generator.get_position_index(l_var_iter->get_x(), l_var_iter->get_y());
