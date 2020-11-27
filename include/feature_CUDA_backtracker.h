@@ -142,6 +142,7 @@ namespace edge_matching_puzzle
         {
             unsigned int l_raw_variable_id = compute_raw_variable_id(*l_var_iter, p_info);
             p_variable_translator.insert(std::make_pair(l_raw_variable_id, l_var_iter->get_id()));
+    	    std::cout << "Variable[" << l_var_iter->get_id() << ":" << l_raw_variable_id << "] : " << *l_var_iter << std::endl;
             l_transition_manager->create_transition(l_raw_variable_id);
 
             unsigned int l_position_index = p_strategy_generator.get_position_index(l_var_iter->get_x(), l_var_iter->get_y());

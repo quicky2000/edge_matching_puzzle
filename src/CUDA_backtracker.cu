@@ -116,6 +116,7 @@ namespace edge_matching_puzzle
             // Only elected thread store selected variable
             if(threadIdx.x == l_elected_thread)
             {
+	        printf("Thread %i : selected variable %i at step %i\n", threadIdx.x, l_variable_id, l_stack_step);
                 l_stack.set_variable_index(l_stack_step, l_variable_id);
                 // Mark piece as used
                 l_thread_available_variables &= ~(1u << l_bit_index);
