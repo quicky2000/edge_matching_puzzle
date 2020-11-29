@@ -62,6 +62,7 @@ set(MY_SOURCE_FILES
     include/simplex_variable.h
     include/situation_capability.h
     include/emp_variable_generator.h
+    include/factory_feature.h
     include/feature_CUDA_backtracker.h
     include/transition_manager.h
     src/border_backtracker.cpp

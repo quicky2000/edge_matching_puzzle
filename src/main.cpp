@@ -24,19 +24,7 @@
 #include "emp_piece_db.h"
 #include "emp_FSM.h"
 
-#include "feature_border_exploration.h"
-#include "feature_simplex.h"
-#include "feature_display_all.h"
-#include "feature_display_max.h"
-#include "feature_display_solutions.h"
-#include "feature_dump_solutions.h"
-#include "feature_compute_stats.h"
-#include "feature_dump_summary.h"
-#include "feature_display_dump.h"
-#include "feature_display_dump.h"
-#include "feature_display_situation.h"
-#include "feature_system_equation.h"
-#include "feature_CUDA_backtracker.h"
+#include "factory_feature.h"
 
 #include "emp_strategy_generator_factory.h"
 #include "emp_strategy.h"
@@ -109,7 +97,7 @@ int main(int argc,char ** argv)
         emp_FSM_info l_info(l_width, l_height, l_piece_db.get_piece_id_size(), l_piece_db.get_dumped_piece_id_size());
 
         emp_FSM_situation::init(l_info);
-        std::string l_feature_name = l_feature_name_parameter.get_value<std::string>();
+        auto l_feature_name = l_feature_name_parameter.get_value<std::string>();
 
         // Generate strategy if needed
         std::unique_ptr<emp_strategy_generator> l_strategy_generator = nullptr;
@@ -134,85 +122,17 @@ int main(int argc,char ** argv)
         {
             l_strategy_generator->generate();
         }
-
-        feature_if * l_feature = nullptr;
-        if("display_all" == l_feature_name)
-        {
-            l_feature = new feature_display_all(l_piece_db, l_info, l_gui);
-        }
-        else if("display_max" == l_feature_name)
-        {
-            l_feature = new feature_display_max(l_piece_db, l_info, l_gui);
-        }
-        else if("display_solutions" == l_feature_name)
-        {
-            l_feature = new feature_display_solutions(l_piece_db, l_info, l_gui);
-        }
-        else if("dump_solutions" == l_feature_name)
-        {
-            l_feature = new feature_dump_solutions(l_piece_db, l_info, l_gui, l_dump_file_name);
-        }
-        else if("dump_summary" == l_feature_name)
-        {
-            l_feature = new feature_dump_summary(l_dump_file_name, l_info);
-        }
-        else if("display_dump" == l_feature_name)
-        {
-            l_feature = new feature_display_dump(l_dump_file_name, l_info, l_gui);
-        }
-        else if("display_situation" == l_feature_name)
-        {
-            l_feature = new feature_display_situation(l_initial_situation.get_value<std::string>(), l_info, l_gui);
-        }
-        else if("compute_stats" == l_feature_name)
-        {
-            l_feature = new feature_compute_stats(l_piece_db, l_info, l_gui);
-        }
-        else if("border_exploration" == l_feature_name)
-        {
-            l_feature = new feature_border_exploration(l_piece_db
-                                                      ,l_info
-                                                      ,l_initial_situation.get_value<std::string>()
-                                                      );
-        }
-        else if("simplex" == l_feature_name)
-        {
-            l_feature = new feature_simplex(l_piece_db
-                                           ,l_strategy_generator
-                                           ,l_info
-                                           ,l_initial_situation.get_value<std::string>()
-                                           ,l_gui
-                                           );
-        }
-        else if("system_equation" == l_feature_name)
-        {
-            l_feature = new feature_system_equation(l_piece_db
-                                                   ,l_strategy_generator
-                                                   ,l_info
-                                                   ,l_initial_situation.get_value<std::string>()
-                                                   ,l_hint_param.get_value<std::string>()
-                                                   ,l_gui
-                                                   );
-        }
-        else if("new_strategy" == l_feature_name || "new_text_strategy" == l_feature_name)
-        {
-            auto * l_strategy = new emp_strategy(l_strategy_generator, l_piece_db, l_gui, l_info, l_dump_file_name);
-            if(l_initial_situation.value_set())
-            {
-                l_strategy->set_initial_state(l_initial_situation.get_value<std::string>());
-            }
-            l_feature = l_strategy;
-        }
-        else if("CUDA_backtracker" == l_feature_name)
-        {
-            l_feature = new feature_CUDA_backtracker(l_piece_db, l_info, l_strategy_generator);
-        }
-        else
-        {
-            throw quicky_exception::quicky_logic_exception("Unsupported feature \"" + l_feature_name + "\"", __LINE__, __FILE__);
-        }
+        std::unique_ptr<feature_if>  l_feature(&factory_feature::create_feature(l_feature_name
+                                                                              ,l_piece_db
+                                                                              ,l_info
+                                                                              ,l_gui
+                                                                              ,l_initial_situation.get_value<std::string>()
+                                                                              ,l_dump_file_name
+                                                                              ,l_strategy_generator
+                                                                              ,l_hint_param.get_value<std::string>()
+                                                                              )
+                                               );
         l_feature->run();
-        delete l_feature;
     }
     catch(quicky_exception::quicky_runtime_exception & e)
     {
