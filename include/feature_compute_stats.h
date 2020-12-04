@@ -26,7 +26,8 @@
 #include <string>
 #include <unistd.h>
 #include <fstream>
-  
+#include <algorithm>
+
 namespace edge_matching_puzzle
 {
     class feature_compute_stats: public algo_based_feature<FSM_framework::algorithm_deep_raw>
@@ -40,28 +41,33 @@ namespace edge_matching_puzzle
                              );
 
         inline
-        ~feature_compute_stats();
+        ~feature_compute_stats() override;
 
         // Methods to implement inherited from algo_based_feature
         inline
-        const std::string& get_class_name() const;
+        const std::string& get_class_name() const override;
 
         inline
-        void print_status();
+        void print_status() override;
         // End of Methods to implement inherited from algo_based_feature
 
       private:
 
         // Methods to implement inherited from algo_based_feature
         inline
-        void display_specific_situation(const emp_FSM_situation & p_situation);
+        void display_specific_situation(const emp_FSM_situation & p_situation) override;
         // End of method to implement inherited from algo_based_feature
 
         inline
         void print_stats(std::ostream & p_stream);
 
+        inline
+        void print_VTK_histogram(std::ostream & p_stream);
+
 
         std::ofstream m_report_file;
+
+        std::ofstream m_VTK_level_histogram;
 
         uint64_t m_nb;
 
@@ -83,22 +89,27 @@ namespace edge_matching_puzzle
                                                 ,emp_gui & p_gui
                                                 )
     : algo_based_feature<FSM_framework::algorithm_deep_raw>(p_db,p_info,p_gui)
-    , m_report_file(NULL)
+    , m_report_file(nullptr)
+    , m_VTK_level_histogram(nullptr)
     , m_nb(0)
     , m_nb_final(0)
     , m_length(p_info.get_width()*p_info.get_height())
     , m_invalid_stats(new uint64_t[m_length])
     , m_intermediate_stats(new uint64_t[m_length])
     {
-        memset(m_invalid_stats,0,m_length*sizeof(uint64_t));
-        memset(m_intermediate_stats,0,m_length*sizeof(uint64_t));
-        std::stringstream l_stream_width;
-        l_stream_width << p_info.get_width();
-        std::stringstream l_stream_height;
-        l_stream_height << p_info.get_height();
-        std::string l_file_name = "stats_"+l_stream_width.str()+"_"+l_stream_height.str()+".txt";
+        std::transform(&m_invalid_stats[0], &m_invalid_stats[0] + m_length, m_invalid_stats, [](uint64_t){return 0;});
+        std::transform(&m_intermediate_stats[0], &m_intermediate_stats[0] + m_length, m_intermediate_stats, [](uint64_t){return 0;});
+
+        std::string l_file_root_name = "stats_" + std::to_string(p_info.get_width()) + "_" + std::to_string(p_info.get_height());
+        std::string l_file_name = l_file_root_name + ".txt";
+
         m_report_file.open(l_file_name.c_str());
         if(!m_report_file.is_open()) throw quicky_exception::quicky_runtime_exception("Unable to create file \""+l_file_name+"\"",__LINE__,__FILE__);
+
+        std::string l_VTK_file_name = l_file_root_name + "_vtk.txt";
+
+        m_VTK_level_histogram.open(l_VTK_file_name.c_str());
+        if(!m_VTK_level_histogram.is_open()) throw quicky_exception::quicky_runtime_exception("Unable to create file \""+l_VTK_file_name+"\"",__LINE__,__FILE__);
     }
 
     //----------------------------------------------------------------------------
@@ -135,6 +146,8 @@ namespace edge_matching_puzzle
     {
         print_stats(m_report_file);
         m_report_file.close();
+        print_VTK_histogram(m_VTK_level_histogram);
+        m_VTK_level_histogram.close();
         delete[] m_invalid_stats;
         delete[] m_intermediate_stats;
     }
@@ -161,6 +174,24 @@ namespace edge_matching_puzzle
     const std::string & feature_compute_stats::get_class_name() const
     {
         return m_class_name;
+    }
+
+    //----------------------------------------------------------------------------
+    void
+    feature_compute_stats::print_VTK_histogram(std::ostream & p_stream)
+    {
+        p_stream << "histogram" << std::endl;
+        p_stream << R"("Invalid/Valid_situations_per_level" Level "Situation_number" )" << m_length << " 2" << std::endl;
+        for(unsigned int l_index = 0 ; l_index < m_length ; ++l_index)
+        {
+            p_stream << m_invalid_stats[l_index] << " ";
+        }
+        p_stream << std::endl;
+        for(unsigned int l_index = 0 ; l_index < m_length - 1; ++l_index)
+        {
+            p_stream << m_intermediate_stats[l_index] << " ";
+        }
+        p_stream << m_nb_final << std::endl;
     }
 }
 
