@@ -1,5 +1,5 @@
 #-----------------------------------------
-# CMakeLists Skeleton v1.0
+# CMakeLists Skeleton 2020/12/10
 #-----------------------------------------
 cmake_minimum_required(VERSION 3.11.4)
 project(edge_matching_puzzle LANGUAGES CXX)
@@ -133,8 +133,12 @@ foreach(SOURCE_FILE IN ITEMS ${MY_SOURCE_FILES})
         if(NOT DEFINED CMAKE_CUDA_STANDARD)
             set(CMAKE_CUDA_STANDARD 11)
             set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-            set(MY_CPP_FLAGS ${MY_CPP_FLAGS} -std=c++11)
-            set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} "--ptxas-options=-v -g -G -lineinfo -arch=sm_75 -gencode=arch=compute_75,code=sm_75")
+            set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} " --ptxas-options=-v -arch=sm_75 -gencode=arch=compute_75,code=sm_75")
+            if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G")
+            else()
+                set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -lineinfo")
+            endif()
         endif()
     endif()
 endforeach(SOURCE_FILE)
@@ -225,7 +229,7 @@ else()
     target_compile_definitions(${PROJECT_NAME} PRIVATE -D$<UPPER_CASE:${PROJECT_NAME}>_SELF_TEST)
     message(Linked librarries ${LINKED_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} ${LINKED_LIBRARIES})
-    target_compile_options(${PROJECT_NAME} PUBLIC -Wall -ansi -g -O0 ${MY_CPP_FLAGS})
+    target_compile_options(${PROJECT_NAME} PUBLIC -Wall -ansi $<$<CONFIG:Debug>:-O0> ${MY_CPP_FLAGS})
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${MY_INCLUDE_DIRECTORIES})
