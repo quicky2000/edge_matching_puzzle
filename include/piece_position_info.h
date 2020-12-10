@@ -202,10 +202,7 @@ namespace edge_matching_puzzle
                                   , const piece_position_info & p_b
                                   )
     {
-        for(unsigned int l_index = 0; l_index < 32; ++l_index)
-        {
-            m_info[l_index] = p_a.m_info[l_index] & p_b.m_info[l_index];
-        }
+        std::transform(&(p_a.m_info[0]), &(p_a.m_info[32]), &(p_b.m_info[0]), &(m_info[0]), [=](uint32_t p_first, uint32_t p_second){return p_first & p_second;});
     }
 
     //-------------------------------------------------------------------------

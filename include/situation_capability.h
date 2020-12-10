@@ -110,10 +110,16 @@ namespace edge_matching_puzzle
                                          , const situation_capability & p_b
                                          )
     {
-        for(unsigned int l_index = 0; l_index < SIZE; ++l_index)
-        {
-            m_capability[l_index].apply_and(p_a.m_capability[l_index], p_b.m_capability[l_index]);
-        }
+        std::transform( &(p_a.m_capability[0])
+                      , &(p_a.m_capability[SIZE])
+                      , &(p_b.m_capability[0])
+                      , &(m_capability[0])
+                      , [=](const piece_position_info & p_first, const piece_position_info & p_second)
+                        {piece_position_info l_result;
+                        l_result.apply_and(p_first, p_second);
+                         return l_result;
+                        }
+                      );
     }
 
     //-------------------------------------------------------------------------
