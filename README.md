@@ -25,8 +25,14 @@ CUDA code is designed to run on a **Nvidia GPU Tesla T4**
 
 ### Build with CUDA code enabled
 
-With CMake use command
+With CMake and CUDA 10, g++ > 9 is not supported so use the following command to force use of gcc 8
 
 ```
-cmake  -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=/usr/bin/gcc-8 -DCMAKE_CXX_COMPILER=/usr/bin/g++-8 $QUICKY_REPOSITORY/edge_matching_puzzle/
+cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=/usr/bin/gcc-8 -DCMAKE_CXX_COMPILER=/usr/bin/g++-8 $QUICKY_REPOSITORY/edge_matching_puzzle/
+```
+
+With CMake and CUDA 11.1 nvcc is not in default path so specify location of nvcc with following command to force use of gcc 8
+
+```
+cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_COMPILER=/usr/local/cuda-11.1/bin/nvcc $QUICKY_REPOSITORY/edge_matching_puzzle/
 ```
