@@ -87,6 +87,7 @@ set(MY_SOURCE_FILES
     src/emp_strategy_generator_factory.cpp
     include/emp_advanced_feature_base.h
     include/CUDA_backtracker_stack.h
+    include/CUDA_memory_managed_pointer.h
     src/piece_position_info.cpp
    )
 

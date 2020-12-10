@@ -19,7 +19,7 @@
 #ifndef EDGE_MATCHING_PUZZLE_TRANSITION_MANAGER_H
 #define EDGE_MATCHING_PUZZLE_TRANSITION_MANAGER_H
 
-#include "CUDA_memory_managed_item.h"
+#include "CUDA_memory_managed_pointer.h"
 #include "situation_capability.h"
 
 namespace edge_matching_puzzle
@@ -52,7 +52,7 @@ namespace edge_matching_puzzle
         situation_capability<2 * NB_PIECES> & get_transition(unsigned int p_index);
 
       private:
-        typedef situation_capability<2 * NB_PIECES> * transition_ptr;
+        using transition_ptr = CUDA_memory_managed_ptr<situation_capability<2 * NB_PIECES>>;
         transition_ptr * m_transitions;
         unsigned int m_size;
     };
@@ -60,17 +60,9 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     template<unsigned int NB_PIECES>
     transition_manager<NB_PIECES>::transition_manager(unsigned int p_nb)
-#ifndef __NVCC__
     : m_transitions{new transition_ptr[p_nb]}
-#else // __NVCC__
-    : m_transitions{nullptr}
-#endif // __NVCC__
-
     , m_size(p_nb)
     {
-#ifdef __NVCC__
-	cudaMallocManaged(&m_transitions, p_nb *sizeof(transition_ptr));
-#endif // __NVCC__
         for(unsigned int l_index = 0; l_index < p_nb; ++l_index)
         {
             m_transitions[l_index] = 0;
@@ -83,13 +75,9 @@ namespace edge_matching_puzzle
     {
         for(unsigned int l_index = 0; l_index < m_size; ++l_index)
         {
-            delete(m_transitions[l_index]);
+            delete(m_transitions[l_index].get());
         }
-#ifndef __NVCC__
         delete[] m_transitions;
-#else // __NVCC__
-	cudaFree(m_transitions);
-#endif // __NVCC__
     }
 
     //-------------------------------------------------------------------------
@@ -102,7 +90,7 @@ namespace edge_matching_puzzle
     {
 #ifndef __NVCC__
         assert(p_index < m_size);
-        assert(m_transitions[p_index]);
+        assert(m_transitions[p_index].get());
 #endif // __NVCC__
         return *m_transitions[p_index];
     }
@@ -114,7 +102,7 @@ namespace edge_matching_puzzle
     {
 #ifndef __NVCC__
         assert(p_index < m_size);
-        assert(m_transitions[p_index]);
+        assert(m_transitions[p_index].get());
 #endif // __NVCC__
         return *m_transitions[p_index];
     }
@@ -126,7 +114,7 @@ namespace edge_matching_puzzle
     {
 #ifndef __NVCC__
         assert(p_index < m_size);
-        assert(nullptr == m_transitions[p_index]);
+        assert(nullptr == m_transitions[p_index].get());
 #endif // __NVCC__
         m_transitions[p_index] = new situation_capability<NB_PIECES * 2>();
     }
