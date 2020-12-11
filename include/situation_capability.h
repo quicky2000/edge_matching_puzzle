@@ -20,6 +20,7 @@
 
 #include "piece_position_info.h"
 #include <array>
+#include <vector>
 
 namespace edge_matching_puzzle
 {
@@ -64,6 +65,9 @@ namespace edge_matching_puzzle
 
         inline
         bool operator==(const situation_capability &) const;
+
+        inline
+        std::vector<unsigned int> compute_profile() const;
 
         typedef piece_position_info info_t;
 
@@ -129,6 +133,23 @@ namespace edge_matching_puzzle
         p_stream << std::endl;
         return p_stream;
     }
+
+    //-------------------------------------------------------------------------
+    template <unsigned int SIZE>
+    std::vector<unsigned int>
+    situation_capability<SIZE>::compute_profile() const
+    {
+        std::vector<unsigned int> l_result(SIZE);
+        std::transform(m_capability.begin(), m_capability.end(), l_result.begin(), [](const piece_position_info & p_info)
+                                                                                   {
+                                                                                       unsigned int l_nb_bits = p_info.get_nb_bits_set();
+                                                                                       return l_nb_bits;
+                                                                                   }
+                      );
+        std::sort(l_result.begin(), l_result.end());
+        return l_result;
+    }
+
 }
 #endif //EMP_SITUATION_CAPABILITY_H
 // EOF

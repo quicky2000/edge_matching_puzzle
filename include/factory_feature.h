@@ -32,6 +32,7 @@
 #include "feature_display_situation.h"
 #include "feature_system_equation.h"
 #include "feature_CUDA_backtracker.h"
+#include "feature_situation_profile.h"
 #include "emp_strategy.h"
 #include <string>
 
@@ -138,6 +139,10 @@ namespace edge_matching_puzzle
         else if("CUDA_backtracker" == p_feature_name)
         {
             l_feature = new feature_CUDA_backtracker(p_piece_db, p_info, p_strategy_generator);
+        }
+        else if("situation_profile" == p_feature_name)
+        {
+            l_feature = new feature_situation_profile(p_piece_db, p_info, p_strategy_generator, p_initial_situation);
         }
         else
         {

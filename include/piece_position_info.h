@@ -26,6 +26,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <iomanip>
+#include <numeric>
 
 namespace edge_matching_puzzle
 {
@@ -81,6 +82,9 @@ namespace edge_matching_puzzle
 
         inline
         void clear();
+
+        inline
+        unsigned int get_nb_bits_set() const;
 
         /**
          * Word access for CUDA warp operations
@@ -294,6 +298,14 @@ namespace edge_matching_puzzle
     piece_position_info::clear()
     {
         std::transform(m_info.begin(), m_info.end(), m_info.begin(), [](uint32_t p_item){return 0x0;});
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    piece_position_info::get_nb_bits_set() const
+    {
+        unsigned int l_nb_bits = std::accumulate(m_info.begin(), m_info.end(), 0, [] (uint32_t p_a, uint32_t p_b){return p_a + __builtin_popcount(p_b);});
+        return l_nb_bits;
     }
 
 }

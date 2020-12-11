@@ -92,6 +92,8 @@ set(MY_SOURCE_FILES
     include/CUDA_situation_capability.h
     include/CUDA_transition_manager.h
     include/system_equation_for_CUDA.h
+    include/feature_situation_profile.h
+    src/feature_situation_profile.cpp
    )
 
 
