@@ -50,28 +50,6 @@ namespace edge_matching_puzzle
 
     }
 
-    //-------------------------------------------------------------------------
-    unsigned int feature_CUDA_backtracker::compute_raw_variable_id( unsigned int p_x
-                                                                  , unsigned int p_y
-                                                                  , unsigned int p_piece_index
-                                                                  , emp_types::t_orientation p_orientation
-                                                                  , const emp_FSM_info & p_info
-                                                                  )
-    {
-        //unsigned int l_nb_pieces = p_info.get_width() * p_info.get_height();
-        unsigned int l_nb_pieces = 256;
-        unsigned int l_position_index = p_x + p_y * p_info.get_width();
-        return l_position_index * l_nb_pieces * 4 + ((unsigned int)p_orientation) * l_nb_pieces + p_piece_index;
-    }
-
-    //-------------------------------------------------------------------------
-    unsigned int feature_CUDA_backtracker::compute_raw_variable_id( const simplex_variable & p_var
-                                                                  , const emp_FSM_info & p_info
-                                                                  )
-    {
-        return compute_raw_variable_id(p_var.get_x(), p_var.get_y(), p_var.get_piece_id() - 1, p_var.get_orientation(), p_info);
-    }
-
 }
 
 // EOF

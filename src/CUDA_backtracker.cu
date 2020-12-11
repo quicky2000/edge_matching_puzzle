@@ -18,6 +18,7 @@
 
 #include "feature_CUDA_backtracker.h"
 #include "CUDA_backtracker_stack.h"
+#include "system_equation_for_CUDA.h"
 #include "my_cuda.h"
 #include "transition_manager.h"
 #include <chrono>
@@ -217,7 +218,7 @@ namespace edge_matching_puzzle
         CUDA_backtracker_stack<NB_PIECES> * l_stacks;
         const transition_manager<NB_PIECES> * l_transition_manager;
         std::map<unsigned int, unsigned int> l_variable_translator;
-        std::tie(l_stacks, l_transition_manager) = feature_CUDA_backtracker::prepare_data_structure<NB_PIECES>(l_nb_stack, p_info, p_variable_generator, p_strategy_generator, l_variable_translator);
+        std::tie(l_stacks, l_transition_manager) = system_equation_for_CUDA::prepare_data_structure<NB_PIECES>(l_nb_stack, p_info, p_variable_generator, p_strategy_generator, l_variable_translator);
 
         dim3 l_block_info(32, 1);
         dim3 l_grid_info(1);
