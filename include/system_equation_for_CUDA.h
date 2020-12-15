@@ -20,7 +20,7 @@
 #define EDGE_MATCHING_PUZZLE_SYSTEM_EQUATION_FOR_CUDA_H
 
 #include "CUDA_backtracker_stack.h"
-#include "transition_manager.h"
+#include "CUDA_transition_manager.h"
 #include "emp_FSM_info.h"
 #include "emp_variable_generator.h"
 #include "emp_strategy_generator.h"
@@ -35,7 +35,7 @@ namespace edge_matching_puzzle
 
         template <unsigned int NB_PIECES>
         static
-        std::tuple<CUDA_backtracker_stack<NB_PIECES> *, const transition_manager<NB_PIECES> *>
+        std::tuple<CUDA_backtracker_stack<NB_PIECES> *, const CUDA_transition_manager<NB_PIECES> *>
         prepare_data_structure( unsigned int p_nb_stack
                               , const emp_FSM_info & p_info
                               , const emp_variable_generator & p_variable_generator
@@ -63,7 +63,7 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     template <unsigned int NB_PIECES>
-    std::tuple<CUDA_backtracker_stack<NB_PIECES> *, const transition_manager<NB_PIECES> *>
+    std::tuple<CUDA_backtracker_stack<NB_PIECES> *, const CUDA_transition_manager<NB_PIECES> *>
     system_equation_for_CUDA::prepare_data_structure( unsigned int p_nb_stack
                                                                , const emp_FSM_info & p_info
                                                                , const emp_variable_generator & p_variable_generator
@@ -77,7 +77,7 @@ namespace edge_matching_puzzle
         std::cout << "Max variables nb: " << l_raw_variable_nb << std::endl;
         std::cout << "Nb variables: " << p_variable_generator.get_variables().size() << std::endl;
 
-        piece_position_info::set_init_value(0);
+        CUDA_piece_position_info::set_init_value(0);
         auto * l_stacks = new CUDA_backtracker_stack<NB_PIECES>[p_nb_stack];
 
         // Init first step of stack
@@ -92,12 +92,12 @@ namespace edge_matching_puzzle
         }
 
         // Allocate an array to do the link between theorical variables and real variables
-        transition_manager<NB_PIECES> * l_transition_manager{new transition_manager<NB_PIECES>(l_raw_variable_nb)};
+        CUDA_transition_manager<NB_PIECES> * l_transition_manager{new CUDA_transition_manager<NB_PIECES>(l_raw_variable_nb)};
 
         // Allocate transition vectors for real variables
         // All transition vector bits are set to 1 by default as they will be
         // used with and operator
-        piece_position_info::set_init_value(std::numeric_limits<uint32_t>::max());
+        CUDA_piece_position_info::set_init_value(std::numeric_limits<uint32_t>::max());
         for(auto l_var_iter: p_variable_generator.get_variables())
         {
             unsigned int l_raw_variable_id = compute_raw_variable_id(*l_var_iter, p_info);
@@ -121,6 +121,7 @@ namespace edge_matching_puzzle
                 l_transition_manager->get_transition(l_raw_variable_id).get_capability(p_strategy_generator.get_position_index(l_other_variable->get_x(), l_other_variable->get_y())).clear_bit(l_other_variable->get_piece_id() - 1, l_other_variable->get_orientation());
             }
         }
+        CUDA_piece_position_info::set_init_value(0);
 
         auto l_lamda = [=, & l_transition_manager, & p_strategy_generator, & p_info]( const simplex_variable & p_var1
                                                                                     , const simplex_variable & p_var2

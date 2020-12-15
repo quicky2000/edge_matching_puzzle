@@ -15,11 +15,14 @@
       You should have received a copy of the GNU General Public License
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
-#ifndef EMP_SITUATION_CAPABILITY_H
-#define EMP_SITUATION_CAPABILITY_H
+#ifndef EMP_CUDA_SITUATION_CAPABILITY_H
+#define EMP_CUDA_SITUATION_CAPABILITY_H
 
-#include "piece_position_info.h"
-#include <array>
+#ifndef __NVCC__
+#error This code should be compiled with nvcc
+#endif // __NVCC__
+
+#include "CUDA_piece_position_info.h"
 
 namespace edge_matching_puzzle
 {
@@ -37,7 +40,8 @@ namespace edge_matching_puzzle
      * @tparam SIZE twice the number of pieces/positions as we have info for both
      */
     template <unsigned int SIZE>
-    class situation_capability
+    class CUDA_situation_capability
+    : public CUDA_memory_managed_item
     {
 
         friend
@@ -45,36 +49,37 @@ namespace edge_matching_puzzle
 
       public:
 
-        situation_capability() = default;
-        situation_capability(const situation_capability &) = default;
-        situation_capability & operator=(const situation_capability &) = default;
+        CUDA_situation_capability() = default;
+        CUDA_situation_capability(const CUDA_situation_capability &) = default;
+        CUDA_situation_capability & operator=(const CUDA_situation_capability &) = default;
 
-        inline
-        const piece_position_info &
+        inline __host__ __device__
+        const CUDA_piece_position_info &
         get_capability(unsigned int p_index) const;
 
-        inline
-        piece_position_info &
+        inline __host__ __device__
+        CUDA_piece_position_info &
         get_capability(unsigned int p_index);
 
         inline
-        void apply_and( const situation_capability & p_a
-                      , const situation_capability & p_b
+        void apply_and( const CUDA_situation_capability & p_a
+                      , const CUDA_situation_capability & p_b
                       );
 
-        inline
-        bool operator==(const situation_capability &) const;
+        inline __host__ __device__
+        bool operator==(const CUDA_situation_capability &) const;
 
       private:
-        std::array<piece_position_info, SIZE> m_capability;
+        CUDA_piece_position_info m_capability[SIZE];
 
         static_assert(!(SIZE % 2),"Situation capability size is odd whereas it should be even");
     };
 
     //-------------------------------------------------------------------------
     template <unsigned int SIZE>
-    const piece_position_info &
-    situation_capability<SIZE>::get_capability(unsigned int p_index) const
+    __host__ __device__
+    const CUDA_piece_position_info &
+    CUDA_situation_capability<SIZE>::get_capability(unsigned int p_index) const
     {
         assert(p_index < SIZE);
         return m_capability[p_index];
@@ -82,8 +87,9 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     template <unsigned int SIZE>
-    piece_position_info &
-    situation_capability<SIZE>::get_capability(unsigned int p_index)
+    __host__ __device__
+    CUDA_piece_position_info &
+    CUDA_situation_capability<SIZE>::get_capability(unsigned int p_index)
     {
         assert(p_index < SIZE);
         return m_capability[p_index];
@@ -92,16 +98,16 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     template <unsigned int SIZE>
     void
-    situation_capability<SIZE>::apply_and( const situation_capability & p_a
-                                         , const situation_capability & p_b
-                                         )
+    CUDA_situation_capability<SIZE>::apply_and( const CUDA_situation_capability & p_a
+                                              , const CUDA_situation_capability & p_b
+                                              )
     {
         std::transform( &(p_a.m_capability[0])
                       , &(p_a.m_capability[SIZE])
                       , &(p_b.m_capability[0])
                       , &(m_capability[0])
-                      , [=](const piece_position_info & p_first, const piece_position_info & p_second)
-                        {piece_position_info l_result;
+                      , [=](const CUDA_piece_position_info & p_first, const CUDA_piece_position_info & p_second)
+                        {CUDA_piece_position_info l_result;
                         l_result.apply_and(p_first, p_second);
                          return l_result;
                         }
@@ -111,14 +117,24 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     template <unsigned int SIZE>
     bool
-    situation_capability<SIZE>::operator==(const situation_capability & p_operator) const
+    CUDA_situation_capability<SIZE>::operator==(const CUDA_situation_capability & p_operator) const
     {
-        return m_capability == p_operator.m_capability;
+        unsigned int l_index = 0;
+        while(l_index < SIZE)
+        {
+            if(!(m_capability[l_index] == p_operator.m_capability[l_index]))
+            {
+                return false;
+            }
+            ++l_index;
+        }
+        return true;
+        return false;
     }
 
     //-------------------------------------------------------------------------
     template <unsigned int SIZE>
-    std::ostream & operator<<(std::ostream & p_stream, const situation_capability<SIZE> & p_capability)
+    std::ostream & operator<<(std::ostream & p_stream, const CUDA_situation_capability<SIZE> & p_capability)
     {
         for(unsigned int l_index = 0; l_index < SIZE; ++l_index)
         {
@@ -128,5 +144,5 @@ namespace edge_matching_puzzle
         return p_stream;
     }
 }
-#endif //EMP_SITUATION_CAPABILITY_H
+#endif //EMP_CUDA_situation_capability_H
 // EOF

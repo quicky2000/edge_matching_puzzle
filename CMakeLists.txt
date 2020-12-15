@@ -88,8 +88,10 @@ set(MY_SOURCE_FILES
     include/emp_advanced_feature_base.h
     include/CUDA_backtracker_stack.h
     include/CUDA_memory_managed_pointer.h
+    include/CUDA_piece_position_info.h
+    include/CUDA_situation_capability.h
+    include/CUDA_transition_manager.h
     include/system_equation_for_CUDA.h
-    src/piece_position_info.cpp
    )
 
 
@@ -97,6 +99,7 @@ if(${ENABLE_CUDA_CODE})
     set (MY_CPP_FLAGS -DENABLE_CUDA_CODE)
     set (MY_SOURCE_FILES ${MY_SOURCE_FILES}
          src/CUDA_backtracker.cu
+         src/CUDA_piece_position_info.cu
         )
 else(${ENABLE_CUDA_CODE})
     set (MY_CPP_FLAGS -pedantic)

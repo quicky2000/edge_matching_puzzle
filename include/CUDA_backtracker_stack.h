@@ -18,15 +18,17 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_BACKTRACKER_STACK_H
 #define EDGE_MATCHING_PUZZLE_CUDA_BACKTRACKER_STACK_H
 
-#include "situation_capability.h"
+#include "CUDA_situation_capability.h"
+
+#ifndef __NVCC__
+#error This code should be compiled with nvcc
+#endif // __NVCC__
 
 namespace edge_matching_puzzle
 {
     template <unsigned int NB_PIECES>
     class CUDA_backtracker_stack
-#ifdef __NVCC__
     : public CUDA_memory_managed_item
-#endif // __NVCC__
     {
       public:
 
@@ -46,7 +48,7 @@ namespace edge_matching_puzzle
 
         inline
         __host__ __device__
-        situation_capability<2 * NB_PIECES> & get_available_variables(unsigned int p_step_index);
+        CUDA_situation_capability<2 * NB_PIECES> & get_available_variables(unsigned int p_step_index);
 
       private:
         unsigned int m_variables_index[NB_PIECES];
@@ -55,7 +57,7 @@ namespace edge_matching_puzzle
          * One extra item compared to NB_PIECES to be able to systematically
          * apply mask even with latest piece
          */
-        situation_capability<2 * NB_PIECES> m_available_variables[NB_PIECES + 1];
+        CUDA_situation_capability<2 * NB_PIECES> m_available_variables[NB_PIECES + 1];
     };
 
     //-------------------------------------------------------------------------
@@ -63,21 +65,17 @@ namespace edge_matching_puzzle
     unsigned int
     CUDA_backtracker_stack<NB_PIECES>::get_variable_index(unsigned int p_step_index) const
     {
-#ifndef __NVCC__
-        assert(p_step_index < NB_PIECES);
-#endif // __NVCC__
+        //assert(p_step_index < NB_PIECES);
         return m_variables_index[p_step_index];
     }
 
     //-------------------------------------------------------------------------
     template <unsigned int NB_PIECES>
     __host__ __device__
-    situation_capability<2 * NB_PIECES> &
+    CUDA_situation_capability<2 * NB_PIECES> &
     CUDA_backtracker_stack<NB_PIECES>::get_available_variables(unsigned int p_step_index)
     {
-#ifndef __NVCC__
-        assert(p_step_index < NB_PIECES + 1);
-#endif // __NVCC__
+        //assert(p_step_index < NB_PIECES + 1);
         return m_available_variables[p_step_index];
     }
 
@@ -87,9 +85,7 @@ namespace edge_matching_puzzle
     void
     CUDA_backtracker_stack<NB_PIECES>::set_variable_index(unsigned int p_step_index, unsigned int p_variable_id)
     {
-#ifndef __NVCC__
-        assert(p_step_index < NB_PIECES);
-#endif // __NVCC__
+        //assert(p_step_index < NB_PIECES);
         m_variables_index[p_step_index] = p_variable_id;
     }
 }

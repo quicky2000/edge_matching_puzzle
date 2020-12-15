@@ -20,22 +20,14 @@
 #define EMP_SITUATION_UTILS_H
 
 #include "feature_if.h"
-#include "emp_piece_db.h"
-#include "emp_FSM_info.h"
+#include "emp_strategy_generator.h"
 #include "emp_variable_generator.h"
-#include "CUDA_backtracker_stack.h"
-#include "transition_manager.h"
-#include "my_cuda.h"
-
-#include <memory>
-#include <tuple>
-#include <map>
+#include "emp_FSM_situation.h"
 
 namespace edge_matching_puzzle
 {
-    template<unsigned int SIZE>
-    class situation_capability;
-
+    class emp_piece_db;
+    class emp_FSM_info;
 
     class feature_CUDA_backtracker: public feature_if
     {

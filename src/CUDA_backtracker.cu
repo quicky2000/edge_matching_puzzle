@@ -16,15 +16,12 @@
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include "feature_CUDA_backtracker.h"
 #include "CUDA_backtracker_stack.h"
 #include "system_equation_for_CUDA.h"
 #include "my_cuda.h"
-#include "transition_manager.h"
+#include "CUDA_transition_manager.h"
 #include <chrono>
-#ifdef __NVCC__
 #include "thrust/version.h"
-#endif // __NVCC__
 
 namespace edge_matching_puzzle
 {
@@ -32,9 +29,9 @@ namespace edge_matching_puzzle
     __device__
     bool compute_piece_info( unsigned int p_start_index
                            , unsigned int p_end_index
-                           , const situation_capability<NB_PIECES * 2> & p_situation_capability
-                           , const situation_capability<NB_PIECES * 2> & p_transition_capability
-                           , situation_capability<NB_PIECES * 2> & p_result_capability
+                           , const CUDA_situation_capability<NB_PIECES * 2> & p_situation_capability
+                           , const CUDA_situation_capability<NB_PIECES * 2> & p_transition_capability
+                           , CUDA_situation_capability<NB_PIECES * 2> & p_result_capability
                            )
     {
         bool l_valid = true;
@@ -68,7 +65,7 @@ namespace edge_matching_puzzle
     template <unsigned int NB_PIECES>
     __global__
     void kernel_and_info( CUDA_backtracker_stack<NB_PIECES> * p_stacks
-                        , const transition_manager<NB_PIECES> & p_transition_capability
+                        , const CUDA_transition_manager<NB_PIECES> & p_transition_capability
                         , unsigned int p_nb_stack
                         )
     {
@@ -129,9 +126,9 @@ namespace edge_matching_puzzle
                 break;
             }
             // Apply vector related to variable_id
-            const situation_capability<NB_PIECES * 2> & l_situation_capability = l_stack.get_available_variables(l_stack_step);
-            const situation_capability<NB_PIECES * 2> & l_transition_capability = p_transition_capability.get_transition(l_variable_id);
-            situation_capability<NB_PIECES * 2> & l_result_capability = l_stack.get_available_variables(l_stack_step + 1);
+            const CUDA_situation_capability<NB_PIECES * 2> & l_situation_capability = l_stack.get_available_variables(l_stack_step);
+            const CUDA_situation_capability<NB_PIECES * 2> & l_transition_capability = p_transition_capability.get_transition(l_variable_id);
+            CUDA_situation_capability<NB_PIECES * 2> & l_result_capability = l_stack.get_available_variables(l_stack_step + 1);
 
             bool l_situation_valid = true;
             // Compute new positions after current one as we now that current one will be all 0
@@ -216,7 +213,7 @@ namespace edge_matching_puzzle
 
         unsigned int l_nb_stack = 1;
         CUDA_backtracker_stack<NB_PIECES> * l_stacks;
-        const transition_manager<NB_PIECES> * l_transition_manager;
+        const CUDA_transition_manager<NB_PIECES> * l_transition_manager;
         std::map<unsigned int, unsigned int> l_variable_translator;
         std::tie(l_stacks, l_transition_manager) = system_equation_for_CUDA::prepare_data_structure<NB_PIECES>(l_nb_stack, p_info, p_variable_generator, p_strategy_generator, l_variable_translator);
 
