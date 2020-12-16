@@ -65,6 +65,8 @@ namespace edge_matching_puzzle
         inline
         bool operator==(const situation_capability &) const;
 
+        typedef piece_position_info info_t;
+
       private:
         std::array<piece_position_info, SIZE> m_capability;
 

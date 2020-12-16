@@ -50,6 +50,8 @@ namespace edge_matching_puzzle
         __host__ __device__
         CUDA_situation_capability<2 * NB_PIECES> & get_available_variables(unsigned int p_step_index);
 
+        using info_t = typename CUDA_situation_capability<2 * NB_PIECES>::info_t;
+
       private:
         unsigned int m_variables_index[NB_PIECES];
 

@@ -69,6 +69,8 @@ namespace edge_matching_puzzle
         inline __host__ __device__
         bool operator==(const CUDA_situation_capability &) const;
 
+        typedef CUDA_piece_position_info info_t;
+
       private:
         CUDA_piece_position_info m_capability[SIZE];
 
