@@ -212,10 +212,18 @@ namespace edge_matching_puzzle
         }
 
         unsigned int l_nb_stack = 1;
-        CUDA_backtracker_stack<NB_PIECES> * l_stacks;
+        auto * l_stacks = new CUDA_backtracker_stack<NB_PIECES>[l_nb_stack];
+
+        // Init first step of stack
+        for(unsigned int l_stack_index = 0; l_stack_index < l_nb_stack; ++l_stack_index)
+        {
+            system_equation_for_CUDA::prepare_initial<NB_PIECES, CUDA_situation_capability<2 * NB_PIECES>>(p_variable_generator, p_strategy_generator, l_stacks[l_stack_index].get_available_variables(0));
+        }
+
+
         const CUDA_transition_manager<NB_PIECES> * l_transition_manager;
         std::map<unsigned int, unsigned int> l_variable_translator;
-        std::tie(l_stacks, l_transition_manager) = system_equation_for_CUDA::prepare_data_structure<NB_PIECES, CUDA_backtracker_stack<NB_PIECES>, CUDA_transition_manager<NB_PIECES>>(l_nb_stack, p_info, p_variable_generator, p_strategy_generator, l_variable_translator);
+        l_transition_manager = system_equation_for_CUDA::prepare_transitions<NB_PIECES, CUDA_situation_capability<2 * NB_PIECES>, CUDA_transition_manager<NB_PIECES>>(p_info, p_variable_generator, p_strategy_generator, l_variable_translator);
 
         dim3 l_block_info(32, 1);
         dim3 l_grid_info(1);

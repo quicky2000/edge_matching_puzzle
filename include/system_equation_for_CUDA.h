@@ -33,13 +33,20 @@ namespace edge_matching_puzzle
 
         template <unsigned int NB_PIECES, typename INITIAL, typename TRANSITION_MANAGER>
         static
-        std::tuple<INITIAL *, const TRANSITION_MANAGER *>
-        prepare_data_structure( unsigned int p_nb_stack
-                              , const emp_FSM_info & p_info
-                              , const emp_variable_generator & p_variable_generator
-                              , const emp_strategy_generator & p_strategy_generator
-                              , std::map<unsigned int, unsigned int> & p_variable_translator
-                              );
+        const TRANSITION_MANAGER *
+        prepare_transitions( const emp_FSM_info & p_info
+                           , const emp_variable_generator & p_variable_generator
+                           , const emp_strategy_generator & p_strategy_generator
+                           , std::map<unsigned int, unsigned int> & p_variable_translator
+                           );
+
+        template <unsigned int NB_PIECES, typename INITIAL>
+        static
+        void
+        prepare_initial( const emp_variable_generator & p_variable_generator
+                       , const emp_strategy_generator & p_strategy_generator
+                       , INITIAL & p_initial
+                       );
 
         static inline
         unsigned int compute_raw_variable_id( unsigned int p_x
@@ -61,33 +68,18 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     template <unsigned int NB_PIECES, typename INITIAL, typename TRANSITION_MANAGER>
-    std::tuple<INITIAL *, const TRANSITION_MANAGER *>
-    system_equation_for_CUDA::prepare_data_structure( unsigned int p_nb_stack
-                                                    , const emp_FSM_info & p_info
-                                                    , const emp_variable_generator & p_variable_generator
-                                                    , const emp_strategy_generator & p_strategy_generator
-                                                    , std::map<unsigned int, unsigned int> & p_variable_translator
-                                                    )
+    const TRANSITION_MANAGER *
+    system_equation_for_CUDA::prepare_transitions( const emp_FSM_info & p_info
+                                                 , const emp_variable_generator & p_variable_generator
+                                                 , const emp_strategy_generator & p_strategy_generator
+                                                 , std::map<unsigned int, unsigned int> & p_variable_translator
+                                                 )
     {
         //unsigned int l_raw_variable_nb = p_info.get_width() * p_info.get_height() * p_info.get_width() * p_info.get_height() * 4;
         unsigned int l_raw_variable_nb = NB_PIECES * 256 * 4;
 
         std::cout << "Max variables nb: " << l_raw_variable_nb << std::endl;
         std::cout << "Nb variables: " << p_variable_generator.get_variables().size() << std::endl;
-
-        INITIAL::info_t::set_init_value(0);
-        auto * l_stacks = new INITIAL[p_nb_stack];
-
-        // Init first step of stack
-        for(unsigned int l_stack_index = 0; l_stack_index < p_nb_stack; ++l_stack_index)
-        {
-            for(auto l_var_iter: p_variable_generator.get_variables())
-            {
-                unsigned int l_position_index = p_strategy_generator.get_position_index(l_var_iter->get_x(), l_var_iter->get_y());
-                l_stacks[l_stack_index].get_available_variables(0).get_capability(l_position_index).set_bit(l_var_iter->get_piece_id() - 1, l_var_iter->get_orientation());
-                l_stacks[l_stack_index].get_available_variables(0).get_capability(NB_PIECES + l_var_iter->get_piece_id() - 1).set_bit(l_position_index, l_var_iter->get_orientation());
-            }
-        }
 
         // Allocate an array to do the link between theorical variables and real variables
         TRANSITION_MANAGER * l_transition_manager{new TRANSITION_MANAGER(l_raw_variable_nb)};
@@ -138,7 +130,7 @@ namespace edge_matching_puzzle
         // Mask variables due to incompatible borders
         p_variable_generator.treat_piece_relations(l_lamda);
 
-        return std::make_tuple(l_stacks, l_transition_manager);
+        return l_transition_manager;
     }
 
     //-------------------------------------------------------------------------
@@ -161,6 +153,23 @@ namespace edge_matching_puzzle
                                                                   )
     {
         return compute_raw_variable_id(p_var.get_x(), p_var.get_y(), p_var.get_piece_id() - 1, p_var.get_orientation(), p_info);
+    }
+
+    //-------------------------------------------------------------------------
+    template <unsigned int NB_PIECES, typename INITIAL>
+    void
+    system_equation_for_CUDA::prepare_initial( const emp_variable_generator & p_variable_generator
+                                             , const emp_strategy_generator & p_strategy_generator
+                                             , INITIAL & p_initial
+                                             )
+    {
+        INITIAL::info_t::set_init_value(0);
+         for(auto l_var_iter: p_variable_generator.get_variables())
+         {
+             unsigned int l_position_index = p_strategy_generator.get_position_index(l_var_iter->get_x(), l_var_iter->get_y());
+             p_initial.get_capability(l_position_index).set_bit(l_var_iter->get_piece_id() - 1, l_var_iter->get_orientation());
+             p_initial.get_capability(NB_PIECES + l_var_iter->get_piece_id() - 1).set_bit(l_position_index, l_var_iter->get_orientation());
+        }
     }
 
 
