@@ -54,6 +54,14 @@ namespace edge_matching_puzzle
         m_vtk_surface_file.close();
         m_vtk_line_plot_file.close();
     }
+
+    //-------------------------------------------------------------------------
+    std::string
+    feature_situation_profile::get_file_name(const std::string & p_name) const
+    {
+        std::string l_root_file_name = std::to_string(m_info.get_width()) + "_" + std::to_string(m_info.get_height());
+        return l_root_file_name + "_" + p_name + ".txt";
+    }
 }
 // EOF
 
