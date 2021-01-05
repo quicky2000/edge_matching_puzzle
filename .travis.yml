@@ -4,18 +4,32 @@ matrix:
       sudo: required
       dist: bionic
       compiler: gcc
+    - os: osx
+      osx_image: xcode10.3
 
 language: cpp
 
 before_install:
-  - sudo apt-get update
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+# SDL1.2 specific part
+#-----------------------
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install sdl; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libsdl1.2-dev; fi
+# End of SDL1.2 specific part
+#-----------------------
 # GLPK specific part
 #-----------------------
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; brew install glpk; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libglpk-dev; fi
 # End of GLPK specific part
 #-----------------------
-  - sudo apt-get install -y libsdl1.2-dev libmicrohttpd-dev
+# Microhttpd specific part
+#-----------------------
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install libmicrohttpd; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -y libmicrohttpd-dev; fi
+# End of Microhttpd specific part
+#-----------------------
   - MY_LOCATION=`pwd`
   - echo $MY_LOCATION
   - mkdir ../repositories
@@ -55,7 +69,9 @@ before_install:
   - cd build
 
 script:
-  - generate_makefile edge_matching_puzzle
-  - make enable_cuda=0
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then generate_makefile edge_matching_puzzle; make enable_cuda=0; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests; fi
+  - cd $MY_LOCATION ; mkdir cmake_build ; cd cmake_build ; cmake $QUICKY_REPOSITORY/edge_matching_puzzle
+  - make
   - run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests
 #EOF
