@@ -2,6 +2,10 @@ matrix:
   include:
     - os: linux
       sudo: required
+      dist: focal
+      compiler: gcc
+    - os: linux
+      sudo: required
       dist: bionic
       compiler: gcc
     - os: osx
@@ -71,7 +75,8 @@ before_install:
 script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then generate_makefile edge_matching_puzzle; make enable_cuda=0; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests; fi
-  - cd $MY_LOCATION ; mkdir cmake_build ; cd cmake_build ; cmake $QUICKY_REPOSITORY/edge_matching_puzzle
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd $MY_LOCATION ; mkdir cmake_build ; cd cmake_build ; fi
+  - cmake $QUICKY_REPOSITORY/edge_matching_puzzle
   - make
   - run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests
 #EOF
