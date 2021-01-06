@@ -216,6 +216,8 @@ foreach(DEPENDANCY_ITEM IN ITEMS ${DEPENDANCY_LIST})
     # Complete include directories with directories coming from dependancy because of transitivity issues with Object libraries
     if(NOT ${IS_IMPORTED})
         set(MY_INCLUDE_DIRECTORIES ${MY_INCLUDE_DIRECTORIES} $<TARGET_PROPERTY:${DEPENDANCY_ITEM},INCLUDE_DIRECTORIES>)
+    else(NOT ${IS_IMPORTED})
+        set(MY_INCLUDE_DIRECTORIES ${MY_INCLUDE_DIRECTORIES} $<TARGET_PROPERTY:${DEPENDANCY_ITEM},INTERFACE_INCLUDE_DIRECTORIES>)
     endif()
 
 endforeach(DEPENDANCY_ITEM)
