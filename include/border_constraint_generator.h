@@ -22,6 +22,7 @@
 #include <map>
 #include <random>
 #include <algorithm>
+#include <array>
 
 namespace edge_matching_puzzle
 {
