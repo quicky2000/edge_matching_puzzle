@@ -24,14 +24,14 @@
 namespace edge_matching_puzzle
 {
     //----------------------------------------------------------------------------
-    int emp_web_server::treat_request(struct MHD_Connection * p_connection
-                                     ,const char * p_url
-                                     ,const char * p_method
-                                     ,const char * p_http_version
-                                     ,const char * p_upload_data
-                                     ,size_t * p_upload_data_size
-                                     ,void ** p_connection_ptr
-                                     )
+    emp_web_server::internal_result_t emp_web_server::treat_request(struct MHD_Connection * p_connection
+                                                                   ,const char * p_url
+                                                                   ,const char * p_method
+                                                                   ,const char * p_http_version
+                                                                   ,const char * p_upload_data
+                                                                   ,size_t * p_upload_data_size
+                                                                   ,void ** p_connection_ptr
+                                                                   )
     {
         std::cout << "Method = \"" << p_method << "\"" <<std::endl ;
         std::cout << "URL = \"" << p_url << "\"" <<std::endl ;
@@ -140,7 +140,7 @@ namespace edge_matching_puzzle
                                                         );
             if (l_response)
             {
-                int ret = MHD_queue_response (p_connection, MHD_HTTP_NOT_FOUND,l_response);
+                internal_result_t ret = MHD_queue_response (p_connection, MHD_HTTP_NOT_FOUND,l_response);
                 MHD_destroy_response (l_response);
                 return ret;
             }
@@ -149,7 +149,7 @@ namespace edge_matching_puzzle
                 return MHD_NO;
             }
         }
-        int ret = MHD_queue_response (p_connection, MHD_HTTP_OK, l_response);
+        internal_result_t ret = MHD_queue_response (p_connection, MHD_HTTP_OK, l_response);
         MHD_destroy_response (l_response);
         return ret;
     }

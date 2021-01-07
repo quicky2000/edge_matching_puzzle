@@ -24,6 +24,8 @@
 #include "emp_gui.h"
 #include "emp_types.h"
 #include "emp_FSM_info.h"
+#include <unistd.h>
+#include <limits.h>
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -35,6 +37,14 @@
 #include <sstream>
 #include <fstream>
 #include <microhttpd.h>
+
+#ifndef HOST_NAME_MAX
+#if defined(__APPLE__)
+#define HOST_NAME_MAX 255
+#else
+#define HOST_NAME_MAX 64
+#endif // __APPLE__
+#endif // HOST_NAME_MAX
 
 namespace edge_matching_puzzle
 {
@@ -58,39 +68,45 @@ namespace edge_matching_puzzle
 
       private:
 
+#if MHD_VERSION >= 0x00097002
+        typedef enum MHD_Result internal_result_t;
+#else  // MHD_VERSION >= 0x00097002
+        typedef int internal_result_t;
+#endif // MHD_VERSION >= 0x00097002
+
         inline
         void dump_picture(const unsigned int & p_index
                          ,const emp_types::t_orientation & p_orientation
                          ,const lib_bmp::my_bmp & p_bmp
                          );
 
-        int treat_request (struct MHD_Connection * p_connection
-                          ,const char * p_url
-                          ,const char * p_method
-                          ,const char * p_http_version
-                          ,const char * p_upload_data
-                          ,size_t * p_upload_data_size
-                          ,void ** p_connection_ptr
-                          );
+        internal_result_t treat_request (struct MHD_Connection * p_connection
+                                        ,const char * p_url
+                                        ,const char * p_method
+                                        ,const char * p_http_version
+                                        ,const char * p_upload_data
+                                        ,size_t * p_upload_data_size
+                                        ,void ** p_connection_ptr
+                                        );
 
         // Microhttpd callbacks
         inline static
-        int s_treat_request(void *p_callback_data
-                           ,struct MHD_Connection *p_connection
-                           ,const char * p_url
-                           ,const char * p_method
-                           ,const char * p_http_version
-                           ,const char * p_upload_data
-                           ,size_t * p_upload_data_size
-                           ,void ** p_connection_ptr
-                           );
+        internal_result_t s_treat_request(void *p_callback_data
+                                         ,struct MHD_Connection *p_connection
+                                         ,const char * p_url
+                                         ,const char * p_method
+                                         ,const char * p_http_version
+                                         ,const char * p_upload_data
+                                         ,size_t * p_upload_data_size
+                                         ,void ** p_connection_ptr
+                                         );
 
         inline static
-        int print_out_key (void * p_callback_data
-                          ,enum MHD_ValueKind p_kind
-                          ,const char *p_key
-                          ,const char *p_value
-                          );
+        internal_result_t print_out_key (void * p_callback_data
+                                        ,enum MHD_ValueKind p_kind
+                                        ,const char * p_key
+                                        ,const char * p_value
+                                        );
 
         // End of Microhttpd callbacks
 
@@ -275,15 +291,16 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    int emp_web_server::s_treat_request (void * p_callback_data
-                                        ,struct MHD_Connection * p_connection
-                                        ,const char * p_url
-                                        ,const char * p_method
-                                        ,const char * p_http_version
-                                        ,const char * p_upload_data
-                                        ,size_t * p_upload_data_size
-                                        ,void ** p_connection_ptr
-                                        )
+
+    emp_web_server::internal_result_t emp_web_server::s_treat_request (void * p_callback_data
+                                                                      ,struct MHD_Connection * p_connection
+                                                                      ,const char * p_url
+                                                                      ,const char * p_method
+                                                                      ,const char * p_http_version
+                                                                      ,const char * p_upload_data
+                                                                      ,size_t * p_upload_data_size
+                                                                      ,void ** p_connection_ptr
+                                                                      )
     {
         assert(p_callback_data);
         emp_web_server * l_server = (emp_web_server*)p_callback_data;
@@ -298,11 +315,11 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    int emp_web_server::print_out_key (void * p_callback_data
-                                      ,enum MHD_ValueKind p_kind
-                                      ,const char *p_key
-                                      ,const char *p_value
-                                      )
+    emp_web_server::internal_result_t emp_web_server::print_out_key (void * p_callback_data
+                                                                    ,enum MHD_ValueKind p_kind
+                                                                    ,const char *p_key
+                                                                    ,const char *p_value
+                                                                    )
     {
         std::cout << "\"" << p_key << "\" = \"" <<  p_value << "\"" << std::endl ;
         return MHD_YES;
