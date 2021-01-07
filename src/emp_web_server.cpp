@@ -27,15 +27,15 @@ namespace edge_matching_puzzle
     emp_web_server::internal_result_t emp_web_server::treat_request(struct MHD_Connection * p_connection
                                                                    ,const char * p_url
                                                                    ,const char * p_method
-                                                                   ,const char * p_http_version
-                                                                   ,const char * p_upload_data
-                                                                   ,size_t * p_upload_data_size
+                                                                   ,const char * // p_http_version
+                                                                   ,const char * // p_upload_data
+                                                                   ,size_t * // p_upload_data_size
                                                                    ,void ** p_connection_ptr
                                                                    )
     {
         std::cout << "Method = \"" << p_method << "\"" <<std::endl ;
         std::cout << "URL = \"" << p_url << "\"" <<std::endl ;
-        MHD_get_connection_values (p_connection, MHD_HEADER_KIND, print_out_key,NULL);
+        MHD_get_connection_values (p_connection, MHD_HEADER_KIND, print_out_key, nullptr);
 
         if (0 != strcmp (p_method, "GET"))
         {
@@ -47,9 +47,9 @@ namespace edge_matching_puzzle
             *p_connection_ptr = &(m_connection_ptr);
             return MHD_YES;
         }
-        *p_connection_ptr = NULL; /* reset when done */
+        *p_connection_ptr = nullptr; /* reset when done */
 
-        struct MHD_Response * l_response = nullptr;
+        struct MHD_Response * l_response;
         if(!strcmp(p_url,"/"))
         {
             uint64_t l_nb_situations = 0;
@@ -100,8 +100,8 @@ namespace edge_matching_puzzle
                     {
                         l_binary_piece = l_binary_piece >> l_shift;
                         std::stringstream l_stream_piece_id;
-                        l_stream_piece_id << (1 + (l_binary_piece >> 2 ));
-                        l_piece_name = l_stream_piece_id.str() + emp_types::orientation2short_string((emp_types::t_orientation)(l_binary_piece & 0x3));
+                        l_stream_piece_id << (1 + (l_binary_piece >> 2u ));
+                        l_piece_name = l_stream_piece_id.str() + emp_types::orientation2short_string((emp_types::t_orientation)(l_binary_piece & 0x3u));
                     }
                     std::string l_cell_string = "<TD><IMG src=\"pieces/" + l_piece_name + ".bmp\"></TD>";
                     l_response_page += l_cell_string;
@@ -119,14 +119,14 @@ namespace edge_matching_puzzle
         else if(strlen(p_url) > m_picture_root.size() + 2 && !strncmp(p_url, (std::string("/") + m_picture_root).c_str(), m_picture_root.size()))
         {
             std::string l_picture_name = std::string(p_url).substr(m_picture_root.size() + 2);
-            size_t l_pos = l_picture_name.find(".");
+            size_t l_pos = l_picture_name.find('.');
             assert(std::string::npos != l_pos);
             l_picture_name = l_picture_name.substr(0,l_pos);
  
             assert(l_picture_name.size() >= 2);
             std::string l_piece_id = l_picture_name.substr(0,l_picture_name.size() - 1);
             std::string l_orient_string = l_picture_name.substr(l_picture_name.size() - 1);
-            unsigned int l_index = (atoi(l_piece_id.c_str()) - 1 )* 4 + (unsigned int) emp_types::short_string2orientation(l_orient_string[0]);
+            unsigned int l_index = (std::stoul(l_piece_id) - 1 )* 4 + (unsigned int) emp_types::short_string2orientation(l_orient_string[0]);
             l_response = MHD_create_response_from_buffer (m_picture_size,m_picture_data[l_index],MHD_RESPMEM_PERSISTENT);
             MHD_add_response_header(l_response,MHD_HTTP_HEADER_CONTENT_TYPE,"image/bmp");
         }

@@ -25,7 +25,7 @@
 #include "emp_types.h"
 #include "emp_FSM_info.h"
 #include <unistd.h>
-#include <limits.h>
+#include <climits>
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -136,6 +136,7 @@ namespace edge_matching_puzzle
     , m_picture_data(new char*[m_info.get_width() * m_info.get_height() * 4 + 1])
     , m_port(p_port)
     , m_daemon(nullptr)
+    , m_connection_ptr(0)
     {
         std::stringstream l_empty_stream;
         l_empty_stream << (1 + m_info.get_width() * m_info.get_height()) << "N"; 
@@ -149,8 +150,8 @@ namespace edge_matching_puzzle
         {
             closedir(l_dir);
             std::vector<std::string> l_file_list;
-            quicky_utils::quicky_files::list_content(m_picture_root.c_str(),l_file_list);
-            for(auto l_iter:l_file_list)
+            quicky_utils::quicky_files::list_content(m_picture_root,l_file_list);
+            for(const auto & l_iter:l_file_list)
             {
                 remove((m_picture_root+"/"+l_iter).c_str());
             }
@@ -163,7 +164,7 @@ namespace edge_matching_puzzle
         {
             const lib_bmp::my_bmp & l_picture = p_gui.get_picture(l_index + 1);
             dump_picture(l_index,emp_types::t_orientation::NORTH,l_picture);
-            for(unsigned int l_orient_index = (unsigned int) emp_types::t_orientation::EAST ;
+            for(auto l_orient_index = (unsigned int) emp_types::t_orientation::EAST ;
                 l_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
                 ++l_orient_index
                )
@@ -179,8 +180,8 @@ namespace edge_matching_puzzle
                         ++l_index_y
                        )
                     {
-                        unsigned int l_oriented_x = 0;
-                        unsigned int l_oriented_y = 0;
+                        unsigned int l_oriented_x;
+                        unsigned int l_oriented_y;
                         switch((emp_types::t_orientation)l_orient_index)
                          {
                             case emp_types::t_orientation::NORTH:
@@ -201,7 +202,6 @@ namespace edge_matching_puzzle
                                 break;
                             default:
                                 throw quicky_exception::quicky_logic_exception("Bad orientation value when rotating pieces images",__LINE__,__FILE__);
-                                break;
                          }
                          const lib_bmp::my_color_alpha & l_rgb_color = l_picture.get_pixel_color(l_oriented_x,l_oriented_y);
                         l_oriented_picture.set_pixel_color(l_index_x,l_index_y,l_rgb_color);
@@ -230,9 +230,9 @@ namespace edge_matching_puzzle
         {
             throw quicky_exception::quicky_runtime_exception("Unable to open " + l_file_name + " file",__LINE__,__FILE__);
         }
-        l_stream.seekg(0,l_stream.end);
+        l_stream.seekg(0,std::ifstream::end);
         size_t l_size = l_stream.tellg();
-        l_stream.seekg(0,l_stream.beg);
+        l_stream.seekg(0,std::ifstream::beg);
         if(m_picture_size && m_picture_size != l_size)
         {
             throw quicky_exception::quicky_logic_exception("Different image sizes",__LINE__,__FILE__);
@@ -255,11 +255,11 @@ namespace edge_matching_puzzle
                                    // MHD_USE_THREAD_PER_CONNECTION | MHD_USE_DEBUG | MHD_USE_POLL,
                                    // MHD_USE_THREAD_PER_CONNECTION | MHD_USE_DEBUG,
                                    ,m_port
-                                   ,NULL, NULL, &s_treat_request, (void*)this
+                                   ,nullptr,nullptr, &s_treat_request, (void*)this
                                    ,MHD_OPTION_CONNECTION_TIMEOUT, (unsigned int) 120
                                    ,MHD_OPTION_END
                                    );
-        if (m_daemon == NULL)
+        if (m_daemon == nullptr)
         {
             throw quicky_exception::quicky_logic_exception("Unable to start webserver",__LINE__,__FILE__);
         }
@@ -274,13 +274,12 @@ namespace edge_matching_puzzle
           
             gethostname(l_name,HOST_NAME_MAX);
             l_name[HOST_NAME_MAX] = 0;
-            struct hostent *l_hostent = 0;
-            l_hostent = gethostbyname(l_name);
+            struct hostent * l_hostent = gethostbyname(l_name);
             if (l_hostent)
             {
                 int l_index = 0;
-                struct in_addr l_addr;
-                while (l_hostent->h_addr_list[l_index] != 0)
+                struct in_addr l_addr{};
+                while (l_hostent->h_addr_list[l_index] != nullptr)
                 {
                     l_addr.s_addr = *(uint32_t *)l_hostent->h_addr_list[l_index++];
                     strncpy( l_buffer, inet_ntoa(l_addr),sizeof(l_buffer));
@@ -303,7 +302,7 @@ namespace edge_matching_puzzle
                                                                       )
     {
         assert(p_callback_data);
-        emp_web_server * l_server = (emp_web_server*)p_callback_data;
+        auto * l_server = (emp_web_server*)p_callback_data;
         return l_server->treat_request(p_connection
                                       ,p_url
                                       ,p_method
@@ -315,8 +314,8 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
-    emp_web_server::internal_result_t emp_web_server::print_out_key (void * p_callback_data
-                                                                    ,enum MHD_ValueKind p_kind
+    emp_web_server::internal_result_t emp_web_server::print_out_key (void * // p_callback_data
+                                                                    ,enum MHD_ValueKind // p_kind
                                                                     ,const char *p_key
                                                                     ,const char *p_value
                                                                     )
