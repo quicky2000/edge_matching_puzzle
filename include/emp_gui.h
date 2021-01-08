@@ -103,7 +103,7 @@ namespace edge_matching_puzzle
                     , const std::vector<emp_piece> & p_pieces
                     , bool p_enable_gui
                     )
-    : simple_gui()
+    : simple_gui(p_enable_gui)
     , m_puzzle_width(p_puzzle_width)
     , m_puzzle_height(p_puzzle_height)
     , m_pieces_pictures(new lib_bmp::my_bmp*[p_pieces.size()])
