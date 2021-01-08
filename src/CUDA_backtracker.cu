@@ -262,9 +262,34 @@ namespace edge_matching_puzzle
                , const emp_strategy_generator & p_strategy_generator
                )
     {
-        assert(3 == p_info.get_width());
-        assert(3 == p_info.get_height());
-        template_launch<9>(p_piece_db, p_info, p_variable_generator, p_strategy_generator);
+        if(3 == p_info.get_width() && 3 == p_info.get_height())
+        {
+            template_launch<9>(p_piece_db, p_info, p_variable_generator, p_strategy_generator);
+        }
+        else if(4 == p_info.get_width() && 4 == p_info.get_height())
+        {
+            template_launch<16>(p_piece_db, p_info, p_variable_generator, p_strategy_generator);
+        }
+        else if(5 == p_info.get_width() && 5 == p_info.get_height())
+        {
+            template_launch<25>(p_piece_db, p_info, p_variable_generator, p_strategy_generator);
+        }
+        else if(6 == p_info.get_width() && 6 == p_info.get_height())
+        {
+            template_launch<36>(p_piece_db, p_info, p_variable_generator, p_strategy_generator);
+        }
+        else if(12 == p_info.get_width() && 6 == p_info.get_height())
+        {
+            template_launch<72>(p_piece_db, p_info, p_variable_generator, p_strategy_generator);
+        }
+        else if(16 == p_info.get_width() && 16 == p_info.get_height())
+        {
+            template_launch<256>(p_piece_db, p_info, p_variable_generator, p_strategy_generator);
+        }
+        else
+        {
+            throw quicky_exception::quicky_logic_exception("Unknown size(" + std::to_string(p_info.get_width()) + "," + std::to_string(p_info.get_height()) +")", __LINE__, __FILE__);
+        }
     }
 
 }
