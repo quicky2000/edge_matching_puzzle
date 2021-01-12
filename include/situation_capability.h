@@ -74,6 +74,18 @@ namespace edge_matching_puzzle
         [[nodiscard]] inline
         std::vector<unsigned int> compute_profile() const;
 
+        /**
+         * Return true if profil is valid for that level (ie no prematured
+         * locked piece or situation)
+         * @param p_profile situation profile
+         * @param p_level level index
+         * @return true if situation profile is valid
+         */
+        [[maybe_unused]] inline
+        bool is_profile_valid(const std::vector<unsigned int> & p_profile
+                             , unsigned int p_level
+                             );
+
         [[maybe_unused]] typedef piece_position_info info_t;
 
       private:
@@ -155,6 +167,18 @@ namespace edge_matching_puzzle
                       );
         std::sort(l_result.begin(), l_result.end());
         return l_result;
+    }
+
+    //-------------------------------------------------------------------------
+    template <unsigned int SIZE>
+    [[maybe_unused]]
+    bool
+    situation_capability<SIZE>::is_profile_valid(const std::vector<unsigned int> & p_profile
+                                                ,unsigned int p_level
+                                                )
+    {
+        assert(2 * p_level + 1 < p_profile.size());
+        return (p_level < (SIZE / 2) - 1) && p_profile[2 * (p_level + 1)];
     }
 
 }

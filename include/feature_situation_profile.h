@@ -275,7 +275,7 @@ namespace edge_matching_puzzle
                                                                                                       );
                     l_situation_capability_new.apply_and(l_situation_capability_min, p_transition_manager.get_transition(l_raw_variable_id));
                     std::vector<uint32_t> l_current_profile = l_situation_capability_new.compute_profile();
-                    bool l_ok = (l_level < NB_PIECES - 1) && l_current_profile[2 * (l_level + 1)];
+                    bool l_ok = l_situation_capability_new.is_profile_valid(l_current_profile, l_level);
                     uint32_t l_score = l_ok ? std::accumulate(l_current_profile.begin(), l_current_profile.end(), 0, [](uint32_t p_a, uint32_t p_b){return p_a + p_b;}) : 0;
                     if(!l_ok || (p_max && l_score >= l_min) || (!p_max && l_score < l_min))
                     {
