@@ -22,6 +22,11 @@
 #include <array>
 #include <vector>
 
+#if __cplusplus < 201703L
+#define [[maybe_unused]]
+#define [[nodiscard]]
+#endif // __cplusplus >= 201703L
+
 namespace edge_matching_puzzle
 {
 
@@ -50,11 +55,11 @@ namespace edge_matching_puzzle
         situation_capability(const situation_capability &) = default;
         situation_capability & operator=(const situation_capability &) = default;
 
-        inline
+        [[nodiscard]] [[maybe_unused]] inline
         const piece_position_info &
         get_capability(unsigned int p_index) const;
 
-        inline
+        [[maybe_unused]] inline
         piece_position_info &
         get_capability(unsigned int p_index);
 
@@ -66,10 +71,10 @@ namespace edge_matching_puzzle
         inline
         bool operator==(const situation_capability &) const;
 
-        inline
+        [[nodiscard]] inline
         std::vector<unsigned int> compute_profile() const;
 
-        typedef piece_position_info info_t;
+        [[maybe_unused]] typedef piece_position_info info_t;
 
       private:
         std::array<piece_position_info, SIZE> m_capability;
@@ -79,6 +84,7 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     template <unsigned int SIZE>
+    [[maybe_unused]]
     const piece_position_info &
     situation_capability<SIZE>::get_capability(unsigned int p_index) const
     {
@@ -88,6 +94,7 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     template <unsigned int SIZE>
+    [[maybe_unused]]
     piece_position_info &
     situation_capability<SIZE>::get_capability(unsigned int p_index)
     {
