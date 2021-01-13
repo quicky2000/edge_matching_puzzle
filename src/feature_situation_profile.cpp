@@ -52,7 +52,7 @@ namespace edge_matching_puzzle
     feature_situation_profile::~feature_situation_profile()
     {
         m_vtk_surface_file.close();
-        m_vtk_line_plot_file.close();
+        delete m_vtk_line_plot_dumper;
     }
 
     //-------------------------------------------------------------------------

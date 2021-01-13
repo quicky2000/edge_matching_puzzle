@@ -65,6 +65,7 @@ set(MY_SOURCE_FILES
     include/factory_feature.h
     include/feature_CUDA_backtracker.h
     include/transition_manager.h
+    include/VTK_line_plot_dumper.h
     src/border_backtracker.cpp
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp
