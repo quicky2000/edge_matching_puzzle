@@ -224,6 +224,7 @@ namespace edge_matching_puzzle
                                               ,bool p_max
                                               )
     {
+        unsigned int l_serie_dim = m_info.get_height() * m_info.get_width() + 1;
         std::string l_file_name{get_file_name(p_max ? "level_max_glutton":"level_min_glutton")};
         std::ofstream l_output_file;
         l_output_file.open(l_file_name.c_str());
@@ -232,7 +233,7 @@ namespace edge_matching_puzzle
             throw quicky_exception::quicky_runtime_exception(R"(Unable to create file ")" + l_file_name +R"(")", __LINE__, __FILE__);
         }
         l_output_file << "line_plot" << std::endl;
-        l_output_file << "Level_" << (p_max ? "max" : "min") << "_glutton Step Total " << m_info.get_height() * m_info.get_width() << " " << 1 << std::endl;
+        l_output_file << "Level_" << (p_max ? "max" : "min") << "_glutton Step Total " << l_serie_dim << " " << 1 << std::endl;
         l_output_file << (p_max ? "Max" : "Min") << std::endl;
         emp_FSM_situation l_situation_min;
         l_situation_min.set_context(*(new emp_FSM_context(m_info.get_width() * m_info.get_height())));
@@ -252,6 +253,7 @@ namespace edge_matching_puzzle
                                                { return p_a + p_b; }
                                               );
             l_profile.push_back(l_score);
+            l_output_file << l_score << " ";
         }
         for(unsigned int l_level = 0; l_level < m_initial_situation.get_level(); ++l_level)
         {
@@ -296,6 +298,12 @@ namespace edge_matching_puzzle
             {
                 l_min = 0;
             }
+        }
+        // Complete incomplete profile in case of non final situation
+        while(l_profile.size() < l_serie_dim)
+        {
+            l_output_file << 0 << " ";
+            l_profile.push_back(0);
         }
         l_output_file << std::endl;
         l_output_file.close();
