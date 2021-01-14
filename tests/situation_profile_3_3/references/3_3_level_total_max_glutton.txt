@@ -1,4 +1,4 @@
 line_plot
-Level_max_glutton Step Total 10 1
+Level_total_max_glutton Step Total 10 1
 Max
 72 50 36 26 22 14 8 4 2 0 

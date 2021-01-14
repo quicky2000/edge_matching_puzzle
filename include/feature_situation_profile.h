@@ -71,6 +71,7 @@ namespace edge_matching_puzzle
                        ,const transition_manager<NB_PIECES> & p_transition_manager
                        ,bool p_max
                        ,std::function<bool(const situation_profile & p_a, const situation_profile & p_b)> & p_less_than
+                       ,const std::string & p_name
                        );
 
         template<unsigned int NB_PIECES>
@@ -211,15 +212,34 @@ namespace edge_matching_puzzle
                                               ,const transition_manager<NB_PIECES> & p_transition_manager
                                               )
     {
+        typedef std::function<bool(const situation_profile & p_a, const situation_profile & p_b)> t_comparator;
+        std::vector<std::pair<std::string, t_comparator>> l_criterias =
+        {
+         {"total", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_total(p_b);}}
+        };
+        std::vector<std::string> l_serie_names;
+        std::for_each(l_criterias.begin()
+                     ,l_criterias.end()
+                     ,[&](const std::pair<std::string, t_comparator> & p_pair)
+                      {
+                        std::string l_name{std::string(1, std::toupper(p_pair.first[0])) + p_pair.first.substr(1)};
+                        l_serie_names.emplace_back(l_name + "_min");
+                        l_serie_names.emplace_back(l_name + "_max");
+                      }
+                     );
         VTK_line_plot_dumper l_plot_dumper{get_file_name("level_glutton")
                                           ,"Level_glutton"
                                           ,"Step", "Total"
-                                          , m_info.get_height() * m_info.get_width() + 1, 2
-                                          ,{"Min", "Max"}
+                                          ,m_info.get_height() * m_info.get_width() + 1
+                                          ,static_cast<unsigned int>(l_serie_names.size())
+                                          ,l_serie_names
                                           };
-        std::function<bool(const situation_profile & p_a, const situation_profile & p_b)> l_comparator = [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_total(p_b);};
-        l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, false, l_comparator));
-        l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, true, l_comparator));
+
+        for(auto l_iter:l_criterias)
+        {
+            l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, false, l_iter.second, l_iter.first));
+            l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, true, l_iter.second, l_iter.first));
+        }
     }
 
     //-------------------------------------------------------------------------
@@ -229,12 +249,14 @@ namespace edge_matching_puzzle
                                               ,const transition_manager<NB_PIECES> & p_transition_manager
                                               ,bool p_max
                                               ,std::function<bool(const situation_profile & p_a, const situation_profile & p_b)> & p_less_than
+                                              ,const std::string & p_name
                                               )
     {
         unsigned int l_serie_dim = m_info.get_height() * m_info.get_width() + 1;
-        VTK_line_plot_dumper l_plot_dumper{get_file_name(p_max ? "level_max_glutton":"level_min_glutton")
-                                          ,std::string("Level_") + (p_max ? "max" : "min") + "_glutton"
-                                          ,"Step" ,"Total"
+        std::string l_title = std::string("Level_") + p_name + "_" + (p_max ? "max" : "min") + "_glutton";
+        VTK_line_plot_dumper l_plot_dumper{get_file_name(l_title)
+                                          ,l_title
+                                          ,"Step" , std::string(1, std::toupper(p_name[0])) + p_name.substr(1)
                                           ,l_serie_dim
                                           ,1
                                           ,{p_max ? "Max" : "Min"}

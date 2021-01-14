@@ -60,7 +60,7 @@ namespace edge_matching_puzzle
     feature_situation_profile::get_file_name(const std::string & p_name) const
     {
         std::string l_root_file_name = std::to_string(m_info.get_width()) + "_" + std::to_string(m_info.get_height());
-        return l_root_file_name + "_" + p_name + ".txt";
+        return l_root_file_name + "_" + std::string(1,std::tolower(p_name[0])) + p_name.substr(1) + ".txt";
     }
 }
 // EOF
