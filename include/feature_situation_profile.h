@@ -25,6 +25,7 @@
 #include "system_equation_for_CUDA.h"
 #include "VTK_line_plot_dumper.h"
 #include <fstream>
+#include <functional>
 
 namespace edge_matching_puzzle
 {
@@ -53,11 +54,23 @@ namespace edge_matching_puzzle
         template<unsigned int NB_PIECES>
         void template_run();
 
+        /**
+         * Method computing situation profiling by following a glutton algo-
+         * -rithm saeching for min or max of a defined criteria
+         * @tparam NB_PIECES Piece number of situation
+         * @param p_situation Initial situation capability
+         * @param p_transition_manager Transition manager
+         * @param p_max indicate if alogirthm search min or max
+         * @param p_less_than comparison function
+         * @param p_name name of criteria that is compared
+         * @return computed profile with total number of bits
+         */
         template<unsigned int NB_PIECES>
         std::vector<uint32_t>
         compute_glutton(const situation_capability<2 * NB_PIECES> & p_situation
                        ,const transition_manager<NB_PIECES> & p_transition_manager
                        ,bool p_max
+                       ,std::function<bool(const situation_profile & p_a, const situation_profile & p_b)> & p_less_than
                        );
 
         template<unsigned int NB_PIECES>
@@ -204,8 +217,9 @@ namespace edge_matching_puzzle
                                           , m_info.get_height() * m_info.get_width() + 1, 2
                                           ,{"Min", "Max"}
                                           };
-        l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, false));
-        l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, true));
+        std::function<bool(const situation_profile & p_a, const situation_profile & p_b)> l_comparator = [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_total(p_b);};
+        l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, false, l_comparator));
+        l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, true, l_comparator));
     }
 
     //-------------------------------------------------------------------------
@@ -214,6 +228,7 @@ namespace edge_matching_puzzle
     feature_situation_profile::compute_glutton(const situation_capability<2 * NB_PIECES> & p_situation_capability
                                               ,const transition_manager<NB_PIECES> & p_transition_manager
                                               ,bool p_max
+                                              ,std::function<bool(const situation_profile & p_a, const situation_profile & p_b)> & p_less_than
                                               )
     {
         unsigned int l_serie_dim = m_info.get_height() * m_info.get_width() + 1;
@@ -228,7 +243,8 @@ namespace edge_matching_puzzle
         l_situation_min.set_context(*(new emp_FSM_context(m_info.get_width() * m_info.get_height())));
 
         situation_capability<2 * NB_PIECES> l_situation_capability_min{p_situation_capability};
-        uint32_t l_min = p_max ? std::numeric_limits<uint32_t>::min(): std::numeric_limits<uint32_t>::max();
+        situation_profile l_extrema{0, 2 * NB_PIECES, p_max ? std::numeric_limits<uint32_t>::min() : std::numeric_limits<uint32_t>::max()};
+        unsigned l_extrema_score;
 
         std::vector<uint32_t> l_profile;
         {
@@ -261,24 +277,29 @@ namespace edge_matching_puzzle
                     situation_profile l_current_profile{l_situation_capability_new.compute_profile(l_level + 1)};
                     bool l_ok = l_current_profile.is_valid();
                     uint32_t l_score = l_ok ? l_current_profile.compute_total() : 0;
-                    if(!l_ok || (p_max && l_score >= l_min) || (!p_max && l_score < l_min))
+                    if(!l_ok || (p_max != p_less_than(l_current_profile,l_extrema)))
                     {
-                        l_min = l_score;
+                        l_extrema = l_current_profile;
+                        l_extrema_score = l_score;
                         l_situation_capability_new_min = l_situation_capability_new;
                         l_x_min = l_x;
                         l_y_min = l_y;
                         l_oriented_piece_min = l_oriented_piece;
+                        if(!l_ok)
+                        {
+                            break;
+                        }
                     }
                 }
             }
-            //std::cout << "Level[" << l_level << "] set " << l_oriented_piece_min.first << emp_types::orientation2short_string(l_oriented_piece_min.second) << "(" << l_x_min << "," << l_y_min << ") => " << l_min << std::endl;
+            //std::cout << "Level[" << l_level << "] set " << l_oriented_piece_min.first << emp_types::orientation2short_string(l_oriented_piece_min.second) << "(" << l_x_min << "," << l_y_min << ") => " << l_extrema_score << std::endl;
             l_situation_capability_min = l_situation_capability_new_min;
             l_situation_min.set_piece(l_x_min, l_y_min, l_oriented_piece_min);
-            l_plot_dumper.dump_value(l_min);
-            l_profile.push_back(l_min);
+            l_plot_dumper.dump_value(l_extrema_score);
+            l_profile.push_back(l_extrema_score);
             if(p_max)
             {
-                l_min = 0;
+                l_extrema = situation_profile(l_level, 2 * NB_PIECES, 0);
             }
         }
         // Complete incomplete profile in case of non final situation

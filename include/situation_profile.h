@@ -81,6 +81,9 @@ namespace edge_matching_puzzle
         [[nodiscard]] inline
         bool is_valid()const;
 
+        [[nodiscard]] inline
+        bool less_than_total(const situation_profile & p_profile)const;
+
       private:
 
         unsigned int m_level;
@@ -157,6 +160,13 @@ namespace edge_matching_puzzle
             return m_values[2 * m_level];
         }
         return true;
+    }
+
+    //-------------------------------------------------------------------------
+    bool
+    situation_profile::less_than_total(const situation_profile & p_profile)const
+    {
+        return this->compute_total() < p_profile.compute_total();
     }
 
 }
