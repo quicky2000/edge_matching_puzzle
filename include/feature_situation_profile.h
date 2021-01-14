@@ -179,15 +179,15 @@ namespace edge_matching_puzzle
                                                          , unsigned int p_level
                                                          )
     {
-        std::vector<unsigned int> l_profile{p_situation_capability.compute_profile()};
-        for(auto l_iter: l_profile)
+        situation_profile l_profile{p_situation_capability.compute_profile(p_level)};
+        for(auto l_iter: l_profile.get_values())
         {
             std::cout << std::setw(3) << l_iter << " ";
             m_vtk_surface_file << l_iter << " ";
         }
         m_vtk_surface_file << std::endl;
-        std::transform(l_profile.begin(),  l_profile.end(), l_profile.begin(), [=](unsigned int p_value){return p_value + NB_PIECES - p_level;});
-        m_vtk_line_plot_dumper->dump_serie(l_profile);
+        std::transform(l_profile.get_values().begin(),  l_profile.get_values().end(), l_profile.get_values().begin(), [=](unsigned int p_value){return p_value + NB_PIECES - p_level;});
+        m_vtk_line_plot_dumper->dump_serie(l_profile.get_values());
         std::cout << std::endl;
     }
 
@@ -232,15 +232,8 @@ namespace edge_matching_puzzle
 
         std::vector<uint32_t> l_profile;
         {
-            std::vector<uint32_t> l_current_profile = p_situation_capability.compute_profile();
-            uint32_t l_score = std::accumulate(l_current_profile.begin(),
-                                               l_current_profile.end(),
-                                               0,
-                                               [](uint32_t p_a,
-                                                  uint32_t p_b
-                                                 )
-                                               { return p_a + p_b; }
-                                              );
+            situation_profile l_current_profile{p_situation_capability.compute_profile(0)};
+            uint32_t l_score = l_current_profile.compute_total();
             l_profile.push_back(l_score);
             l_plot_dumper.dump_value(l_score);
         }
@@ -265,9 +258,9 @@ namespace edge_matching_puzzle
                                                                                                       , m_info
                                                                                                       );
                     l_situation_capability_new.apply_and(l_situation_capability_min, p_transition_manager.get_transition(l_raw_variable_id));
-                    std::vector<uint32_t> l_current_profile = l_situation_capability_new.compute_profile();
-                    bool l_ok = l_situation_capability_new.is_profile_valid(l_current_profile, l_level);
-                    uint32_t l_score = l_ok ? std::accumulate(l_current_profile.begin(), l_current_profile.end(), 0, [](uint32_t p_a, uint32_t p_b){return p_a + p_b;}) : 0;
+                    situation_profile l_current_profile{l_situation_capability_new.compute_profile(l_level + 1)};
+                    bool l_ok = l_current_profile.is_valid();
+                    uint32_t l_score = l_ok ? l_current_profile.compute_total() : 0;
                     if(!l_ok || (p_max && l_score >= l_min) || (!p_max && l_score < l_min))
                     {
                         l_min = l_score;

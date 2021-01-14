@@ -1,0 +1,164 @@
+/*
+      This file is part of edge_matching_puzzle
+      Copyright (C) 2020  Julien Thevenon ( julien_thevenon at yahoo.fr )
+
+      This program is free software: you can redistribute it and/or modify
+      it under the terms of the GNU General Public License as published by
+      the Free Software Foundation, either version 3 of the License, or
+      (at your option) any later version.
+
+      This program is distributed in the hope that it will be useful,
+      but WITHOUT ANY WARRANTY; without even the implied warranty of
+      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+      GNU General Public License for more details.
+
+      You should have received a copy of the GNU General Public License
+      along with this program.  If not, see <http://www.gnu.org/licenses/>
+*/
+
+#ifndef EDGE_MATCHING_PUZZLE_SITUATION_PROFILE_H
+#define EDGE_MATCHING_PUZZLE_SITUATION_PROFILE_H
+
+#include <vector>
+#include <cassert>
+#include <algorithm>
+
+#if __cplusplus < 201703L
+#define [[maybe_unused]]
+#define [[nodiscard]]
+#endif // __cplusplus >= 201703L
+
+namespace edge_matching_puzzle
+{
+    class situation_profile
+    {
+      public:
+
+        /**
+         * Create a profile from a unique value, typical use is for min/max
+         * search
+         * @param p_level level of situation this profile willl be compared with
+         * @param p_size size of profile ( twice size of situation)
+         * @param p_init_value value used to fill the profile
+         */
+        [[maybe_unused]] inline
+        situation_profile(unsigned int p_level
+                         ,unsigned int p_size
+                         ,unsigned int p_init_value
+                         );
+
+        /**
+         * Create a profile from situation values ( piece_position_info)
+         * @param p_level level of situation
+         * @param p_values values composing profile
+         */
+        inline
+        situation_profile(unsigned int p_level
+                         ,std::vector<unsigned int> && p_values
+                         );
+
+        [[nodiscard]] [[maybe_unused]] inline
+        unsigned int get_level()const;
+
+        [[nodiscard]] [[maybe_unused]] inline
+        const std::vector<unsigned int> & get_values() const;
+
+        inline
+        std::vector<unsigned int> & get_values();
+
+        /**
+         * Compute the sum of profile values
+         * @return sum of profile values
+         */
+        [[nodiscard]] inline
+        unsigned int compute_total()const;
+
+        /**
+         * Indicate if corresponding situation is valid
+         * This depend on level and values
+         * @return true if situation is valid
+         */
+        [[nodiscard]] inline
+        bool is_valid()const;
+
+      private:
+
+        unsigned int m_level;
+        std::vector<unsigned int> m_values;
+    };
+
+    //-------------------------------------------------------------------------
+    [[maybe_unused]]
+    situation_profile::situation_profile(unsigned int p_level
+                                        ,unsigned int p_size
+                                        ,unsigned int p_init_value
+                                        )
+    :m_level(p_level)
+    ,m_values(p_size, p_init_value)
+    {
+        assert((2 * p_level) <= m_values.size());
+    }
+
+    //-------------------------------------------------------------------------
+    situation_profile::situation_profile(unsigned int p_level
+                                        ,std::vector<unsigned int> && p_values
+                                        )
+    :m_level(p_level)
+    ,m_values(std::move(p_values))
+    {
+        assert(!(m_values.size() % 2));
+        assert((2 * p_level) <= m_values.size());
+        std::sort(m_values.begin(), m_values.end());
+    }
+
+    //-------------------------------------------------------------------------
+    [[maybe_unused]]
+    unsigned int
+    situation_profile::get_level() const
+    {
+        return m_level;
+    }
+
+    //-------------------------------------------------------------------------
+    [[maybe_unused]]
+    const std::vector<unsigned int> &
+    situation_profile::get_values() const
+    {
+        return m_values;
+    }
+
+    //-------------------------------------------------------------------------
+    std::vector<unsigned int> &
+    situation_profile::get_values()
+    {
+        return m_values;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    situation_profile::compute_total() const
+    {
+        return std::accumulate(m_values.begin()
+                              ,m_values.end()
+                              ,0
+                              ,[](unsigned int p_a
+                                 ,unsigned int p_b
+                                 )
+                                 { return p_a + p_b; }
+                              );
+    }
+
+    //-------------------------------------------------------------------------
+    bool
+    situation_profile::is_valid() const
+    {
+        if(m_level < m_values.size() / 2)
+        {
+            return m_values[2 * m_level];
+        }
+        return true;
+    }
+
+}
+#endif //EDGE_MATCHING_PUZZLE_SITUATION_PROFILE_H
+// EOF

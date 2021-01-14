@@ -64,6 +64,7 @@ set(MY_SOURCE_FILES
     include/emp_variable_generator.h
     include/factory_feature.h
     include/feature_CUDA_backtracker.h
+    include/situation_profile.h
     include/transition_manager.h
     include/VTK_line_plot_dumper.h
     src/border_backtracker.cpp

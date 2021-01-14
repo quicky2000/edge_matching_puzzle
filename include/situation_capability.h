@@ -19,6 +19,7 @@
 #define EMP_SITUATION_CAPABILITY_H
 
 #include "piece_position_info.h"
+#include "situation_profile.h"
 #include <array>
 #include <vector>
 
@@ -72,19 +73,7 @@ namespace edge_matching_puzzle
         bool operator==(const situation_capability &) const;
 
         [[nodiscard]] inline
-        std::vector<unsigned int> compute_profile() const;
-
-        /**
-         * Return true if profil is valid for that level (ie no prematured
-         * locked piece or situation)
-         * @param p_profile situation profile
-         * @param p_level level index
-         * @return true if situation profile is valid
-         */
-        [[maybe_unused]] inline
-        bool is_profile_valid(const std::vector<unsigned int> & p_profile
-                             , unsigned int p_level
-                             );
+        situation_profile compute_profile(unsigned int p_level) const;
 
         [[maybe_unused]] typedef piece_position_info info_t;
 
@@ -155,8 +144,8 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     template <unsigned int SIZE>
-    std::vector<unsigned int>
-    situation_capability<SIZE>::compute_profile() const
+    situation_profile
+    situation_capability<SIZE>::compute_profile(unsigned int p_level) const
     {
         std::vector<unsigned int> l_result(SIZE);
         std::transform(m_capability.begin(), m_capability.end(), l_result.begin(), [](const piece_position_info & p_info)
@@ -165,20 +154,7 @@ namespace edge_matching_puzzle
                                                                                        return l_nb_bits;
                                                                                    }
                       );
-        std::sort(l_result.begin(), l_result.end());
-        return l_result;
-    }
-
-    //-------------------------------------------------------------------------
-    template <unsigned int SIZE>
-    [[maybe_unused]]
-    bool
-    situation_capability<SIZE>::is_profile_valid(const std::vector<unsigned int> & p_profile
-                                                ,unsigned int p_level
-                                                )
-    {
-        assert(2 * p_level + 1 < p_profile.size());
-        return (p_level < (SIZE / 2) - 1) && p_profile[2 * (p_level + 1)];
+        return situation_profile(p_level, std::move(l_result));
     }
 
 }
