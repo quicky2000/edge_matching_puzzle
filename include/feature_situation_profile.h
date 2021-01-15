@@ -214,8 +214,8 @@ namespace edge_matching_puzzle
     {
         typedef std::function<bool(const situation_profile & p_a, const situation_profile & p_b)> t_comparator;
         std::vector<std::pair<std::string, t_comparator>> l_criterias =
-        {
-         {"total", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_total(p_b);}}
+        {{"total", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_total(p_b);}}
+        ,{"max", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_max(p_b);}}
         };
         std::vector<std::string> l_serie_names;
         std::for_each(l_criterias.begin()

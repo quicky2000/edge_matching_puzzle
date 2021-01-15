@@ -1,3 +1,3 @@
 exe_file:edge_matching_puzzle
-args:<test_location>/../../doc/example/3_3.txt <test_location>/../../doc/example/ressources situation_profile --initial_situation="1N2N3N6S5W8E9W4E7E"
+args:<test_location>/../../doc/example/3_3.txt <test_location>/../../doc/example/ressources situation_profile --enable_gui=0 --initial_situation="1N2N3N6S5W8E9W4E7E"
 #EOF

@@ -84,7 +84,13 @@ namespace edge_matching_puzzle
         [[nodiscard]] inline
         bool less_than_total(const situation_profile & p_profile)const;
 
+        [[nodiscard]] inline
+        bool less_than_max(const situation_profile & p_profile)const;
+
       private:
+
+        [[nodiscard]] inline
+        unsigned int get_max()const;
 
         unsigned int m_level;
         std::vector<unsigned int> m_values;
@@ -163,12 +169,25 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    unsigned int
+    situation_profile::get_max() const
+    {
+        return *m_values.rbegin();
+    }
+
+    //-------------------------------------------------------------------------
     bool
     situation_profile::less_than_total(const situation_profile & p_profile)const
     {
         return this->compute_total() < p_profile.compute_total();
     }
 
+    //-------------------------------------------------------------------------
+    bool
+    situation_profile::less_than_max(const situation_profile & p_profile) const
+    {
+        return std::pair<unsigned int, unsigned int>(get_max(),compute_total()) < std::pair<unsigned int, unsigned int>(p_profile.get_max(), p_profile.compute_total());
+    }
 }
 #endif //EDGE_MATCHING_PUZZLE_SITUATION_PROFILE_H
 // EOF
