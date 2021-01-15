@@ -282,6 +282,7 @@ namespace edge_matching_puzzle
             emp_types::t_oriented_piece l_oriented_piece_min;
             situation_capability<2 * NB_PIECES> l_situation_capability_new_min{l_situation_capability_min};
 
+            bool l_match = false;
             for(unsigned int l_position_index = 0; l_position_index < NB_PIECES; ++l_position_index)
             {
                 unsigned int l_x, l_y;
@@ -307,12 +308,19 @@ namespace edge_matching_puzzle
                         l_x_min = l_x;
                         l_y_min = l_y;
                         l_oriented_piece_min = l_oriented_piece;
+                        l_match = true;
                         if(!l_ok)
                         {
                             break;
                         }
                     }
                 }
+            }
+            // Ensure a selection has been done in case comparison operator is
+            // not coded to always find an evolution between two levels
+            if(!l_match)
+            {
+                throw quicky_exception::quicky_logic_exception("No seclection done at level " + std::to_string(l_level), __LINE__, __FILE__);
             }
             //std::cout << "Level[" << l_level << "] set " << l_oriented_piece_min.first << emp_types::orientation2short_string(l_oriented_piece_min.second) << "(" << l_x_min << "," << l_y_min << ") => " << l_extrema_score << std::endl;
             l_situation_capability_min = l_situation_capability_new_min;
