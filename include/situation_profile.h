@@ -90,6 +90,9 @@ namespace edge_matching_puzzle
         [[nodiscard]] inline
         bool less_than_min(const situation_profile & p_profile)const;
 
+        [[nodiscard]] inline
+        bool less_than_vector(const situation_profile & p_profile)const;
+
       private:
 
         [[nodiscard]] inline
@@ -207,6 +210,14 @@ namespace edge_matching_puzzle
     situation_profile::less_than_min(const situation_profile & p_profile) const
     {
         return std::pair<unsigned int, unsigned int>(get_min(),compute_total()) < std::pair<unsigned int, unsigned int>(p_profile.get_min(), p_profile.compute_total());
+    }
+
+    //-------------------------------------------------------------------------
+    [[nodiscard]]
+    bool
+    situation_profile::less_than_vector(const situation_profile & p_profile) const
+    {
+        return m_values < p_profile.m_values;
     }
 }
 #endif //EDGE_MATCHING_PUZZLE_SITUATION_PROFILE_H

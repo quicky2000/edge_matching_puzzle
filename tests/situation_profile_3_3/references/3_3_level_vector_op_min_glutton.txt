@@ -1,0 +1,4 @@
+line_plot
+Level_vector_op_min_glutton Step Vector_op 10 1
+Min
+72 48 30 16 10 8 6 4 2 0 
