@@ -268,8 +268,6 @@ namespace edge_matching_puzzle
         l_situation_min.set_context(*(new emp_FSM_context(m_info.get_width() * m_info.get_height())));
 
         situation_capability<2 * NB_PIECES> l_situation_capability_min{p_situation_capability};
-        situation_profile l_extrema{0, 2 * NB_PIECES, p_max ? std::numeric_limits<uint32_t>::min() : std::numeric_limits<uint32_t>::max()};
-        unsigned l_extrema_score;
 
         std::vector<uint32_t> l_profile;
         {
@@ -284,6 +282,9 @@ namespace edge_matching_puzzle
             unsigned int l_y_min;
             emp_types::t_oriented_piece l_oriented_piece_min;
             situation_capability<2 * NB_PIECES> l_situation_capability_new_min{l_situation_capability_min};
+
+            situation_profile l_extrema{0, 2 * NB_PIECES, p_max ? std::numeric_limits<uint32_t>::min() : std::numeric_limits<uint32_t>::max()};
+            unsigned l_extrema_score;
 
             bool l_match = false;
             for(unsigned int l_position_index = 0; l_position_index < NB_PIECES; ++l_position_index)
