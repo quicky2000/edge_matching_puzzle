@@ -1,0 +1,4 @@
+line_plot
+Level_min_min_glutton Step Min 26 1
+Min
+968 696 440 302 234 178 130 100 76 56 46 36 28 24 22 20 18 16 14 12 10 8 6 4 2 0 
