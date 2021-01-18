@@ -218,6 +218,7 @@ namespace edge_matching_puzzle
         ,{"max", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_max(p_b);}}
         ,{"min", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_min(p_b);}}
         ,{"vector_op", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_vector(p_b);}}
+        ,{"rvector_op", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_vector(p_b);}}
         };
         std::vector<std::string> l_serie_names;
         std::for_each(l_criterias.begin()

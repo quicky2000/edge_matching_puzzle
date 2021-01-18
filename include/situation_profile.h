@@ -93,6 +93,9 @@ namespace edge_matching_puzzle
         [[nodiscard]] inline
         bool less_than_vector(const situation_profile & p_profile)const;
 
+        [[nodiscard]] inline
+        bool less_than_rvector(const situation_profile & p_profile)const;
+
       private:
 
         [[nodiscard]] inline
@@ -218,6 +221,20 @@ namespace edge_matching_puzzle
     situation_profile::less_than_vector(const situation_profile & p_profile) const
     {
         return m_values < p_profile.m_values;
+    }
+
+    //-------------------------------------------------------------------------
+    [[nodiscard]]
+    bool
+    situation_profile::less_than_rvector(const situation_profile & p_profile) const
+    {
+        assert(m_values.size() == p_profile.m_values.size());
+        unsigned int l_index = m_values.size() - 1;
+        while(l_index && m_values[l_index] == p_profile.m_values[l_index])
+        {
+            --l_index;
+        }
+        return m_values[l_index] < p_profile.m_values[l_index];
     }
 }
 #endif //EDGE_MATCHING_PUZZLE_SITUATION_PROFILE_H
