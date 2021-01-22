@@ -86,6 +86,10 @@ namespace edge_matching_puzzle
         inline
         unsigned int get_nb_bits_set() const;
 
+        inline
+        bool any_bit_set() const;
+
+
         /**
          * Word access for CUDA warp operations
          * @param p_index Index of word
@@ -306,6 +310,13 @@ namespace edge_matching_puzzle
     {
         unsigned int l_nb_bits = std::accumulate(m_info.begin(), m_info.end(), 0, [] (uint32_t p_a, uint32_t p_b){return p_a + __builtin_popcount(p_b);});
         return l_nb_bits;
+    }
+
+    //-------------------------------------------------------------------------
+    bool
+    piece_position_info::any_bit_set() const
+    {
+        return std::any_of(m_info.begin(), m_info.end(), [](uint32_t p_item){return p_item;});
     }
 
 }

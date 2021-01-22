@@ -51,7 +51,10 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     feature_situation_profile::~feature_situation_profile()
     {
-        m_vtk_surface_file.close();
+        if(m_vtk_surface_file.is_open())
+        {
+            m_vtk_surface_file.close();
+        }
         delete m_vtk_line_plot_dumper;
     }
 
@@ -62,6 +65,15 @@ namespace edge_matching_puzzle
         std::string l_root_file_name = std::to_string(m_info.get_width()) + "_" + std::to_string(m_info.get_height());
         return l_root_file_name + "_" + std::string(1,std::tolower(p_name[0])) + p_name.substr(1) + ".txt";
     }
+
+    std::vector<std::pair<std::string, feature_situation_profile::t_comparator>> feature_situation_profile::m_criterias =
+            {{"total", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_total(p_b);}}
+            ,{"max", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_max(p_b);}}
+            ,{"min", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_min(p_b);}}
+            ,{"vector_op", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_vector(p_b);}}
+            ,{"rvector_op", [](const situation_profile & p_a, const situation_profile & p_b) -> bool { return p_a.less_than_vector(p_b);}}
+            };
+
 }
 // EOF
 
