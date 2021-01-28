@@ -19,14 +19,10 @@
 #ifndef EDGE_MATCHING_PUZZLE_SITUATION_PROFILE_H
 #define EDGE_MATCHING_PUZZLE_SITUATION_PROFILE_H
 
+#include "common.h"
 #include <vector>
 #include <cassert>
 #include <algorithm>
-
-#if __cplusplus < 201703L
-#define [[maybe_unused]]
-#define [[nodiscard]]
-#endif // __cplusplus >= 201703L
 
 namespace edge_matching_puzzle
 {

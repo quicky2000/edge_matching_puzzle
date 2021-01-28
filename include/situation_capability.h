@@ -20,13 +20,10 @@
 
 #include "piece_position_info.h"
 #include "situation_profile.h"
+#include "common.h"
 #include <array>
 #include <vector>
 
-#if __cplusplus < 201703L
-#define [[maybe_unused]]
-#define [[nodiscard]]
-#endif // __cplusplus >= 201703L
 
 namespace edge_matching_puzzle
 {
