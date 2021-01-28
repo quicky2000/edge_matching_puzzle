@@ -14,36 +14,47 @@ set(MY_SOURCE_FILES
     include/border_color_constraint.h
     include/border_constraint_generator.h
     include/border_exploration.h
+    include/CUDA_backtracker_stack.h
+    include/CUDA_memory_managed_pointer.h
+    include/CUDA_piece_position_info.h
+    include/CUDA_situation_capability.h
+    include/CUDA_transition_manager.h
+    include/emp_advanced_feature_base.h
     include/emp_basic_strategy_generator.h
     include/emp_constraint.h
-    include/emp_FSM.h
     include/emp_FSM_context.h
+    include/emp_FSM.h
     include/emp_FSM_info.h
     include/emp_FSM_motor.h
-    include/emp_FSM_situation.h
     include/emp_FSM_situation_analyzer.h
+    include/emp_FSM_situation.h
     include/emp_FSM_transition.h
     include/emp_gui.h
     include/emp_link.h
-    include/emp_piece.h
     include/emp_piece_border.h
     include/emp_piece_constraint.h
     include/emp_piece_corner.h
     include/emp_piece_db.h
+    include/emp_piece.h
     include/emp_pieces_parser.h
     include/emp_position_strategy.h
+    include/emp_se_step_info.h
     include/emp_simplex_listener.h
     include/emp_situation_binary_dumper.h
     include/emp_situation_binary_reader.h
     include/emp_spiral_strategy_generator.h
-    include/emp_strategy.h
+    include/emp_strategy_generator_factory.h
     include/emp_strategy_generator.h
+    include/emp_strategy.h
     include/emp_stream_strategy_generator.h
     include/emp_text_strategy_generator.h
     include/emp_types.h
+    include/emp_variable_generator.h
     include/emp_web_server.h
+    include/factory_feature.h
     include/feature_border_exploration.h
     include/feature_compute_stats.h
+    include/feature_CUDA_backtracker.h
     include/feature_display_all.h
     include/feature_display_dump.h
     include/feature_display_max.h
@@ -53,6 +64,8 @@ set(MY_SOURCE_FILES
     include/feature_dump_summary.h
     include/feature_if.h
     include/feature_simplex.h
+    include/feature_situation_profile.h
+    include/feature_system_equation.h
     include/light_border_pieces_db.h
     include/octet_array.h
     include/piece_position_info.h
@@ -61,41 +74,28 @@ set(MY_SOURCE_FILES
     include/sequential_border_backtracker.h
     include/simplex_variable.h
     include/situation_capability.h
-    include/emp_variable_generator.h
-    include/factory_feature.h
-    include/feature_CUDA_backtracker.h
     include/situation_profile.h
+    include/system_equation_for_CUDA.h
     include/transition_manager.h
     include/VTK_line_plot_dumper.h
     src/border_backtracker.cpp
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp
-    src/emp_FSM_situation.cpp
     src/emp_FSM_situation_analyzer.cpp
+    src/emp_FSM_situation.cpp
     src/emp_piece.cpp
+    src/emp_se_step_info.cpp
+    src/emp_strategy_generator_factory.cpp
     src/emp_types.cpp
     src/emp_web_server.cpp
     src/feature_compute_stats.cpp
+    src/feature_CUDA_backtracker.cpp
     src/feature_display_all.cpp
     src/feature_display_max.cpp
     src/feature_display_solutions.cpp
     src/feature_dump_solutions.cpp
-    src/feature_CUDA_backtracker.cpp
-    include/feature_system_equation.h
-    src/feature_system_equation.cpp
-    include/emp_se_step_info.h
-    src/emp_se_step_info.cpp
-    include/emp_strategy_generator_factory.h
-    src/emp_strategy_generator_factory.cpp
-    include/emp_advanced_feature_base.h
-    include/CUDA_backtracker_stack.h
-    include/CUDA_memory_managed_pointer.h
-    include/CUDA_piece_position_info.h
-    include/CUDA_situation_capability.h
-    include/CUDA_transition_manager.h
-    include/system_equation_for_CUDA.h
-    include/feature_situation_profile.h
     src/feature_situation_profile.cpp
+    src/feature_system_equation.cpp
    )
 
 
