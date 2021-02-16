@@ -23,7 +23,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     void feature_situation_profile::run()
     {
-        switch(m_info.get_height() * m_info.get_width())
+        switch(m_info.get_nb_pieces())
         {
             case 9:
                 template_run<9>();

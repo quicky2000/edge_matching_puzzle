@@ -142,13 +142,13 @@ namespace edge_matching_puzzle
                 throw quicky_exception::quicky_logic_exception("Unable to create VTK surface file", __LINE__, __FILE__);
             }
             m_vtk_surface_file << "surface" << std::endl;
-            m_vtk_surface_file << 2 * m_info.get_height() * m_info.get_width() << " " << m_initial_situation.get_level() + 1 << std::endl;
+            m_vtk_surface_file << 2 * m_info.get_nb_pieces() << " " << m_initial_situation.get_level() + 1 << std::endl;
 
             m_vtk_line_plot_dumper = new VTK_line_plot_dumper(l_root_file_name + "line_plot_vtk.txt"
                                                              ,"Profile_evolution"
                                                              ,"Step"
                                                              ,"Possibilities"
-                                                             ,2 * m_info.get_height() * m_info.get_width()
+                                                             ,2 * m_info.get_nb_pieces()
                                                              ,m_initial_situation.get_level() + 1
                                                              ,[](const emp_FSM_situation & p_situation)
                                                              {
@@ -361,7 +361,7 @@ namespace edge_matching_puzzle
         VTK_line_plot_dumper l_plot_dumper{get_file_name("level_glutton")
                                           ,"Level_glutton"
                                           ,"Step", "Total"
-                                          ,m_info.get_height() * m_info.get_width() + 1
+                                          ,m_info.get_nb_pieces() + 1
                                           ,static_cast<unsigned int>(l_serie_names.size())
                                           ,l_serie_names
                                           };
@@ -410,7 +410,7 @@ namespace edge_matching_puzzle
                                               ,const emp_FSM_situation & p_situation
                                               )
     {
-        unsigned int l_serie_dim = m_info.get_height() * m_info.get_width() + 1;
+        unsigned int l_serie_dim = m_info.get_nb_pieces() + 1;
         std::string l_title = std::string("Level_") + p_name + "_" + (p_max ? "max" : "min") + "_glutton";
         VTK_line_plot_dumper l_plot_dumper{get_file_name(l_title)
                                           ,l_title
@@ -420,7 +420,7 @@ namespace edge_matching_puzzle
                                           ,{p_max ? "Max" : "Min"}
                                           };
         emp_FSM_situation l_situation_min;
-        l_situation_min.set_context(*(new emp_FSM_context(m_info.get_width() * m_info.get_height())));
+        l_situation_min.set_context(*(new emp_FSM_context(m_info.get_nb_pieces())));
 
         situation_capability<2 * NB_PIECES> l_situation_capability_min{p_situation_capability};
 //        situation_profile l_extrema{0, 2 * NB_PIECES, p_max ? std::numeric_limits<uint32_t>::min() : std::numeric_limits<uint32_t>::max()};

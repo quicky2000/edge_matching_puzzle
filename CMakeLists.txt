@@ -41,6 +41,7 @@ set(MY_SOURCE_FILES
     include/emp_position_strategy.h
     include/emp_se_step_info.h
     include/emp_simplex_listener.h
+    include/emp_situation_base.h
     include/emp_situation_binary_dumper.h
     include/emp_situation_binary_reader.h
     include/emp_spiral_strategy_generator.h
@@ -83,9 +84,9 @@ set(MY_SOURCE_FILES
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp
     src/emp_FSM_situation_analyzer.cpp
-    src/emp_FSM_situation.cpp
     src/emp_piece.cpp
     src/emp_se_step_info.cpp
+    src/emp_situation_base.cpp
     src/emp_strategy_generator_factory.cpp
     src/emp_types.cpp
     src/emp_web_server.cpp

@@ -21,10 +21,10 @@
 
 namespace edge_matching_puzzle
 {
-  emp_FSM_info const * emp_FSM_situation::m_info = NULL;
-  unsigned int emp_FSM_situation::m_piece_representation_width = 0;
-  unsigned int emp_FSM_situation::m_piece_nb_bits = 0;
-  unsigned int emp_FSM_situation::m_situation_nb_bits = 0;
+  emp_FSM_info const * emp_situation_base::m_info = nullptr;
+  unsigned int emp_situation_base::m_piece_representation_width = 0;
+  unsigned int emp_situation_base::m_piece_nb_bits = 0;
+  unsigned int emp_situation_base::m_situation_nb_bits = 0;
 }
 //EOF
 
