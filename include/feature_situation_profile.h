@@ -24,6 +24,7 @@
 #include "transition_manager.h"
 #include "system_equation_for_CUDA.h"
 #include "VTK_line_plot_dumper.h"
+#include "feature_sys_equa_CUDA_base.h"
 #include <fstream>
 #include <functional>
 #include <random>
@@ -31,7 +32,8 @@
 
 namespace edge_matching_puzzle
 {
-    class feature_situation_profile: public feature_if
+    class feature_situation_profile: public feature_if,
+                                     public feature_sys_equa_CUDA_base
     {
       public:
 
@@ -91,23 +93,6 @@ namespace edge_matching_puzzle
 
         std::string get_file_name(const std::string & p_name) const;
 
-        const emp_piece_db & m_piece_db;
-
-        const emp_FSM_info & m_info;
-
-        /**
-         * Contains initial situation
-         * Should be declared before variable generator to be fully built
-         */
-        emp_FSM_situation m_initial_situation;
-
-        /**
-         * Generate variables of equation system representing the puzzle
-         */
-        emp_variable_generator m_variable_generator;
-
-        const emp_strategy_generator & m_strategy_generator;
-
         std::ofstream m_vtk_surface_file;
 
         VTK_line_plot_dumper * m_vtk_line_plot_dumper;
@@ -122,17 +107,11 @@ namespace edge_matching_puzzle
                                                         , std::unique_ptr<emp_strategy_generator> & p_strategy_generator
                                                         , const std::string & p_initial_situation
                                                         )
-    : m_piece_db(p_piece_db)
-    , m_info(p_info)
-    , m_variable_generator(p_piece_db, *p_strategy_generator, p_info, "", m_initial_situation)
-    , m_strategy_generator(*p_strategy_generator)
+    : feature_sys_equa_CUDA_base(p_piece_db, p_info, p_strategy_generator, p_initial_situation)
     , m_vtk_line_plot_dumper(nullptr)
     {
-        m_initial_situation.set_context(*(new emp_FSM_context(p_info.get_width() * p_info.get_height())));
         if(!p_initial_situation.empty())
         {
-            m_initial_situation.set(p_initial_situation);
-
             std::string l_root_file_name = std::to_string(p_info.get_width()) + "_" + std::to_string(p_info.get_height()) + "_";
 
             std::string l_file_name = l_root_file_name + "surface_vtk.txt";
@@ -142,14 +121,14 @@ namespace edge_matching_puzzle
                 throw quicky_exception::quicky_logic_exception("Unable to create VTK surface file", __LINE__, __FILE__);
             }
             m_vtk_surface_file << "surface" << std::endl;
-            m_vtk_surface_file << 2 * m_info.get_nb_pieces() << " " << m_initial_situation.get_level() + 1 << std::endl;
+            m_vtk_surface_file << 2 * get_info().get_nb_pieces() << " " << get_initial_situation().get_level() + 1 << std::endl;
 
             m_vtk_line_plot_dumper = new VTK_line_plot_dumper(l_root_file_name + "line_plot_vtk.txt"
                                                              ,"Profile_evolution"
                                                              ,"Step"
                                                              ,"Possibilities"
-                                                             ,2 * m_info.get_nb_pieces()
-                                                             ,m_initial_situation.get_level() + 1
+                                                             ,2 * get_info().get_nb_pieces()
+                                                             ,get_initial_situation().get_level() + 1
                                                              ,[](const emp_FSM_situation & p_situation)
                                                              {
                                                                 std::vector<std::string> l_names;
@@ -158,7 +137,7 @@ namespace edge_matching_puzzle
                                                                     l_names.emplace_back("Level_" + std::to_string(l_index));
                                                                 }
                                                                 return l_names;
-                                                             }(m_initial_situation)
+                                                             }(get_initial_situation())
                                                              );
             }
     }
@@ -168,13 +147,11 @@ namespace edge_matching_puzzle
     void feature_situation_profile::template_run()
     {
         situation_capability<2 * NB_PIECES> l_situation_capability;
-
-        system_equation_for_CUDA::prepare_initial<NB_PIECES, situation_capability<2 * NB_PIECES>>(m_variable_generator, m_strategy_generator, l_situation_capability);
         std::map<unsigned int, unsigned int> l_variable_translator;
-        const transition_manager<NB_PIECES> * l_transition_manager = system_equation_for_CUDA::prepare_transitions<NB_PIECES, situation_capability<2 * NB_PIECES>, transition_manager<NB_PIECES>>(m_info, m_variable_generator, m_strategy_generator, l_variable_translator);
+        std::unique_ptr<const transition_manager<NB_PIECES>> l_transition_manager{prepare_run<NB_PIECES>(l_situation_capability, l_variable_translator)};
 
-        std::cout << m_initial_situation.get_level() << std::endl;
-        if(m_initial_situation.get_level())
+        std::cout << get_initial_situation().get_level() << std::endl;
+        if(get_initial_situation().get_level())
         {
             compute_glutton<NB_PIECES>(l_situation_capability,
                                        *l_transition_manager
@@ -188,18 +165,18 @@ namespace edge_matching_puzzle
                 unsigned int l_x, l_y;
                 std::tie(l_x,
                          l_y
-                        ) = m_strategy_generator.get_position(l_position_index);
-                if (m_initial_situation.contains_piece(l_x, l_y))
+                        ) = get_strategy_generator().get_position(l_position_index);
+                if (get_initial_situation().contains_piece(l_x, l_y))
                 {
 
                     treat_situation_capability<NB_PIECES>(l_situation_capability, l_position_index);
 
-                    const emp_types::t_oriented_piece l_oriented_piece = m_initial_situation.get_piece(l_x, l_y);
+                    const emp_types::t_oriented_piece l_oriented_piece = get_initial_situation().get_piece(l_x, l_y);
                     unsigned int l_raw_variable_id = system_equation_for_CUDA::compute_raw_variable_id(l_x
                                                                                                       ,l_y
                                                                                                       ,l_oriented_piece.first - 1
                                                                                                       ,l_oriented_piece.second
-                                                                                                      ,m_info
+                                                                                                      ,get_info()
                                                                                                       );
 
                     l_situation_capability.apply_and(l_situation_capability, l_transition_manager->get_transition(l_raw_variable_id));
@@ -233,7 +210,7 @@ namespace edge_matching_puzzle
             for(unsigned int l_nb_situationn = 0; l_nb_situationn < 10000; ++l_nb_situationn)
             {
                 situation_capability<2 * NB_PIECES> l_random_capability{l_situation_capability};
-                emp_FSM_situation l_situation{m_initial_situation};
+                emp_FSM_situation l_situation{get_initial_situation()};
 
                 bool l_continu = true;
                 for (unsigned int l_level = 0; l_level < NB_PIECES && l_continu; ++l_level)
@@ -283,15 +260,15 @@ namespace edge_matching_puzzle
                         while (!(l_word & (1u << l_bit_index)));
 
                         unsigned int l_whole_index = 32 * l_word_index + l_bit_index;
-                        unsigned int l_x = (l_position_or_piece ? l_position_or_piece_index : l_whole_index % 256) % m_info.get_width();
-                        unsigned int l_y = (l_position_or_piece ? l_position_or_piece_index : l_whole_index % 256) / m_info.get_width();
+                        unsigned int l_x = (l_position_or_piece ? l_position_or_piece_index : l_whole_index % 256) % get_info().get_width();
+                        unsigned int l_y = (l_position_or_piece ? l_position_or_piece_index : l_whole_index % 256) / get_info().get_width();
                         unsigned int l_piece_index = l_position_or_piece ? l_whole_index % 256 : l_position_or_piece_index;
                         auto l_orientation = static_cast<emp_types::t_orientation>(l_whole_index / 256);
                         unsigned int l_raw_variable_id = system_equation_for_CUDA::compute_raw_variable_id(l_x
                                                                                                           ,l_y
                                                                                                           ,l_piece_index
                                                                                                           ,l_orientation
-                                                                                                          ,m_info
+                                                                                                          ,get_info()
                                                                                                           );
                         l_situation.set_piece(l_x, l_y, emp_types::t_oriented_piece(l_piece_index + 1, l_orientation));
                         l_random_capability.apply_and(l_random_capability, l_transition_manager->get_transition(l_raw_variable_id));
@@ -319,7 +296,6 @@ namespace edge_matching_puzzle
                 std::cout << l_iter.second << ": " << l_iter.first << std::endl;
             }
         }
-        delete l_transition_manager;
     }
 
     //-------------------------------------------------------------------------
@@ -361,15 +337,15 @@ namespace edge_matching_puzzle
         VTK_line_plot_dumper l_plot_dumper{get_file_name("level_glutton")
                                           ,"Level_glutton"
                                           ,"Step", "Total"
-                                          ,m_info.get_nb_pieces() + 1
+                                          ,get_info().get_nb_pieces() + 1
                                           ,static_cast<unsigned int>(l_serie_names.size())
                                           ,l_serie_names
                                           };
 
         for(auto l_iter:m_criterias)
         {
-            l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, false, l_iter.second, l_iter.first, m_initial_situation));
-            l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, true, l_iter.second, l_iter.first, m_initial_situation));
+            l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, false, l_iter.second, l_iter.first, get_initial_situation()));
+            l_plot_dumper.dump_serie(compute_glutton(p_situation_capability, p_transition_manager, true, l_iter.second, l_iter.first, get_initial_situation()));
         }
     }
 
@@ -410,7 +386,7 @@ namespace edge_matching_puzzle
                                               ,const emp_FSM_situation & p_situation
                                               )
     {
-        unsigned int l_serie_dim = m_info.get_nb_pieces() + 1;
+        unsigned int l_serie_dim = get_info().get_nb_pieces() + 1;
         std::string l_title = std::string("Level_") + p_name + "_" + (p_max ? "max" : "min") + "_glutton";
         VTK_line_plot_dumper l_plot_dumper{get_file_name(l_title)
                                           ,l_title
@@ -420,7 +396,7 @@ namespace edge_matching_puzzle
                                           ,{p_max ? "Max" : "Min"}
                                           };
         emp_FSM_situation l_situation_min;
-        l_situation_min.set_context(*(new emp_FSM_context(m_info.get_nb_pieces())));
+        l_situation_min.set_context(*(new emp_FSM_context(get_info().get_nb_pieces())));
 
         situation_capability<2 * NB_PIECES> l_situation_capability_min{p_situation_capability};
 //        situation_profile l_extrema{0, 2 * NB_PIECES, p_max ? std::numeric_limits<uint32_t>::min() : std::numeric_limits<uint32_t>::max()};
@@ -447,7 +423,7 @@ namespace edge_matching_puzzle
             for(unsigned int l_position_index = 0; l_position_index < NB_PIECES; ++l_position_index)
             {
                 unsigned int l_x, l_y;
-                std::tie(l_x, l_y) = m_strategy_generator.get_position(l_position_index);
+                std::tie(l_x, l_y) = get_strategy_generator().get_position(l_position_index);
                 if(p_situation.contains_piece(l_x, l_y) && !l_situation_min.contains_piece(l_x, l_y))
                 {
                     situation_capability<2 * NB_PIECES> l_situation_capability_new{l_situation_capability_min};
@@ -455,7 +431,7 @@ namespace edge_matching_puzzle
                     unsigned int l_raw_variable_id = system_equation_for_CUDA::compute_raw_variable_id( l_x, l_y
                                                                                                       , l_oriented_piece.first - 1
                                                                                                       , l_oriented_piece.second
-                                                                                                      , m_info
+                                                                                                      , get_info()
                                                                                                       );
                     l_situation_capability_new.apply_and(l_situation_capability_min, p_transition_manager.get_transition(l_raw_variable_id));
                     situation_profile l_current_profile{l_situation_capability_new.compute_profile(l_level + 1)};

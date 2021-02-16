@@ -17,13 +17,14 @@
 */
 
 #include "feature_situation_profile.h"
+#include "feature_sys_equa_CUDA_base.h"
 
 namespace edge_matching_puzzle
 {
     //-------------------------------------------------------------------------
     void feature_situation_profile::run()
     {
-        switch(m_info.get_nb_pieces())
+        switch(get_info().get_nb_pieces())
         {
             case 9:
                 template_run<9>();
@@ -44,7 +45,7 @@ namespace edge_matching_puzzle
                 template_run<256>();
                 break;
             default:
-                throw quicky_exception::quicky_logic_exception("Unsupported size " + std::to_string(m_info.get_width()) + "x" + std::to_string(m_info.get_height()), __LINE__, __FILE__);
+                throw quicky_exception::quicky_logic_exception("Unsupported size " + std::to_string(get_info().get_width()) + "x" + std::to_string(get_info().get_height()), __LINE__, __FILE__);
         }
     }
 
@@ -62,7 +63,7 @@ namespace edge_matching_puzzle
     std::string
     feature_situation_profile::get_file_name(const std::string & p_name) const
     {
-        std::string l_root_file_name = std::to_string(m_info.get_width()) + "_" + std::to_string(m_info.get_height());
+        std::string l_root_file_name = std::to_string(get_info().get_width()) + "_" + std::to_string(get_info().get_height());
         return l_root_file_name + "_" + std::string(1,std::tolower(p_name[0])) + p_name.substr(1) + ".txt";
     }
 

@@ -68,6 +68,7 @@ set(MY_SOURCE_FILES
     include/feature_simplex.h
     include/feature_situation_profile.h
     include/feature_system_equation.h
+    include/feature_sys_equa_CUDA_base.h
     include/light_border_pieces_db.h
     include/octet_array.h
     include/piece_position_info.h
