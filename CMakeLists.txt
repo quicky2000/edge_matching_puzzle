@@ -80,7 +80,9 @@ set(MY_SOURCE_FILES
     include/situation_profile.h
     include/system_equation_for_CUDA.h
     include/transition_manager.h
+    include/VTK_histogram_dumper.h
     include/VTK_line_plot_dumper.h
+    include/VTK_table_based_dumper.h
     src/border_backtracker.cpp
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp

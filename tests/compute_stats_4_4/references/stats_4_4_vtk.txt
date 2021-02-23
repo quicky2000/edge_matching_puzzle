@@ -1,4 +1,5 @@
 histogram
 "Invalid/Valid_situations_per_level" Level "Situation_number" 16 2
+Invalid Valid
 0 0 0 0 0 36 0 0 324 0 72 0 346 141 39 0 
-1 4 15 24 75 162 180 396 324 324 288 288 170 51 12 12
+1 4 15 24 75 162 180 396 324 324 288 288 170 51 12 12 

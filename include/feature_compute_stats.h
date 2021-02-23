@@ -23,6 +23,7 @@
 #include "emp_gui.h"
 #include "algo_based_feature.h"
 #include "algorithm_deep_raw.h"
+#include "VTK_histogram_dumper.h"
 #include <string>
 #include <unistd.h>
 #include <fstream>
@@ -62,12 +63,12 @@ namespace edge_matching_puzzle
         void print_stats(std::ostream & p_stream);
 
         inline
-        void print_VTK_histogram(std::ostream & p_stream);
+        void print_VTK_histogram();
 
 
         std::ofstream m_report_file;
 
-        std::ofstream m_VTK_level_histogram;
+        VTK_histogram_dumper * m_VTK_level_histogram_dumper;
 
         uint64_t m_nb;
 
@@ -90,7 +91,7 @@ namespace edge_matching_puzzle
                                                 )
     : algo_based_feature<FSM_framework::algorithm_deep_raw>(p_db,p_info,p_gui)
     , m_report_file(nullptr)
-    , m_VTK_level_histogram(nullptr)
+    , m_VTK_level_histogram_dumper(nullptr)
     , m_nb(0)
     , m_nb_final(0)
     , m_length(p_info.get_width()*p_info.get_height())
@@ -108,8 +109,14 @@ namespace edge_matching_puzzle
 
         std::string l_VTK_file_name = l_file_root_name + "_vtk.txt";
 
-        m_VTK_level_histogram.open(l_VTK_file_name.c_str());
-        if(!m_VTK_level_histogram.is_open()) throw quicky_exception::quicky_runtime_exception("Unable to create file \""+l_VTK_file_name+"\"",__LINE__,__FILE__);
+        m_VTK_level_histogram_dumper = new VTK_histogram_dumper(l_VTK_file_name
+                                                               ,R"("Invalid/Valid_situations_per_level")"
+                                                               ,"Level"
+                                                               ,R"("Situation_number")"
+                                                               ,m_length
+                                                               ,2
+                                                               ,{"Invalid" , "Valid"}
+                                                               );
     }
 
     //----------------------------------------------------------------------------
@@ -146,8 +153,8 @@ namespace edge_matching_puzzle
     {
         print_stats(m_report_file);
         m_report_file.close();
-        print_VTK_histogram(m_VTK_level_histogram);
-        m_VTK_level_histogram.close();
+        print_VTK_histogram();
+        delete m_VTK_level_histogram_dumper;
         delete[] m_invalid_stats;
         delete[] m_intermediate_stats;
     }
@@ -178,20 +185,21 @@ namespace edge_matching_puzzle
 
     //----------------------------------------------------------------------------
     void
-    feature_compute_stats::print_VTK_histogram(std::ostream & p_stream)
+    feature_compute_stats::print_VTK_histogram()
     {
-        p_stream << "histogram" << std::endl;
-        p_stream << R"("Invalid/Valid_situations_per_level" Level "Situation_number" )" << m_length << " 2" << std::endl;
+//        p_stream << "histogram" << std::endl;
+//        p_stream << R"("Invalid/Valid_situations_per_level" Level "Situation_number" )" << m_length << " 2" << std::endl;
         for(unsigned int l_index = 0 ; l_index < m_length ; ++l_index)
         {
-            p_stream << m_invalid_stats[l_index] << " ";
+            m_VTK_level_histogram_dumper->dump_value(m_invalid_stats[l_index]);
         }
-        p_stream << std::endl;
+        m_VTK_level_histogram_dumper->close_serie();
         for(unsigned int l_index = 0 ; l_index < m_length - 1; ++l_index)
         {
-            p_stream << m_intermediate_stats[l_index] << " ";
+            m_VTK_level_histogram_dumper->dump_value(m_intermediate_stats[l_index]);
         }
-        p_stream << m_nb_final << std::endl;
+        m_VTK_level_histogram_dumper->dump_value(m_nb_final);
+        m_VTK_level_histogram_dumper->close_serie();
     }
 }
 

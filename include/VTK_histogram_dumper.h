@@ -16,19 +16,19 @@
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef EDGE_MATCHING_PUZZLE_VTK_LINE_PLOT_DUMPER_H
-#define EDGE_MATCHING_PUZZLE_VTK_LINE_PLOT_DUMPER_H
+#ifndef EDGE_MATCHING_PUZZLE_VTK_HISTOGRAM_DUMPER_H
+#define EDGE_MATCHING_PUZZLE_VTK_HISTOGRAM_DUMPER_H
 
 #include "VTK_table_based_dumper.h"
 
 namespace edge_matching_puzzle
 {
-    class VTK_line_plot_dumper: public VTK_table_based_dumper
+    class VTK_histogram_dumper: public VTK_table_based_dumper
     {
       public:
 
         inline
-        VTK_line_plot_dumper(const std::string & p_file_name
+        VTK_histogram_dumper(const std::string & p_file_name
                             ,const std::string & p_title
                             ,const std::string & p_X_name
                             ,const std::string & p_Y_name
@@ -38,10 +38,11 @@ namespace edge_matching_puzzle
                             );
 
       private:
+
     };
 
     //-------------------------------------------------------------------------
-    VTK_line_plot_dumper::VTK_line_plot_dumper(const std::string & p_file_name
+    VTK_histogram_dumper::VTK_histogram_dumper(const std::string & p_file_name
                                               ,const std::string & p_title
                                               ,const std::string & p_X_name
                                               ,const std::string & p_Y_name
@@ -49,10 +50,9 @@ namespace edge_matching_puzzle
                                               ,unsigned int p_nb_series
                                               ,const std::vector<std::string> & p_series_name
                                               )
-    :VTK_table_based_dumper("line_plot", p_file_name, p_title, p_X_name, p_Y_name, p_serie_dim, p_nb_series, p_series_name)
+    :VTK_table_based_dumper("histogram", p_file_name, p_title, p_X_name, p_Y_name, p_serie_dim, p_nb_series,p_series_name)
     {
     }
-
 }
-#endif //EDGE_MATCHING_PUZZLE_VTK_LINE_PLOT_DUMPER_H
+#endif //EDGE_MATCHING_PUZZLE_VTK_HISTOGRAM_DUMPER_H
 // EOF
