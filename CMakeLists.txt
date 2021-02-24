@@ -66,6 +66,7 @@ set(MY_SOURCE_FILES
     include/feature_dump_solutions.h
     include/feature_dump_summary.h
     include/feature_if.h
+    include/feature_profile.h
     include/feature_simplex.h
     include/feature_situation_profile.h
     include/feature_system_equation.h

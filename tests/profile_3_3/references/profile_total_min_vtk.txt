@@ -1,0 +1,6 @@
+histogram
+Profile_Total_Min Level Transition_number 10 3
+General Solution NoSolution
+72 46 24 12 10 8 6 4 2 0 
+72 46 28 12 10 8 6 4 2 0 
+72 0 24 12 10 8 6 0 0 0 

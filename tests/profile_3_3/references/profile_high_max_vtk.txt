@@ -1,0 +1,6 @@
+histogram
+Profile_High_max Level Transition_number 10 3
+General Solution NoSolution
+4 4 4 4 4 2 2 1 1 0 
+4 4 4 4 4 2 2 1 1 0 
+4 0 4 4 3 2 1 0 0 0 

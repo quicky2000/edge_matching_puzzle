@@ -69,6 +69,12 @@ namespace edge_matching_puzzle
         [[nodiscard]] inline
         unsigned int compute_total()const;
 
+        [[nodiscard]] inline
+        unsigned int get_max()const;
+
+        [[nodiscard]] inline
+        unsigned int get_min()const;
+
         /**
          * Indicate if corresponding situation is valid
          * This depend on level and values
@@ -93,12 +99,6 @@ namespace edge_matching_puzzle
         bool less_than_rvector(const situation_profile & p_profile)const;
 
       private:
-
-        [[nodiscard]] inline
-        unsigned int get_max()const;
-
-        [[nodiscard]] inline
-        unsigned int get_min()const;
 
         unsigned int m_level;
         std::vector<unsigned int> m_values;

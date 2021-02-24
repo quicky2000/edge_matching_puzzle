@@ -113,7 +113,7 @@ int main(int argc,char ** argv)
         {
             l_strategy_generator.reset(emp_strategy_generator_factory::create("strategy.txt", l_info));
         }
-        else if("system_equation" == l_feature_name || "simplex" == l_feature_name || "CUDA_backtracker" == l_feature_name || "situation_profile" == l_feature_name)
+        else if("system_equation" == l_feature_name || "simplex" == l_feature_name || "CUDA_backtracker" == l_feature_name || "situation_profile" == l_feature_name || "profile" == l_feature_name)
         {
             l_strategy_generator.reset(emp_strategy_generator_factory::create("basic", l_info));
         }

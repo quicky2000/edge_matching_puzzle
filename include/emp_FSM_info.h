@@ -95,6 +95,22 @@ namespace edge_matching_puzzle
                                        ) const;
 
         /**
+         * Compute X coordinate from position index
+         * @param p_position_index
+         * @return X coordinate
+         */
+        inline
+        unsigned int get_x(unsigned int p_position_index) const;
+
+        /**
+         * Compute Y coordinate from position index
+         * @param p_position_index
+         * @return Y coordinate
+         */
+        inline
+        unsigned int get_y(unsigned int p_position_index) const;
+
+        /**
          * Return number of border positions
          * @return number of border positions
          */
@@ -230,6 +246,22 @@ namespace edge_matching_puzzle
     emp_FSM_info::get_nb_pieces() const
     {
         return m_width * m_height;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    emp_FSM_info::get_x(unsigned int p_position_index) const
+    {
+        assert(p_position_index < get_nb_pieces());
+        return p_position_index % m_width;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    emp_FSM_info::get_y(unsigned int p_position_index) const
+    {
+        assert(p_position_index < get_nb_pieces());
+        return p_position_index / m_width;
     }
 
 }

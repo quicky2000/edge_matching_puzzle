@@ -1,0 +1,6 @@
+histogram
+Profile_Total_Max Level Transition_number 10 3
+General Solution NoSolution
+72 50 36 26 24 14 10 4 2 0 
+72 50 36 26 24 14 10 4 2 0 
+72 0 36 26 18 12 6 0 0 0 
