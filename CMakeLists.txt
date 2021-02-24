@@ -78,6 +78,7 @@ set(MY_SOURCE_FILES
     include/simplex_variable.h
     include/situation_capability.h
     include/situation_profile.h
+    include/situation_string_formatter.h
     include/system_equation_for_CUDA.h
     include/transition_manager.h
     include/VTK_histogram_dumper.h

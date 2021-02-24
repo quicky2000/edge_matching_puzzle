@@ -38,10 +38,10 @@ namespace edge_matching_puzzle
         inline static
         unsigned int get_piece_representation_width();
 
-      protected:
-
         inline static
         const emp_FSM_info & get_info();
+
+      protected:
 
         inline static
         unsigned int get_nb_bits();

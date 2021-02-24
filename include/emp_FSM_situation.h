@@ -25,6 +25,7 @@
 #include "emp_types.h"
 #include "emp_situation_base.h"
 #include "quicky_exception.h"
+#include "situation_string_formatter.h"
 #include <map>
 #include <sstream>
 #include <iomanip>
@@ -205,18 +206,7 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     void emp_FSM_situation::compute_string_id(std::string & p_id) const
     {
-        p_id = std::string(get_info().get_nb_pieces() * get_piece_representation_width(),'-');
-        for(unsigned int l_index = 0 ; l_index < get_info().get_width() * get_info().get_height() ; ++l_index)
-        {
-            if(contains_piece(l_index % get_info().get_width(), l_index / get_info().get_width()))
-            {
-                // Updating the unique identifier
-                std::stringstream l_stream;
-                l_stream << std::setw(get_piece_representation_width() - 1) << m_content[l_index].first;
-                std::string l_piece_str(l_stream.str()+emp_types::orientation2short_string(m_content[l_index].second));
-                p_id.replace(l_index * get_piece_representation_width(),get_piece_representation_width(),l_piece_str);
-            }
-        }
+        p_id = situation_string_formatter<emp_FSM_situation>::to_string(*this);
     }
 
     //----------------------------------------------------------------------------
@@ -242,52 +232,7 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     void emp_FSM_situation::set(const std::string & p_string)
     {
-        this->reset();
-        if(p_string.size() == get_info().get_nb_pieces() * get_piece_representation_width())
-        {
-            for(unsigned int l_y = 0 ; l_y < get_info().get_height() ; ++l_y)
-            {
-                for(unsigned int l_x = 0 ; l_x < get_info().get_width() ; ++l_x)
-                {
-                    unsigned int l_index = (l_x + l_y * get_info().get_width()) * get_piece_representation_width();
-                    std::string l_piece_id_str = p_string.substr(l_index, get_piece_representation_width() - 1);
-                    if(l_piece_id_str != std::string(get_piece_representation_width() - 1 ,'-'))
-                    {
-                        std::string l_piece_orientation_str = p_string.substr(l_index + get_piece_representation_width() - 1,1);
-                        emp_types::t_piece_id l_piece_id = strtol(l_piece_id_str.c_str(), NULL, 10);
-                        emp_types::t_orientation l_piece_orientation;
-                        bool l_found = false;
-                        for(unsigned int l_orient_index = (unsigned int)emp_types::t_orientation::NORTH;
-                            !l_found && l_orient_index <= (unsigned int)emp_types::t_orientation::WEST;
-                            ++l_orient_index
-                           )
-                        {
-                            if(l_piece_orientation_str[0] == emp_types::orientation2short_string((emp_types::t_orientation)l_orient_index))
-                            {
-                                l_piece_orientation = (emp_types::t_orientation)l_orient_index;
-                                l_found = true;;
-                            }
-                        }
-                        if(l_found)
-                        {
-                            set_piece(l_x,l_y,std::pair<emp_types::t_piece_id,emp_types::t_orientation>(l_piece_id, l_piece_orientation));
-                        }
-                        else
-                        {
-                            throw quicky_exception::quicky_logic_exception("Unkown short string orientation : \"" + l_piece_orientation_str + "\"", __LINE__, __FILE__);
-                        }
-                    }
-                }
-            }
-        }
-        else
-        {
-            std::stringstream l_real_size;
-            l_real_size << p_string.size();
-            std::stringstream l_theoric_size;
-            l_theoric_size << get_info().get_nb_pieces() * get_piece_representation_width();
-            throw quicky_exception::quicky_logic_exception("Real size (" + l_real_size.str() + ") doesn`t match theoric size(" + l_theoric_size.str() +")", __LINE__, __FILE__);
-        }
+        situation_string_formatter<emp_FSM_situation>::set(*this, p_string);
     }
 
     //----------------------------------------------------------------------------
