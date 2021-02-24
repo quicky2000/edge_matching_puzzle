@@ -41,6 +41,7 @@ set(MY_SOURCE_FILES
     include/emp_position_strategy.h
     include/emp_se_step_info.h
     include/emp_simplex_listener.h
+    include/emp_situation.h
     include/emp_situation_base.h
     include/emp_situation_binary_dumper.h
     include/emp_situation_binary_reader.h
