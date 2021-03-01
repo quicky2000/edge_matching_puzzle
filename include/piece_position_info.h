@@ -77,6 +77,11 @@ namespace edge_matching_puzzle
                     , emp_types::t_orientation p_orientation
                     );
 
+        inline
+        bool is_bit(unsigned int p_index
+                   , emp_types::t_orientation p_orientation
+                   )const;
+
         inline static
         void set_init_value(uint32_t p_value);
 
@@ -125,6 +130,12 @@ namespace edge_matching_puzzle
         void set_bit( unsigned int p_word_index
                     , unsigned int p_bit_index
                     );
+
+        inline
+        bool is_bit(unsigned int p_word_index
+                   ,unsigned int p_bit_index
+                   )const;
+
 
         std::array<uint32_t, 32> m_info;
 
@@ -251,6 +262,27 @@ namespace edge_matching_puzzle
     {
         assert(p_index < 256);
         set_bit(8 * static_cast<unsigned int>(p_orientation) + p_index / 32, p_index % 32);
+    }
+
+    //-------------------------------------------------------------------------
+    bool
+    piece_position_info::is_bit(unsigned int p_word_index
+                               ,unsigned int p_bit_index
+                               ) const
+    {
+        assert(p_word_index < 32);
+        assert(p_bit_index < 32);
+        return m_info[p_word_index] & (1u << p_bit_index);
+    }
+
+    //-------------------------------------------------------------------------
+    bool
+    piece_position_info::is_bit(unsigned int p_index
+                               ,emp_types::t_orientation p_orientation
+                               ) const
+    {
+        assert(p_index < 256);
+        return is_bit(8 * static_cast<unsigned int>(p_orientation) + p_index / 32, p_index % 32);
     }
 
     //-------------------------------------------------------------------------

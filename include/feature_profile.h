@@ -176,6 +176,7 @@ namespace edge_matching_puzzle
                  ,const std::set<emp_situation> & p_initial_situations
                  ,const transition_manager<NB_PIECES> & p_transition_manager
                  ,const situation_capability<2 * NB_PIECES> & p_ref_situation_capability
+                 ,unsigned int p_level
                  );
 
         /**
@@ -204,6 +205,8 @@ namespace edge_matching_puzzle
                       ,situation_capability<2 * NB_PIECES> & p_result_capability
                       ,const transition_manager<NB_PIECES> & p_transition_manager
                       );
+
+        const emp_piece_db & m_piece_db;
     };
 
     //-------------------------------------------------------------------------
@@ -379,6 +382,7 @@ namespace edge_matching_puzzle
                                     ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
                                     )
     :feature_sys_equa_CUDA_base(p_piece_db, p_info, p_strategy_generator, "")
+    ,m_piece_db{p_piece_db}
     {
 
     }
@@ -529,7 +533,7 @@ namespace edge_matching_puzzle
                                 situation_capability<2 * NB_PIECES> l_new_situation_capability{l_situation_capability};
                                 set_piece<NB_PIECES>(l_next_situation, l_new_situation_capability, l_x, l_y, l_piece_index, l_orientation, l_new_situation_capability, p_transition_manager);
 
-                                situation_profile l_profile = l_new_situation_capability.compute_profile(l_level + 1);
+                                situation_profile l_profile = l_new_situation_capability.compute_profile(l_next_situation.get_level());
                                 if(l_profile.is_valid() && l_next_situations.end() == l_next_situations.find(l_next_situation))
                                 {
                                     l_next_situations.insert(l_next_situation);
@@ -585,11 +589,12 @@ namespace edge_matching_puzzle
                          ,const std::set<emp_situation> & p_initial_situations
                          ,const transition_manager<NB_PIECES> & p_transition_manager
                          ,const situation_capability<2 * NB_PIECES> & p_ref_situation_capability
+                         ,unsigned int p_level
                          )
     {
         std::set<emp_situation> l_situations[2] = {p_initial_situations};
 
-        for(unsigned int l_level = 0; l_level < NB_PIECES; ++l_level)
+        for(unsigned int l_level = 0; l_level < p_level; ++l_level)
         {
             std::set<emp_situation> & l_current_situations = l_situations[l_level % 2];
             std::set<emp_situation> & l_next_situations = l_situations[(1 + l_level) % 2];
@@ -613,9 +618,9 @@ namespace edge_matching_puzzle
                 // Rebuild situation capability
                 situation_capability<2 * NB_PIECES> l_situation_capability{p_ref_situation_capability};
                 unsigned int l_nb_pieces = 0;
-                for(unsigned int l_x = 0; l_x < l_current_situation.get_info().get_width() && l_nb_pieces < l_level; ++l_x)
+                for(unsigned int l_x = 0; l_x < l_current_situation.get_info().get_width() && l_nb_pieces < l_current_situation.get_level(); ++l_x)
                 {
-                    for(unsigned int l_y = 0; l_y < l_current_situation.get_info().get_height() && l_nb_pieces < l_level; ++l_y)
+                    for(unsigned int l_y = 0; l_y < l_current_situation.get_info().get_height() && l_nb_pieces < l_current_situation.get_level(); ++l_y)
                     {
                         if(l_current_situation.contains_piece(l_x, l_y))
                         {
@@ -653,7 +658,7 @@ namespace edge_matching_puzzle
                                 situation_capability<2 * NB_PIECES> l_new_situation_capability{l_situation_capability};
                                 set_piece<NB_PIECES>(l_next_situation, l_new_situation_capability, l_x, l_y, l_piece_index, l_orientation, l_new_situation_capability, p_transition_manager);
 
-                                situation_profile l_profile = l_new_situation_capability.compute_profile(l_level + 1);
+                                situation_profile l_profile = l_new_situation_capability.compute_profile(l_next_situation.get_level());
                                 if(l_profile.is_valid() && l_next_situations.end() == l_next_situations.find(l_next_situation))
                                 {
                                     l_next_situations.insert(l_next_situation);
@@ -681,10 +686,10 @@ namespace edge_matching_puzzle
                 l_current_situations.erase(l_current_situations.begin());
             }
         }
-        std::cout << "\rLevel " << NB_PIECES << " : " << l_situations[NB_PIECES % 2].size() << std::endl;
+        std::cout << "\rLevel " << p_level << " : " << l_situations[p_level % 2].size() << std::endl;
         if(p_solutions.empty())
         {
-            p_solutions = l_situations[NB_PIECES % 2];
+            p_solutions = l_situations[p_level % 2];
         }
     }
 
@@ -700,9 +705,84 @@ namespace edge_matching_puzzle
         emp_situation l_situation;
         std::set<emp_situation> l_solutions;
 
+        std::vector<std::pair<emp_situation,situation_capability<2 * NB_PIECES>>> l_to_treat;
+        unsigned int l_nb_level = NB_PIECES;
+        if(NB_PIECES != 25)
+        {
+            l_to_treat.push_back(std::make_pair(l_situation, l_ref_situation_capability));
+        }
+        else
+        {
+            l_nb_level = NB_PIECES - 4;
+            auto l_set_corner = [&](emp_situation & p_situation
+                                  ,situation_capability<2 * NB_PIECES> & p_capability
+                                  ,unsigned int p_corner_id
+                                  ,unsigned int p_x
+                                  ,unsigned int p_y
+                                  )
+            {
+                for (auto l_orientation_index = static_cast<unsigned int>(emp_types::t_orientation::NORTH);
+                     l_orientation_index <= static_cast<unsigned int>(emp_types::t_orientation::WEST);
+                     ++l_orientation_index
+                    )
+                {
+                    if (p_capability.get_capability(p_situation.get_info().get_position_index(p_x, p_y)).is_bit(p_corner_id - 1, static_cast<emp_types::t_orientation>(l_orientation_index)))
+                    {
+                        set_piece(p_situation
+                                 ,p_capability
+                                 ,p_x
+                                 ,p_y
+                                 ,p_corner_id - 1
+                                 ,static_cast<emp_types::t_orientation>(l_orientation_index)
+                                 ,p_capability
+                                 ,*l_transition_manager
+                                 );
+                        break;
+                    }
+                }
+
+            };
+
+            emp_situation l_corner_situation;
+            situation_capability<2 * NB_PIECES> l_corner_capability{l_ref_situation_capability};
+            auto l_corner_id = m_piece_db.get_corner(0).get_id();
+
+            l_set_corner(l_corner_situation, l_corner_capability, l_corner_id, 0, 0);
+
+            std::vector<unsigned int> l_corner_positions{l_situation.get_info().get_position_index(l_situation.get_info().get_width() - 1, 0)
+                                                        ,l_situation.get_info().get_position_index(0 , l_situation.get_info().get_height() - 1)
+                                                        ,l_situation.get_info().get_position_index(l_situation.get_info().get_width() - 1,l_situation.get_info().get_height() - 1)
+                                                        };
+            std::vector<unsigned int> l_other_corners{1,2,3};
+
+            do
+            {
+                emp_situation l_all_corner_situation{l_corner_situation};
+                situation_capability<2 * NB_PIECES> l_all_corner_capability{l_corner_capability};
+                unsigned int l_pos_index = 0;
+                for (auto l_iter: l_other_corners)
+                {
+                    l_set_corner(l_all_corner_situation
+                                ,l_all_corner_capability
+                                ,m_piece_db.get_corner(l_iter).get_id()
+                                ,l_all_corner_situation.get_info().get_x(l_corner_positions[l_pos_index])
+                                ,l_all_corner_situation.get_info().get_y(l_corner_positions[l_pos_index])
+                                );
+                    ++l_pos_index;
+                }
+                std::cout << situation_string_formatter<emp_situation>::to_string(l_all_corner_situation) << std::endl;
+                l_to_treat.push_back(std::make_pair(l_all_corner_situation, l_all_corner_capability));
+            }
+            while (next_permutation(l_other_corners.begin(),l_other_corners.end()));
+        }
         profile_stats<NB_PIECES> l_all_stats;
         l_all_stats.update(l_ref_situation_capability.compute_profile(0));
-        wide<NB_PIECES>(l_solutions, l_all_stats, l_all_stats, {l_situation}, *l_transition_manager, l_ref_situation_capability);
+
+        for(const auto & l_iter: l_to_treat)
+        {
+            wide<NB_PIECES>(l_solutions, l_all_stats, l_all_stats, {l_iter.first}, *l_transition_manager, l_iter.second, l_nb_level);
+        }
+
         std::set<std::string> l_solutions_string;
         for(const auto & l_iter: l_solutions)
         {
@@ -713,8 +793,11 @@ namespace edge_matching_puzzle
         profile_stats<NB_PIECES> l_non_solution_stats;
         l_solution_stats.update(l_ref_situation_capability.compute_profile(0));
         l_non_solution_stats.update(l_ref_situation_capability.compute_profile(0));
-        wide<NB_PIECES>(l_solutions, l_solution_stats, l_non_solution_stats, {l_situation}, *l_transition_manager, l_ref_situation_capability);
 
+        for(const auto & l_iter: l_to_treat)
+        {
+            wide<NB_PIECES>(l_solutions, l_solution_stats, l_non_solution_stats, {l_iter.first}, *l_transition_manager, l_iter.second, l_nb_level);
+        }
         VTK_histogram_dumper l_low_min_dumper("profile_low_min_vtk.txt"
                                              ,"Profile_Low_min"
                                              , "Level"
