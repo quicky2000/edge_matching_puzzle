@@ -15,6 +15,7 @@ set(MY_SOURCE_FILES
     include/border_constraint_generator.h
     include/border_exploration.h
     include/CUDA_backtracker_stack.h
+    include/CUDA_common.h
     include/CUDA_memory_managed_pointer.h
     include/CUDA_piece_position_info.h
     include/CUDA_situation_capability.h
