@@ -43,8 +43,8 @@ before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$cuda_branch" != "0" ]]; then sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$distribution/x86_64/3bf863cc.pub; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$cuda_branch" != "0" ]]; then echo "deb https://developer.download.nvidia.com/compute/cuda/repos/$distribution/x86_64 /" | sudo tee /etc/apt/sources.list.d/cuda.list; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$cuda_branch" != "0" ]]; then sudo apt-get update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$cuda_branch" != "0" ]]; then sudo apt-get -y install cuda-drivers; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$cuda_branch" != "0" ]]; then sudo apt-get install nvidia-cuda-toolkit; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$cuda_branch" != "0" ]]; then sudo apt-get -y install cuda-11-1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$cuda_branch" != "0" ]]; then PATH=/usr/local/cuda-11.1/bin/:$PATH ; fi
 # End of CUDA specific part
 #-----------------------
 # SDL1.2 specific part
@@ -113,5 +113,5 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" && "$cuda_branch" == "1" ]]; then sed -i 's/ENABLE_CUDA_CODE off/ENABLE_CUDA_CODE ON/' $QUICKY_REPOSITORY/edge_matching_puzzle/CMakeLists.txt; cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_COMPILER=/usr/local/cuda-11.1/bin/nvcc $QUICKY_REPOSITORY/edge_matching_puzzle; fi
   - make
 # Cannot run tests in CUDA branch as there is no CUDA device on Travis
-  - if [[ "$TRAVIS_OS_NAME" == "linux" && "$cuda_branch" == "0" ]]; then run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests; fi
+  - if [[ "$cuda_branch" == "0" ]]; then run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests; fi
 #EOF
