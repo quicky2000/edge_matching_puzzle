@@ -53,7 +53,7 @@ before_install:
   - echo $MY_LOCATION
   - mkdir ../repositories
   - cd ..
-  - mv $MY_LOCATION repositories
+  - mv $MY_LOCATION repositories/edge_matching_puzzle
   - QUICKY_REPOSITORY=`pwd`/repositories
   - export QUICKY_REPOSITORY
   - MY_LOCATION=`pwd`
