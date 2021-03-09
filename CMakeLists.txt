@@ -16,6 +16,7 @@ set(MY_SOURCE_FILES
     include/border_exploration.h
     include/CUDA_backtracker_stack.h
     include/CUDA_common.h
+    include/CUDA_memory_managed_array.h
     include/CUDA_memory_managed_pointer.h
     include/CUDA_piece_position_info.h
     include/CUDA_piece_position_info_base.h

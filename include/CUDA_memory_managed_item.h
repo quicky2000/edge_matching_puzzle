@@ -49,7 +49,7 @@ namespace edge_matching_puzzle
         inline
         void operator delete[](void * p_ptr);
 
-      private:
+      protected:
 	inline static
 	void * allocate(size_t p_size);
 
