@@ -16,6 +16,7 @@ set(MY_SOURCE_FILES
     include/border_exploration.h
     include/CUDA_backtracker_stack.h
     include/CUDA_common.h
+    include/CUDA_glutton_max_stack.h
     include/CUDA_memory_managed_array.h
     include/CUDA_memory_managed_pointer.h
     include/CUDA_piece_position_info.h
@@ -60,7 +61,6 @@ set(MY_SOURCE_FILES
     include/factory_feature.h
     include/feature_border_exploration.h
     include/feature_compute_stats.h
-    include/feature_CUDA_backtracker.h
     include/feature_display_all.h
     include/feature_display_dump.h
     include/feature_display_max.h
@@ -74,6 +74,8 @@ set(MY_SOURCE_FILES
     include/feature_situation_profile.h
     include/feature_system_equation.h
     include/feature_sys_equa_CUDA_base.h
+    include/feature_CUDA_backtracker.h
+    include/feature_CUDA_glutton_max.h
     include/light_border_pieces_db.h
     include/octet_array.h
     include/piece_position_info.h
@@ -114,6 +116,7 @@ if(${ENABLE_CUDA_CODE})
     set (MY_CPP_FLAGS -DENABLE_CUDA_CODE)
     set (MY_SOURCE_FILES ${MY_SOURCE_FILES}
          src/CUDA_backtracker.cu
+         src/CUDA_glutton_max.cu
          src/CUDA_piece_position_info_base.cu
         )
 else(${ENABLE_CUDA_CODE})
