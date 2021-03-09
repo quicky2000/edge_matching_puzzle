@@ -6,7 +6,7 @@ project(edge_matching_puzzle LANGUAGES CXX)
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_CXX_STANDARD 17)
-set(ENABLE_CUDA_CODE off)
+set(ENABLE_CUDA_CODE ON)
 
 set(MY_SOURCE_FILES
     include/algo_based_feature.h

@@ -10,9 +10,6 @@ matrix:
       dist: bionic
       compiler: gcc
       env: DISTRIB_NAME=bionic
-    - os: osx
-      osx_image: xcode10.3
-      env: DISTRIB_NAME=macos
 
 language: cpp
 
@@ -26,6 +23,19 @@ before_install:
   - if [[ "$DISTRIB_NAME" == "focal" ]]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 100 --slave /usr/bin/g++ g++ /usr/bin/g++-10 ; fi
   - if [[ "$DISTRIB_NAME" == "focal" ]]; then sudo update-alternatives --set gcc /usr/bin/gcc-10 ; fi
 # End of g++ 10 specific part
+#-----------------------
+# CUDA specific part
+#-----------------------
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install linux-headers-$(uname -r); fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then distribution=$(. /etc/os-release;echo $ID$VERSION_ID | sed -e 's/\.//g'); fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://developer.download.nvidia.com/compute/cuda/repos/$distribution/x86_64/cuda-$distribution.pin; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo mv cuda-$distribution.pin /etc/apt/preferences.d/cuda-repository-pin-600; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/$distribution/x86_64/7fa2af80.pub; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then echo "deb http://developer.download.nvidia.com/compute/cuda/repos/$distribution/x86_64 /" | sudo tee /etc/apt/sources.list.d/cuda.list; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -y install cuda-drivers; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install nvidia-cuda-toolkit; fi
+# End of CUDA specific part
 #-----------------------
 # SDL1.2 specific part
 #-----------------------
@@ -84,10 +94,14 @@ before_install:
   - cd build
 
 script:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then generate_makefile edge_matching_puzzle; make enable_cuda=0; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests; fi
+#  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then generate_makefile edge_matching_puzzle; make enable_cuda=1; fi
+#  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests; fi
+# Cannot run CUDA test as there is no CUDA device on Travis
+#  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests_CUDA; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd $MY_LOCATION ; mkdir cmake_build ; cd cmake_build ; fi
-  - cmake $QUICKY_REPOSITORY/edge_matching_puzzle
+  - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_COMPILER=/usr/local/cuda-11.1/bin/nvcc $QUICKY_REPOSITORY/edge_matching_puzzle
   - make
   - run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests
+# Cannot run CUDA test as there is no CUDA device on Travis
+#  - run_test.py $MY_LOCATION/repositories/edge_matching_puzzle/tests_CUDA
 #EOF
