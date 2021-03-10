@@ -15,6 +15,7 @@ set(MY_SOURCE_FILES
     include/border_constraint_generator.h
     include/border_exploration.h
     include/CUDA_backtracker_stack.h
+    include/CUDA_color_constraints.h
     include/CUDA_common.h
     include/CUDA_glutton_max_stack.h
     include/CUDA_memory_managed_array.h
