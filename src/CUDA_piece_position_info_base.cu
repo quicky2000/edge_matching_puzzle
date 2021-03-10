@@ -16,9 +16,10 @@
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#include "CUDA_piece_position_info.h"
+#include "CUDA_piece_position_info_base.h"
 
 namespace edge_matching_puzzle
 {
-    uint32_t CUDA_piece_position_info::s_init_value = 0;
+    uint32_t CUDA_piece_position_info_base::s_init_value = 0;
 }
+// EOF
