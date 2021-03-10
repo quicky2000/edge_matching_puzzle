@@ -19,6 +19,7 @@ set(MY_SOURCE_FILES
     include/CUDA_memory_managed_array.h
     include/CUDA_memory_managed_pointer.h
     include/CUDA_piece_position_info.h
+    include/CUDA_piece_position_info2.h
     include/CUDA_piece_position_info_base.h
     include/CUDA_situation_capability.h
     include/CUDA_transition_manager.h
