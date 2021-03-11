@@ -21,7 +21,7 @@
 
 #include "emp_piece.h"
 #include "quicky_exception.h"
-#include <inttypes.h>
+#include <cinttypes>
 
 namespace edge_matching_puzzle
 {
@@ -33,7 +33,7 @@ namespace edge_matching_puzzle
                         ,const std::array<emp_types::t_color_id, ((unsigned int)(emp_types::t_orientation::WEST)) + 1> & p_colours
                         );
 
-        inline
+        inline explicit
         emp_piece_border(const emp_piece & p_piece);
 
         inline
@@ -67,6 +67,11 @@ namespace edge_matching_puzzle
                                       ,const std::array<emp_types::t_color_id,((unsigned int)(emp_types::t_orientation::WEST))+1> & p_colours
                                       )
     : emp_piece(p_id,p_colours)
+    ,m_border_orientation{}
+    ,m_center_orientation{}
+    ,m_border_colors{}
+    ,m_colors_orientations{}
+    ,m_center_color{}
     {
         init();
     }
@@ -74,6 +79,11 @@ namespace edge_matching_puzzle
     //----------------------------------------------------------------------------
     emp_piece_border::emp_piece_border(const emp_piece & p_piece)
     : emp_piece(p_piece.get_id(),p_piece.get_colors())
+    ,m_border_orientation{}
+    ,m_center_orientation{}
+    ,m_border_colors{}
+    ,m_colors_orientations{}
+    ,m_center_color{}
     {
         init();
     }
@@ -91,19 +101,19 @@ namespace edge_matching_puzzle
         {
             throw quicky_exception::quicky_logic_exception("Try to build a border piece with a "+emp_types::kind2string(get_kind()),__LINE__,__FILE__);
         }
-        for(unsigned int l_index = 0 ; l_index <= (unsigned int)emp_types::t_orientation::WEST; ++l_index)
+        for(auto l_orientation:emp_types::get_orientations())
         {
-            if(!get_color((emp_types::t_orientation)l_index))
+            if(!get_color(l_orientation))
             {
-                m_border_orientation = (emp_types::t_orientation)l_index;
-                m_center_orientation = (emp_types::t_orientation)(((unsigned int) m_border_orientation + 2) % 4);
+                m_border_orientation = l_orientation;
+                m_center_orientation = emp_types::get_opposite(l_orientation);
                 break;
             }
         }
-        m_border_colors.first = get_color((emp_types::t_orientation)(((unsigned int) m_border_orientation + 3) % 4));
-        m_border_colors.second = get_color((emp_types::t_orientation)(((unsigned int) m_border_orientation + 5) % 4));
-        m_colors_orientations.first = (emp_types::t_orientation)(((unsigned int) m_border_orientation + 3) % 4);
-        m_colors_orientations.second = (emp_types::t_orientation)(((unsigned int) m_border_orientation + 5) % 4);
+        m_colors_orientations.first = emp_types::get_previous_orientation(m_border_orientation);
+        m_colors_orientations.second = emp_types::get_next_orientation(m_border_orientation);
+        m_border_colors.first = get_color(m_colors_orientations.first);
+        m_border_colors.second = get_color(m_colors_orientations.second);
         m_center_color = get_color(m_center_orientation);
     }
 

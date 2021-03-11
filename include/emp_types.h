@@ -23,6 +23,7 @@
 #include "quicky_bitfield.h"
 #include "quicky_exception.h"
 #include <string>
+#include <array>
 
 namespace edge_matching_puzzle
 {
@@ -48,6 +49,32 @@ namespace edge_matching_puzzle
         inline static
         t_orientation short_string2orientation(const char & p_char);
 
+        /**
+         * Return list of orientation values ,useful to iterate on it
+         * @return list of orientation values
+         */
+        inline static
+        std::array<t_orientation, static_cast<unsigned int>(t_orientation::WEST) + 1> get_orientations();
+
+        /**
+         * Return previous clockwise orientation related to argument orientation
+         * @param p_orientation ref orientation
+         * @return previous clockwise orientation related to argument orientation
+         */
+        inline static
+        emp_types::t_orientation get_previous_orientation(emp_types::t_orientation p_orientation);
+
+        /**
+         * Return next clockwise orientation related to argument orientation
+         * @param p_orientation ref orientation
+         * @return next clockwise orientation related to argument orientation
+         */
+        inline static
+        emp_types::t_orientation get_next_orientation(emp_types::t_orientation p_orientation);
+
+        inline static
+        emp_types::t_orientation get_opposite(emp_types::t_orientation p_orientation);
+
         typedef quicky_utils::quicky_bitfield<uint64_t> bitfield;
 
       private:
@@ -57,6 +84,7 @@ namespace edge_matching_puzzle
         static const std::string m_orientation_strings[((uint32_t)t_orientation::WEST) + 1];
 
         static const char m_short_orientation_strings[((uint32_t)t_orientation::WEST) + 1];
+
     };
 
     //----------------------------------------------------------------------------
@@ -82,21 +110,44 @@ namespace edge_matching_puzzle
     {
         switch(p_char)
         {
-            case 'N':
-                return emp_types::t_orientation::NORTH;
-                break;
-            case 'E':
-                return emp_types::t_orientation::EAST;
-                break;
-            case 'S':
-                return emp_types::t_orientation::SOUTH;
-                break;
-            case 'W':
-                return emp_types::t_orientation::WEST;
-                break;
+            case 'N': return emp_types::t_orientation::NORTH;
+            case 'E': return emp_types::t_orientation::EAST;
+            case 'S': return emp_types::t_orientation::SOUTH;
+            case 'W': return emp_types::t_orientation::WEST;
             default:
                 throw quicky_exception::quicky_logic_exception("Unkown short string orientation '" + std::string(1,p_char) +"'",__LINE__,__FILE__);
         }
+    }
+
+    //-------------------------------------------------------------------------
+    std::array<emp_types::t_orientation, static_cast<unsigned int>(emp_types::t_orientation::WEST) + 1>
+    emp_types::get_orientations()
+    {
+        return {emp_types::t_orientation::NORTH
+               ,emp_types::t_orientation::EAST
+               ,emp_types::t_orientation::SOUTH
+               ,emp_types::t_orientation::WEST
+               };
+    }
+
+    //-------------------------------------------------------------------------
+    emp_types::t_orientation
+    emp_types::get_previous_orientation(emp_types::t_orientation p_orientation)
+    {
+        return static_cast<emp_types::t_orientation>((static_cast<unsigned int>(p_orientation) + 3) % 4);
+    }
+    //-------------------------------------------------------------------------
+    emp_types::t_orientation
+    emp_types::get_next_orientation(emp_types::t_orientation p_orientation)
+    {
+        return static_cast<emp_types::t_orientation>((static_cast<unsigned int>(p_orientation) + 1) % 4);
+    }
+
+    //-------------------------------------------------------------------------
+    emp_types::t_orientation
+    emp_types::get_opposite(emp_types::t_orientation p_orientation)
+    {
+        return static_cast<emp_types::t_orientation>((static_cast<unsigned int>(p_orientation) + 2) % 4);
     }
 }
 #endif //EMP_TYPES_H
