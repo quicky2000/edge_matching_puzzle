@@ -21,6 +21,7 @@
 
 #include "emp_types.h"
 #include <cinttypes>
+#include <array>
 
 namespace edge_matching_puzzle
 {
@@ -130,6 +131,20 @@ namespace edge_matching_puzzle
          */
         inline
         unsigned int get_nb_pieces() const;
+
+        /**
+         * Compute corner borders orientation according to position index
+         * @return pair of orientations indicating orientation of corner borders
+         */
+        inline
+        std::pair<emp_types::t_orientation, emp_types::t_orientation> get_corner_orientation(unsigned int p_position_index) const;
+
+        /**
+         * Compute border orientation according to position index
+         * @return pair of orientations indicating orientation of corner borders
+         */
+        inline
+        emp_types::t_orientation get_border_orientation(unsigned int p_position_index) const;
 
       private:
 
@@ -262,6 +277,55 @@ namespace edge_matching_puzzle
     {
         assert(p_position_index < get_nb_pieces());
         return p_position_index / m_width;
+    }
+
+    //-------------------------------------------------------------------------
+    std::pair<emp_types::t_orientation, emp_types::t_orientation>
+    emp_FSM_info::get_corner_orientation(unsigned int p_position_index) const
+    {
+        std::array<unsigned int, 4> l_corner_positions{get_position_index(0, 0)
+                                                      ,get_position_index(m_width - 1, 0)
+                                                      ,get_position_index(m_width - 1, m_height - 1)
+                                                      ,get_position_index(0 , m_height - 1)
+                                                      };
+        unsigned int l_index = 0;
+        for(auto l_iter: l_corner_positions)
+        {
+            if(p_position_index == l_iter)
+            {
+                emp_types::t_orientation l_border1{static_cast<emp_types::t_orientation>(l_index)};
+                emp_types::t_orientation l_border2{emp_types::get_previous_orientation(l_border1)};
+                return {l_border1, l_border2};
+            }
+            ++l_index;
+        }
+        throw quicky_exception::quicky_logic_exception("Position (" + std::to_string(get_x(p_position_index)) + "," + std::to_string(get_y(p_position_index)) + ") is not a corner", __LINE__, __FILE__);
+    }
+
+    //-------------------------------------------------------------------------
+    emp_types::t_orientation
+    emp_FSM_info::get_border_orientation(unsigned int p_position_index) const
+    {
+        unsigned int l_x = get_x(p_position_index);
+        unsigned int l_y = get_y(p_position_index);
+
+        if(!l_y && l_x && (l_x != m_width - 1))
+        {
+            return emp_types::t_orientation::NORTH;
+        }
+        if((l_x == m_width - 1) && l_y && (l_y < m_height - 1))
+        {
+            return emp_types::t_orientation::EAST;
+        }
+        if((l_y == m_height - 1) && l_x && (l_x != m_width - 1))
+        {
+            return emp_types::t_orientation::SOUTH;
+        }
+        if(!l_x && l_y && (l_y < m_height - 1))
+        {
+            return emp_types::t_orientation::WEST;
+        }
+        throw quicky_exception::quicky_logic_exception("Position (" + std::to_string(get_x(p_position_index)) + "," + std::to_string(get_y(p_position_index)) + ") is not a border", __LINE__, __FILE__);
     }
 
 }
