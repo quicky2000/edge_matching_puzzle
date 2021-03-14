@@ -51,6 +51,14 @@ namespace edge_matching_puzzle
         inline
         emp_types::t_orientation get_border_orientation()const;
 
+        /**
+         * Compute piece orientation to match given argument border orientation
+         * @param p_border_orientation border orientation
+         * @return piece orientation
+         */
+        inline
+        emp_types::t_orientation compute_orientation(emp_types::t_orientation p_border_orientation)const;
+
       private:
         inline
         void init();
@@ -140,6 +148,13 @@ namespace edge_matching_puzzle
 	{
         return m_colors_orientations;
 	}
+
+    //----------------------------------------------------------------------------
+    emp_types::t_orientation
+    emp_piece_border::compute_orientation(emp_types::t_orientation p_border_orientation)const
+    {
+        return static_cast<emp_types::t_orientation>((static_cast<unsigned int>(m_border_orientation) + 4 - static_cast<unsigned int>(p_border_orientation)) % 4);
+    }
 
 }
 #endif // EMP_PIECE_BORDER_H
