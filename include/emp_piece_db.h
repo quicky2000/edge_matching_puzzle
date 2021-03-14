@@ -143,6 +143,12 @@ namespace edge_matching_puzzle
         const emp_piece_border & get_border(const unsigned int & p_index) const;
 
         /**
+         Get center by index
+        **/
+        inline
+        const emp_piece & get_center(unsigned int p_index) const;
+
+        /**
          Get pieces identical to a given piece
         **/
         inline
@@ -1528,6 +1534,15 @@ namespace edge_matching_puzzle
     }
 
     //----------------------------------------------------------------------------
+    const emp_piece &
+    emp_piece_db::get_center(unsigned int p_index) const
+    {
+        assert(p_index < m_nb_pieces[(unsigned int)emp_types::t_kind::CENTER]);
+        assert(m_center_pieces[p_index]);
+        return *(m_center_pieces[p_index]);
+    }
+
+    //----------------------------------------------------------------------------
     unsigned int emp_piece_db::get_kind_index(const emp_types::t_piece_id & p_id) const
     {
         assert(p_id <= m_pieces.size());
@@ -1657,6 +1672,7 @@ namespace edge_matching_puzzle
         }
         return l_result;
     }
+
 }
 #endif // EMP_PIECE_DB_H
 // EOF
