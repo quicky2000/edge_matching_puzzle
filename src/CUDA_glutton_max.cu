@@ -155,29 +155,21 @@ namespace edge_matching_puzzle
 
         // Prepare color constraints
         CUDA_piece_position_info2::set_init_value(0xFFFFFFFF);
-        CUDA_color_constraints l_color_constraints{static_cast<unsigned int>(p_piece_db.get_colors().size())};
+        std::unique_ptr<CUDA_color_constraints> l_color_constraints{new CUDA_color_constraints(static_cast<unsigned int>(p_piece_db.get_colors().size()))};
         for(auto l_iter_color: p_piece_db.get_colors())
         {
             unsigned int l_color_index = l_iter_color - 1;
-            for(auto l_color_orientation_index = static_cast<unsigned int>(emp_types::t_orientation::NORTH);
-                l_color_orientation_index <= static_cast<unsigned int>(emp_types::t_orientation::WEST);
-                ++l_color_orientation_index
-               )
+            for(auto l_color_orientation: emp_types::get_orientations())
             {
-                unsigned int l_opposite_orientation_index = (l_color_orientation_index + 2) % 4;
-                auto l_opposite_orientation = static_cast<emp_types::t_orientation>(l_opposite_orientation_index);
+                auto l_opposite_orientation = emp_types::get_opposite(l_color_orientation);
                 for(unsigned int l_piece_index = 0; l_piece_index < p_info.get_nb_pieces(); ++l_piece_index)
                 {
-                    for(auto l_piece_orientation_index = static_cast<unsigned int>(emp_types::t_orientation::NORTH);
-                        l_piece_orientation_index <= static_cast<unsigned int>(emp_types::t_orientation::WEST);
-                        ++l_piece_orientation_index
-                       )
+                    for(auto l_piece_orientation: emp_types::get_orientations())
                     {
-                        auto l_piece_orientation = static_cast<emp_types::t_orientation>(l_piece_orientation_index);
                         emp_types::t_color_id l_color_id{p_piece_db.get_piece(l_piece_index + 1).get_color(l_opposite_orientation, l_piece_orientation)};
                         if(l_color_id != l_iter_color)
                         {
-                            l_color_constraints.get_info(l_color_index, l_color_orientation_index).clear_bit(l_piece_index, l_piece_orientation);
+                            l_color_constraints->get_info(l_color_index, static_cast<unsigned int>(l_color_orientation)).clear_bit(l_piece_index, l_piece_orientation);
                         }
                     }
                 }
