@@ -27,42 +27,24 @@
 namespace edge_matching_puzzle
 {
 
-    // Store piece representation :
+    /**
+     * Store piece representation.
+     * First dimension is piece index ( ie piece id -1 )
+     * Second dimension is border orientation
+     */
     __constant__ uint32_t g_pieces[256][4];
 
+    /**
+     * Return position offset for each orientation
+     * NORTH : 0 EAST:1 SOUTH:2 WEST:3
+     * Position offset depend on puzzle dimensions
+     */
     __constant__ int g_position_offset[4];
 
+    /**
+     * Number of pieces remaining to set
+     */
     __constant__ unsigned int g_nb_pieces;
-
-    /**
-     * Return color id corresponding to side defined by orientation in piece description
-     * @param p_piece_description 32 bits unsigned integer representing piece colors
-     * @param p_orientation side whose color should be returned
-     * @return color
-     */
-    __device__
-    uint32_t get_piece_color(uint32_t p_piece_description
-                            ,uint32_t p_orientation
-                            )
-    {
-        assert(p_orientation < 4);
-        return (p_piece_description >> (8 * p_orientation)) & 0xFFu;
-    }
-
-    /**
-     * Store color in binary piece description
-     * @param p_piece_description 32 bits unsigned integer representing piece colors
-     * @param p_orientation side of piece corresponding to color
-     * @param p_color color
-     */
-    void set_piece_color(uint32_t & p_piece_description
-                        ,emp_types::t_orientation p_orientation
-                        ,uint8_t p_color
-                        )
-    {
-        p_piece_description &= 0xFFu << (8 * static_cast<unsigned int>(p_orientation));
-        p_piece_description |= static_cast<unsigned int>(p_color) << (8 * static_cast<unsigned int>(p_orientation));
-    }
 
     __global__
     void test_kernel(CUDA_glutton_max_stack * p_stacks
@@ -154,13 +136,9 @@ namespace edge_matching_puzzle
         std::array<uint32_t, 256 * 4> l_pieces{};
         for(unsigned int l_piece_index = 0; l_piece_index < p_info.get_nb_pieces(); ++l_piece_index)
         {
-            for(auto l_orientation_index = static_cast<unsigned int>(emp_types::t_orientation::NORTH);
-                l_orientation_index <= static_cast<unsigned int>(emp_types::t_orientation::WEST);
-                ++l_orientation_index
-               )
+            for(auto l_orientation: emp_types::get_orientations())
             {
-                auto l_orientation = static_cast<emp_types::t_orientation>(l_orientation_index);
-                l_pieces[l_piece_index * 4 + l_orientation_index] = p_piece_db.get_piece(l_piece_index + 1).get_color(l_orientation);
+                l_pieces[l_piece_index * 4 + static_cast<unsigned int>(l_orientation)] = p_piece_db.get_piece(l_piece_index + 1).get_color(l_orientation);
             }
         }
 
