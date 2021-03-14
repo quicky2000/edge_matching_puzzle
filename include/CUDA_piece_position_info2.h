@@ -67,6 +67,33 @@ namespace edge_matching_puzzle
                     ,emp_types::t_orientation p_orientation
                     );
 
+        inline static
+        unsigned int compute_word_index(unsigned int p_index
+                                       ,emp_types::t_orientation p_orientation
+                                       );
+
+        inline static
+        unsigned int compute_bit_index(unsigned int p_index
+                                       ,emp_types::t_orientation p_orientation
+                                       );
+
+        inline static
+        __host__ __device__
+        unsigned int compute_piece_index(unsigned int p_word_index
+                                        ,unsigned int p_bit_index
+                                        );
+
+        inline static
+        emp_types::t_orientation compute_orientation(unsigned int p_word_index
+                                                    ,unsigned int p_bit_index
+                                                    );
+
+        inline static
+        __host__ __device__
+        unsigned int compute_orientation_index(unsigned int p_word_index
+                                              ,unsigned int p_bit_index
+                                              );
+
       private:
 
 
@@ -80,7 +107,7 @@ namespace edge_matching_puzzle
                                         )
     {
         assert(p_index < 256);
-        CUDA_piece_position_info_base::clear_bit(p_index / 8, static_cast<unsigned int>(p_orientation) + 4 * (p_index % 8));
+        CUDA_piece_position_info_base::clear_bit(compute_word_index(p_index, p_orientation), compute_bit_index(p_index, p_orientation));
     }
 
     //-------------------------------------------------------------------------
@@ -90,7 +117,54 @@ namespace edge_matching_puzzle
                                       )
     {
         assert(p_index < 256);
-        CUDA_piece_position_info_base::set_bit(p_index / 8, static_cast<unsigned int>(p_orientation) + 4 * (p_index % 8));
+        CUDA_piece_position_info_base::set_bit(compute_word_index(p_index, p_orientation), compute_bit_index(p_index, p_orientation));
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    CUDA_piece_position_info2::compute_word_index(unsigned int p_index
+                                                 ,emp_types::t_orientation
+                                                 )
+    {
+        return p_index / 8;
+    }
+
+    //-------------------------------------------------------------------------
+    unsigned int
+    CUDA_piece_position_info2::compute_bit_index(unsigned int p_index,
+                                                 emp_types::t_orientation p_orientation
+                                                )
+    {
+        return static_cast<unsigned int>(p_orientation) + 4 * (p_index % 8);
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    unsigned int
+    CUDA_piece_position_info2::compute_piece_index(unsigned int p_word_index
+                                                  ,unsigned int p_bit_index
+                                                  )
+    {
+        return 8 * p_word_index + p_bit_index / 4;
+    }
+
+    //-------------------------------------------------------------------------
+    emp_types::t_orientation
+    CUDA_piece_position_info2::compute_orientation(unsigned int p_word_index
+                                                  ,unsigned int p_bit_index
+                                                  )
+    {
+        return static_cast<emp_types::t_orientation>(compute_orientation_index(p_word_index, p_bit_index));
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    unsigned int
+    CUDA_piece_position_info2::compute_orientation_index(unsigned int
+                                                        ,unsigned int p_bit_index
+                                                        )
+    {
+        return p_bit_index % 4;
     }
 
     //-------------------------------------------------------------------------

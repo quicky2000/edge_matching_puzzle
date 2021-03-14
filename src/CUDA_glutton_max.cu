@@ -125,10 +125,10 @@ namespace edge_matching_puzzle
                         l_current_available_variables &= (1u << l_bit_index);
 
                         // Compute piece index
-                        uint32_t l_piece_index = (l_elected_thread % 8) * 32 + l_bit_index;
+                        uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
 
                         // Piece orientation
-                        uint32_t l_piece_orientation = l_elected_thread / 8;
+                        uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
 
                         for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
                         {
