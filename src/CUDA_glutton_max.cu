@@ -246,6 +246,30 @@ namespace edge_matching_puzzle
                                 }
                             }
                         }
+
+                        uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
+                        if(!l_invalid)
+                        {
+                            for(unsigned int l_result_info_index = 0; l_result_info_index < l_info_index; ++l_result_info_index)
+                            {
+                                uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_info)))
+                                {
+                                    break;
+                                }
+                            }
+                        }
+                        if(!l_invalid)
+                        {
+                            for(unsigned int l_result_info_index = l_info_index + 1; l_result_info_index < l_stack.get_nb_position(); ++l_result_info_index)
+                            {
+                                uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_info)))
+                                {
+                                    break;
+                                }
+                            }
+                        }
                     }  while(l_current_available_variables);
 
                 } while(l_ballot_result);
