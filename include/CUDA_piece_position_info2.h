@@ -63,16 +63,19 @@ namespace edge_matching_puzzle
                       );
 
         inline
+        __host__ __device__
         void set_bit(unsigned int p_index
                     ,emp_types::t_orientation p_orientation
                     );
 
         inline static
+        __host__ __device__
         unsigned int compute_word_index(unsigned int p_index
                                        ,emp_types::t_orientation p_orientation
                                        );
 
         inline static
+        __host__ __device__
         unsigned int compute_bit_index(unsigned int p_index
                                        ,emp_types::t_orientation p_orientation
                                        );
@@ -94,6 +97,10 @@ namespace edge_matching_puzzle
                                               ,unsigned int p_bit_index
                                               );
 
+        inline static
+        __host__ __device__
+        uint32_t compute_piece_mask(unsigned int p_bit_index);
+
       private:
 
 
@@ -111,6 +118,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    __host__ __device__
     void
     CUDA_piece_position_info2::set_bit(unsigned int p_index
                                       ,emp_types::t_orientation p_orientation
@@ -121,6 +129,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    __host__ __device__
     unsigned int
     CUDA_piece_position_info2::compute_word_index(unsigned int p_index
                                                  ,emp_types::t_orientation
@@ -130,6 +139,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    __host__ __device__
     unsigned int
     CUDA_piece_position_info2::compute_bit_index(unsigned int p_index,
                                                  emp_types::t_orientation p_orientation
@@ -189,6 +199,14 @@ namespace edge_matching_puzzle
             p_stream << "|" << std::endl;
         }
         return p_stream;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    uint32_t
+    CUDA_piece_position_info2::compute_piece_mask(unsigned int p_bit_index)
+    {
+        return 0xFu << 4 * (p_bit_index / 4);
     }
 
 }

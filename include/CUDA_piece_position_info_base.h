@@ -99,6 +99,7 @@ namespace edge_matching_puzzle
                        );
 
          inline
+         __host__ __device__
          void set_bit(unsigned int p_word_index
                      ,unsigned int p_bit_index
                      );
@@ -232,6 +233,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    __host__ __device__
     void
     CUDA_piece_position_info_base::set_bit(unsigned int p_word_index
                                           ,unsigned int p_bit_index
