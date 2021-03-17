@@ -120,6 +120,31 @@ namespace edge_matching_puzzle
         __host__ __device__
         uint32_t get_position_of_index(uint32_t p_index) const;
 
+        /**
+         * Indicate if piece designed by piece index is used or not
+         * @param p_piece_index
+         * @return true if piece not used, false if used
+         */
+        inline
+        __host__ __device__
+        bool is_piece_available(unsigned int p_piece_index)const;
+
+        /**
+         * Indicate that piece designed by piece index is not used
+         * @param p_piece_index
+         */
+        inline
+        __host__ __device__
+        void set_piece_available(unsigned int p_piece_index);
+
+        /**
+         * Indicate that piece designed by piece index is used
+         * @param p_piece_index
+         */
+        inline
+        __host__ __device__
+        void set_piece_unavailable(unsigned int p_piece_index);
+
       private:
 
         /**
@@ -179,6 +204,26 @@ namespace edge_matching_puzzle
         __device__ __host__
         uint32_t compute_situation_index(uint32_t p_level) const;
 
+        /**
+         * Help method to compute word index in a bitfield composed of 32 bits
+         * words
+         * @param p_index
+         * @return word index
+         */
+        inline static
+        __device__ __host__
+        uint32_t compute_word_index(uint32_t p_index);
+
+        /**
+         * Help method to compute bit index in a word for a bitfield composed
+         * of 32 bits words
+         * @param p_index
+         * @return bit index
+         */
+        inline static
+        __device__ __host__
+        uint32_t compute_bit_index(uint32_t p_index);
+
         uint32_t m_size;
 
         uint32_t m_level;
@@ -193,6 +238,11 @@ namespace edge_matching_puzzle
          */
         CUDA_memory_managed_array<uint32_t> m_position_to_index;
 
+        /**
+         * Store available pieces
+         */
+         uint32_t m_available_pieces[8];
+
         CUDA_piece_position_info2 * m_position_infos;
         CUDA_piece_position_info2 * m_best_candidate_infos;
     };
@@ -205,6 +255,7 @@ namespace edge_matching_puzzle
     ,m_level{0}
     ,m_index_to_position(p_size)
     ,m_position_to_index(p_nb_pieces)
+    ,m_available_pieces{0, 0, 0, 0, 0, 0, 0, 0}
     ,m_position_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
     ,m_best_candidate_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
     {
@@ -371,6 +422,53 @@ namespace edge_matching_puzzle
                                              )
     {
         get_position_info(m_level, p_info_index) = p_info;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    bool
+    CUDA_glutton_max_stack::is_piece_available(unsigned int p_piece_index) const
+    {
+        assert(p_piece_index < 256);
+        return m_available_pieces[compute_word_index(p_piece_index)] & (1u << compute_bit_index(p_piece_index));
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    void
+    CUDA_glutton_max_stack::set_piece_available(unsigned int p_piece_index)
+    {
+        assert(p_piece_index < 256);
+        assert(!is_piece_available(p_piece_index));
+        m_available_pieces[compute_word_index(p_piece_index)] |= (1u << compute_bit_index(p_piece_index));
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    void
+    CUDA_glutton_max_stack::set_piece_unavailable(unsigned int p_piece_index)
+    {
+        assert(p_piece_index < 256);
+        assert(is_piece_available(p_piece_index));
+        m_available_pieces[compute_word_index(p_piece_index)] &= ~(1u << compute_bit_index(p_piece_index));
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    uint32_t
+    CUDA_glutton_max_stack::compute_word_index(uint32_t p_index)
+    {
+        unsigned int l_word_index = p_index / 32;
+        return l_word_index;
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    uint32_t
+    CUDA_glutton_max_stack::compute_bit_index(uint32_t p_index)
+    {
+        unsigned int l_bit_index = p_index % 32;
+        return l_bit_index;
     }
 
 }

@@ -382,16 +382,26 @@ namespace edge_matching_puzzle
 
         unsigned int l_size = l_nb_pieces - l_start_situation.get_level();
         CUDA_glutton_max_stack l_stack(l_size,l_nb_pieces);
+        for(unsigned int l_piece_index = 0; l_piece_index < l_nb_pieces; ++l_piece_index)
+        {
+            l_stack.set_piece_available(l_piece_index);
+        }
 
         // Prepare stack with info of initial situation
         uint32_t l_info_index = 0;
         for(unsigned int l_position_index = 0; l_position_index < l_nb_pieces; ++l_position_index)
         {
-            if(!l_start_situation.contains_piece(p_info.get_x(l_position_index), p_info.get_y(l_position_index)))
+            unsigned int l_x = p_info.get_x(l_position_index);
+            unsigned int l_y = p_info.get_y(l_position_index);
+            if(!l_start_situation.contains_piece(l_x, l_y))
             {
                 l_stack.set_position_index(l_info_index, l_position_index);
                 l_stack.set_position_info(l_info_index, l_initial_capability[l_position_index]);
                 ++l_info_index;
+            }
+            else
+            {
+                l_stack.set_piece_unavailable(l_start_situation.get_piece(l_x, l_y).first - 1);
             }
         }
 
