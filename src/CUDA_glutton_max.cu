@@ -23,6 +23,7 @@
 #include "CUDA_memory_managed_array.h"
 #include "my_cuda.h"
 #include "CUDA_common.h"
+#include "emp_situation.h"
 
 namespace edge_matching_puzzle
 {
@@ -278,8 +279,23 @@ namespace edge_matching_puzzle
             l_cuda_array[l_index] = 0;
         }
 
-        unsigned int l_size = 10;
-        CUDA_glutton_max_stack l_stack(l_size);
+        emp_situation l_start_situation;
+
+        unsigned int l_size = l_nb_pieces - l_start_situation.get_level();
+        CUDA_glutton_max_stack l_stack(l_size,l_nb_pieces);
+
+        // Prepare stack with info of initial situation
+        uint32_t l_info_index = 0;
+        for(unsigned int l_position_index = 0; l_position_index < l_nb_pieces; ++l_position_index)
+        {
+            if(!l_start_situation.contains_piece(p_info.get_x(l_position_index), p_info.get_y(l_position_index)))
+            {
+                l_stack.set_position_index(l_info_index, l_position_index);
+                l_stack.set_position_info(l_info_index, l_initial_capability[l_position_index]);
+                ++l_info_index;
+            }
+        }
+
 
         // Reset CUDA error status
         cudaGetLastError();
