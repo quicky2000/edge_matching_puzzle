@@ -164,6 +164,12 @@ namespace edge_matching_puzzle
 
         while(l_stack.get_level() < l_stack.get_size())
         {
+
+            uint32_t l_best_total_score = 0;
+            uint32_t l_best_min_max_score = 0;
+            unsigned int l_best_start_index = 0;
+            unsigned int l_best_last_index = 0;
+
             // Iterate on all level position information to compute the score of each available transition
             for(unsigned int l_info_index = 0; l_info_index < l_stack.get_nb_position(); ++l_info_index)
             {
@@ -298,9 +304,41 @@ namespace edge_matching_puzzle
                                 l_info_bits_max = l_piece_info_max_bits > l_info_bits_max ? l_piece_info_max_bits : l_info_bits_max;
                             }
                         }
+                        if(!l_invalid)
+                        {
+                            // compare with global stats
+                            uint32_t l_min_max_score = (l_info_bits_max << 16u) + l_info_bits_min;
+                            if(l_info_bits_total > l_best_total_score || (l_info_bits_total == l_best_total_score && l_min_max_score > l_best_min_max_score))
+                            {
+                                l_best_total_score = l_info_bits_total;
+                                l_best_min_max_score = l_min_max_score;
+                                // Clear previous candidate for best score
+                                for(unsigned int l_clear_info_index = l_best_start_index; l_clear_info_index <= l_best_last_index; ++l_clear_info_index)
+                                {
+                                    // Clear previous candidate capability
+                                    l_stack.get_best_candidate_info(l_clear_info_index).set_word(threadIdx.x, 0);
+                                }
+                                l_best_start_index = l_info_index;
+                                l_best_last_index = l_info_index;
+                                if(!threadIdx.x)
+                                {
+                                    l_stack.get_best_candidate_info(l_info_index).set_bit(l_piece_index, static_cast<emp_types::t_orientation>(l_piece_orientation));
+                                }
+                            }
+                            else if(l_info_bits_total == l_best_total_score && l_min_max_score == l_best_min_max_score)
+                            {
+                                l_best_last_index = l_info_index;
+                            }
+                        }
                     }  while(l_current_available_variables);
 
                 } while(l_ballot_result);
+            }
+
+            // Iterate on best score to prepare next level
+            for(unsigned int l_best_candidate_index = l_best_start_index; l_best_candidate_index <= l_best_last_index; ++l_best_candidate_index)
+            {
+
             }
         }
     }
