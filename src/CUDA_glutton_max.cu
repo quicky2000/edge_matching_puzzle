@@ -103,9 +103,52 @@ namespace edge_matching_puzzle
         return __shfl_sync(0xFFFFFFFFu, p_word, 0);
     }
 
+    inline
+    __device__
+    void update_stats(uint32_t p_value
+                     ,uint32_t & p_min
+                     ,uint32_t & p_max
+                     ,uint32_t & p_total
+                     )
+    {
+        p_max = p_value > p_max ? p_value : p_max;
+        p_min = p_value < p_min ? p_value : p_min;
+        p_total += p_value;
+    }
+
+    inline
+    __device__
+    bool analyze_info(uint32_t p_capability
+                     ,uint32_t p_constraint_capability
+                     ,uint32_t & p_min
+                     ,uint32_t & p_max
+                     ,uint32_t & p_total
+                     ,uint32_t (&p_piece_info)[8]
+                     )
+    {
+        uint32_t l_result_capability = p_capability & p_constraint_capability;
+
+        // Check result of mask except for selected piece and current position
+        if(__any_sync(0xFFFFFFFFu, l_result_capability))
+        {
+            uint32_t l_info_bits = reduce_add_sync(__popc(l_result_capability));
+            update_stats(l_info_bits, p_min, p_max, p_total);
+            unsigned int l_piece_index = 0;
+            while(l_result_capability)
+            {
+                p_piece_info[l_piece_index] += __popc(static_cast<int>(l_result_capability & 0xFu));
+                l_result_capability = l_result_capability >> 4;
+                ++l_piece_index;
+            }
+            return false;
+        }
+        return true;
+    }
+
     __global__
     void kernel(CUDA_glutton_max_stack * p_stacks
                ,unsigned int p_nb_stack
+               ,const CUDA_color_constraints & p_color_constraints
                )
     {
         assert(warpSize == blockDim.x);
@@ -167,12 +210,40 @@ namespace edge_matching_puzzle
                         // Piece orientation
                         uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
 
+                        // Get position index corresponding to this info index
+                        uint32_t l_position_index = l_stack.get_position_of_index(l_info_index);
+
+                        bool l_invalid = false;
+
+                        uint32_t l_info_bits_min = 0xFFFFFFFFu;
+                        uint32_t l_info_bits_max = 0;
+                        uint32_t l_info_bits_total = 0;
+
+                        uint32_t l_piece_info[8];
+                        for(unsigned int l_piece_info_index = 0; l_piece_info_index < 8; ++l_piece_info_index)
+                        {
+                            l_piece_info[l_piece_info_index] = 8 * threadIdx.x + l_piece_info_index < g_nb_pieces ? 0 : 0xFFFFFFFFu;
+                        }
+
+                        // Apply color constraint
                         for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
                         {
-                            uint32_t l_color_id = g_pieces[l_piece_index][l_color_id];
+                            uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
                             if(l_color_id)
                             {
+                                // Compute position index related to piece side
+                                uint32_t l_related_position_index = l_position_index + g_position_offset[l_orientation_index];
 
+                                // Compute corresponding info index
+                                uint32_t l_related_info_index = l_stack.get_index_of_position(l_related_position_index);
+
+                                uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
+                                uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
+
+                                if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_info)))
+                                {
+                                    break;
+                                }
                             }
                         }
                     }  while(l_current_available_variables);
