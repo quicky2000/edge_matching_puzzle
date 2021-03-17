@@ -121,18 +121,18 @@ namespace edge_matching_puzzle
 
         while(l_stack.get_level() < l_stack.get_size())
         {
-            // Iterate on all level position information
-            for(unsigned int l_position_index = 0; l_position_index < l_stack.get_nb_position(); ++l_position_index)
+            // Iterate on all level position information to compute the score of each available transition
+            for(unsigned int l_info_index = 0; l_info_index < l_stack.get_nb_position(); ++l_info_index)
             {
                 // At the beginning all threads participates to ballot
                 unsigned int l_ballot_result = 0xFFFFFFFF;
 
+                // Each thread get its word in position info
+                uint32_t l_thread_available_variables = l_stack.get_position_info(l_info_index).get_word(threadIdx.x);
+
                 // Iterate on non null position info words determined by ballot between threads
                 do
                 {
-                    // Each thread get its word in position info
-                    uint32_t l_thread_available_variables = l_stack.get_position_info(l_position_index).get_word(threadIdx.x);
-
                     // Sync between threads to determine who as some available variables
                     l_ballot_result = __ballot_sync(l_ballot_result, (int) l_thread_available_variables);
 
@@ -142,20 +142,24 @@ namespace edge_matching_puzzle
                     // Determine first lane/thread having an available variable. Result is greater than 0 due to assert
                     unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
 
+                    // Eliminate thread from next ballot
+                    l_ballot_result &= ~(1u << l_elected_thread);
+
                     // Copy available variables because we will iterate on it
                     uint32_t l_current_available_variables = l_thread_available_variables;
 
                     // Share current available variables with all other threads so they can select the same variable
                     l_current_available_variables = __shfl_sync(0xFFFFFFFF, l_current_available_variables, (int)l_elected_thread);
 
-                    // Iterate on available variables
+                    // Iterate on available variables of elected thread
                     do
                     {
                         // Determine first available variable. Result  cannot be 0 due to ballot
                         unsigned l_bit_index = __ffs((int)l_current_available_variables) - 1;
 
                         // Set variable bit to zero
-                        l_current_available_variables &= (1u << l_bit_index);
+                        uint32_t l_mask = ~(1u << l_bit_index);
+                        l_current_available_variables &= l_mask;
 
                         // Compute piece index
                         uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
