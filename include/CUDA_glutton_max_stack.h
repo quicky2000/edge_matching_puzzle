@@ -20,7 +20,7 @@
 #define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_STACK_H
 
 #include "CUDA_memory_managed_item.h"
-#include "CUDA_memory_managed_pointer.h"
+#include "CUDA_memory_managed_array.h"
 #include "CUDA_piece_position_info2.h"
 #include <cinttypes>
 
@@ -41,7 +41,9 @@ namespace edge_matching_puzzle
       public:
 
         inline explicit
-        CUDA_glutton_max_stack(uint32_t p_size);
+        CUDA_glutton_max_stack(uint32_t p_size
+                              ,uint32_t p_nb_pieces
+                              );
 
         inline
         ~CUDA_glutton_max_stack();
@@ -75,6 +77,34 @@ namespace edge_matching_puzzle
         __device__ __host__
         uint32_t get_nb_position() const;
 
+        /**
+         * Store correspondant between index of position info and position index
+         * @param p_index Index of position info
+         * @param p_position_index Position index
+         */
+        inline
+        void set_position_index(uint32_t p_index
+                               ,uint32_t p_position_index
+                               );
+
+        /**
+         * Indicate at which index information related to position index is stored
+         * @param p_position_index
+         * @return index in info array here information is stored
+         */
+        inline
+        __host__ __device__
+        uint32_t get_index_of_position(uint32_t p_position_index) const;
+
+        /**
+         * Indicate which position corresponds to info stored at index
+         * @param p_index index in info array
+         * @return Position index whose info is stored
+         */
+        inline
+        __host__ __device__
+        uint32_t get_position_of_index(uint32_t p_index) const;
+
       private:
 
         /**
@@ -98,16 +128,29 @@ namespace edge_matching_puzzle
 
         uint32_t m_level;
 
+        /**
+         * Store correspondence between position info and position
+         */
+        CUDA_memory_managed_array<uint32_t> m_index_to_position;
+
+        /**
+         * Store correspondence between position and position info
+         */
+        CUDA_memory_managed_array<uint32_t> m_position_to_index;
+
         CUDA_piece_position_info2 * m_position_infos;
     };
 
     //-------------------------------------------------------------------------
-    CUDA_glutton_max_stack::CUDA_glutton_max_stack(uint32_t p_size)
+    CUDA_glutton_max_stack::CUDA_glutton_max_stack(uint32_t p_size
+                                                  ,uint32_t p_nb_pieces
+                                                  )
     :m_size(p_size)
     ,m_level{0}
+    ,m_index_to_position(p_size)
+    ,m_position_to_index(p_nb_pieces)
     ,m_position_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
     {
-
     }
 
     //-------------------------------------------------------------------------
@@ -185,6 +228,35 @@ namespace edge_matching_puzzle
     {
         return m_size - m_level;
     }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_max_stack::set_position_index(uint32_t p_index,
+                                               uint32_t p_position_index
+                                              )
+    {
+        assert(p_index < m_size);
+        m_position_to_index[p_position_index] = p_index;
+        m_index_to_position[p_index] = p_position_index;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    uint32_t
+    CUDA_glutton_max_stack::get_index_of_position(uint32_t p_position_index) const
+    {
+        return m_position_to_index[p_position_index];
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    uint32_t
+    CUDA_glutton_max_stack::get_position_of_index(uint32_t p_index) const
+    {
+        assert(p_index < m_size);
+        return m_index_to_position[p_index];
+    }
+
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_STACK_H
 // EOF
