@@ -123,7 +123,7 @@ namespace edge_matching_puzzle
                      ,uint32_t & p_min
                      ,uint32_t & p_max
                      ,uint32_t & p_total
-                     ,uint32_t (&p_piece_info)[8]
+                     ,CUDA_glutton_max_stack::t_piece_infos & p_piece_info
                      )
     {
         uint32_t l_result_capability = p_capability & p_constraint_capability;
@@ -136,7 +136,7 @@ namespace edge_matching_puzzle
             unsigned int l_piece_index = 0;
             while(l_result_capability)
             {
-                p_piece_info[l_piece_index] += __popc(static_cast<int>(l_result_capability & 0xFu));
+                p_piece_info[l_piece_index] += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(l_result_capability & 0xFu)));
                 l_result_capability = l_result_capability >> 4;
                 ++l_piece_index;
             }
@@ -219,11 +219,8 @@ namespace edge_matching_puzzle
                         uint32_t l_info_bits_max = 0;
                         uint32_t l_info_bits_total = 0;
 
-                        uint32_t l_piece_info[8];
-                        for(unsigned int l_piece_info_index = 0; l_piece_info_index < 8; ++l_piece_info_index)
-                        {
-                            l_piece_info[l_piece_info_index] = 8 * threadIdx.x + l_piece_info_index < g_nb_pieces ? 0 : 0xFFFFFFFFu;
-                        }
+                        l_stack.clear_piece_info(threadIdx.x);
+                        CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info(threadIdx.x);
 
                         // Apply color constraint
                         for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
@@ -240,20 +237,19 @@ namespace edge_matching_puzzle
                                 uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
                                 uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
 
-                                if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_info)))
+                                if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                 {
                                     break;
                                 }
                             }
                         }
-
                         uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
                         if(!l_invalid)
                         {
                             for(unsigned int l_result_info_index = 0; l_result_info_index < l_info_index; ++l_result_info_index)
                             {
                                 uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_info)))
+                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                 {
                                     break;
                                 }
@@ -264,10 +260,42 @@ namespace edge_matching_puzzle
                             for(unsigned int l_result_info_index = l_info_index + 1; l_result_info_index < l_stack.get_nb_position(); ++l_result_info_index)
                             {
                                 uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_info)))
+                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                 {
                                     break;
                                 }
+                            }
+                        }
+                        // Manage pieces info
+                        if(!l_invalid)
+                        {
+                            uint32_t l_piece_info_total_bit = 0;
+                            uint32_t l_piece_info_min_bits = 0xFFFFFFFFu;
+                            uint32_t l_piece_info_max_bits = 0;
+                            for(unsigned int l_piece_info_index = 0; l_piece_info_index < 8; ++l_piece_info_index)
+                            {
+                                CUDA_glutton_max_stack::t_piece_info l_piece_info = l_piece_infos[l_piece_info_index];
+                                if(__all_sync(0xFFFFFFFFu, l_piece_info))
+                                {
+                                    unsigned int l_info_piece_index = 8 * threadIdx.x + l_piece_info_index;
+                                    if(l_stack.is_piece_available(l_info_piece_index))
+                                    {
+                                        update_stats(l_piece_info, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
+                                    }
+                                }
+                                else
+                                {
+                                    l_invalid = true;
+                                    break;
+                                }
+                            }
+                            if(!l_invalid)
+                            {
+                                l_info_bits_total += reduce_add_sync(l_piece_info_total_bit);
+                                l_piece_info_min_bits = reduce_min_sync(l_piece_info_min_bits);
+                                l_info_bits_min = l_piece_info_min_bits < l_info_bits_min ? l_piece_info_min_bits : l_info_bits_min;
+                                l_piece_info_max_bits = reduce_max_sync(l_piece_info_max_bits);
+                                l_info_bits_max = l_piece_info_max_bits > l_info_bits_max ? l_piece_info_max_bits : l_info_bits_max;
                             }
                         }
                     }  while(l_current_available_variables);

@@ -145,6 +145,29 @@ namespace edge_matching_puzzle
         __host__ __device__
         void set_piece_unavailable(unsigned int p_piece_index);
 
+        /**
+         * Alias to improve code readibility
+         */
+        typedef uint16_t t_piece_info;
+        typedef t_piece_info t_piece_infos[8];
+
+        /**
+         * Return piece information related to a thread
+         * @param p_thread_id
+         * @return piece information
+         */
+        inline
+        __device__
+        t_piece_infos & get_thread_piece_info(unsigned int p_thread_id);
+
+        /**
+         * Reset values of piece info depending on piece availabilitys
+         * @param p_thread_id thread ID
+         */
+        inline
+        __device__
+        void clear_piece_info(unsigned int p_thread_id);
+
       private:
 
         /**
@@ -243,6 +266,11 @@ namespace edge_matching_puzzle
          */
          uint32_t m_available_pieces[8];
 
+         /**
+          * Store piece infos
+          */
+          t_piece_infos m_thread_piece_infos[32];
+
         CUDA_piece_position_info2 * m_position_infos;
         CUDA_piece_position_info2 * m_best_candidate_infos;
     };
@@ -256,6 +284,39 @@ namespace edge_matching_puzzle
     ,m_index_to_position(p_size)
     ,m_position_to_index(p_nb_pieces)
     ,m_available_pieces{0, 0, 0, 0, 0, 0, 0, 0}
+    ,m_thread_piece_infos{{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         ,{0, 0, 0, 0, 0, 0, 0, 0}
+                         }
     ,m_position_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
     ,m_best_candidate_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
     {
@@ -469,6 +530,27 @@ namespace edge_matching_puzzle
     {
         unsigned int l_bit_index = p_index % 32;
         return l_bit_index;
+    }
+
+    //-------------------------------------------------------------------------
+    __device__
+    CUDA_glutton_max_stack::t_piece_infos &
+    CUDA_glutton_max_stack::get_thread_piece_info(unsigned int p_thread_id)
+    {
+        assert(p_thread_id < 32);
+        return m_thread_piece_infos[p_thread_id];
+    }
+
+    //-------------------------------------------------------------------------
+    __device__
+    void
+    CUDA_glutton_max_stack::clear_piece_info(unsigned int p_thread_id)
+    {
+        assert(p_thread_id < 32);
+        for(unsigned int l_index = 0; l_index < 8; ++l_index)
+        {
+            m_thread_piece_infos[p_thread_id][l_index] = is_piece_available(8 * p_thread_id + l_index) ? 0 : 0xFFFF;
+        }
     }
 
 }
