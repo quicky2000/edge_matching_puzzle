@@ -52,6 +52,56 @@ namespace edge_matching_puzzle
                     ,CUDA_memory_managed_array<uint32_t> & p_array
                     );
 
+    inline
+    __device__
+    uint32_t reduce_add_sync(uint32_t p_word)
+    {
+        unsigned l_mask = 0xFFFF;
+        unsigned int l_width = 16;
+        do
+        {
+            p_word += __shfl_down_sync(l_mask, p_word, l_width);
+            l_width = l_width >> 1;
+            l_mask = l_mask >> l_width;
+        }
+        while(l_width);
+        return __shfl_sync(0xFFFFFFFFu, p_word, 0);
+    }
+
+    inline
+    __device__
+    uint32_t reduce_min_sync(uint32_t p_word)
+    {
+        unsigned l_mask = 0xFFFF;
+        unsigned int l_width = 16;
+        do
+        {
+            uint32_t l_received_word = __shfl_down_sync(l_mask, p_word, l_width);
+            p_word = l_received_word < p_word ? l_received_word : p_word;
+            l_width = l_width >> 1;
+            l_mask = l_mask >> l_width;
+        }
+        while(l_width);
+        return __shfl_sync(0xFFFFFFFFu, p_word, 0);
+    }
+
+    inline
+    __device__
+    uint32_t reduce_max_sync(uint32_t p_word)
+    {
+        unsigned l_mask = 0xFFFF;
+        unsigned int l_width = 16;
+        do
+        {
+            uint32_t l_received_word = __shfl_down_sync(l_mask, p_word, l_width);
+            p_word = l_received_word > p_word ? l_received_word : p_word;
+            l_width = l_width >> 1;
+            l_mask = l_mask >> l_width;
+        }
+        while(l_width);
+        return __shfl_sync(0xFFFFFFFFu, p_word, 0);
+    }
+
     __global__
     void kernel(CUDA_glutton_max_stack * p_stacks
                ,unsigned int p_nb_stack
