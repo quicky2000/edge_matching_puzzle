@@ -438,19 +438,19 @@ namespace edge_matching_puzzle
             }
         }
 
-        CUDA_memory_managed_array<uint32_t> l_cuda_array(32);
+        std::unique_ptr<CUDA_memory_managed_array<uint32_t>> l_cuda_array{new CUDA_memory_managed_array<uint32_t>(32)};
         for(unsigned int l_index = 0; l_index < 32 ; ++l_index)
         {
-            l_cuda_array[l_index] = 0;
+            (*l_cuda_array)[l_index] = 0;
         }
 
         emp_situation l_start_situation;
 
         unsigned int l_size = l_nb_pieces - l_start_situation.get_level();
-        CUDA_glutton_max_stack l_stack(l_size,l_nb_pieces);
+        std::unique_ptr<CUDA_glutton_max_stack> l_stack{new CUDA_glutton_max_stack(l_size,l_nb_pieces)};
         for(unsigned int l_piece_index = 0; l_piece_index < l_nb_pieces; ++l_piece_index)
         {
-            l_stack.set_piece_available(l_piece_index);
+            l_stack->set_piece_available(l_piece_index);
         }
 
         // Prepare stack with info of initial situation
@@ -461,36 +461,37 @@ namespace edge_matching_puzzle
             unsigned int l_y = p_info.get_y(l_position_index);
             if(!l_start_situation.contains_piece(l_x, l_y))
             {
-                l_stack.set_position_index(l_info_index, l_position_index);
-                l_stack.set_position_info(l_info_index, l_initial_capability[l_position_index]);
+                l_stack->set_position_index(l_info_index, l_position_index);
+                l_stack->set_position_info(l_info_index, l_initial_capability[l_position_index]);
                 ++l_info_index;
             }
             else
             {
-                l_stack.set_piece_unavailable(l_start_situation.get_piece(l_x, l_y).first - 1);
+                l_stack->set_piece_unavailable(l_start_situation.get_piece(l_x, l_y).first - 1);
             }
         }
-
+        delete[] l_initial_capability;
 
         // Reset CUDA error status
         cudaGetLastError();
         std::cout << "Launch kernels" << std::endl;
         dim3 l_block_info(32, 1);
         dim3 l_grid_info(1);
-        test_kernel<<<l_grid_info, l_block_info>>>(&l_stack, 1, l_cuda_array);
+        //kernel<<<l_grid_info, l_block_info>>>(l_stack.get(), 1, *l_color_constraints);
+        test_kernel<<<l_grid_info, l_block_info>>>(l_stack.get(), 1, *l_cuda_array);
         cudaDeviceSynchronize();
         gpuErrChk(cudaGetLastError());
 
         for(unsigned int l_index = 0; l_index < l_size; ++l_index)
         {
-            std::cout << l_stack.get_position_info(l_index) << std::endl;
-            l_stack.push();
+            std::cout << l_stack->get_position_info(l_index) << std::endl;
+            //l_stack->push();
         }
 
         std::cout << "CUDA array content" << std::endl;
         for(unsigned int l_index = 0; l_index < 32; ++l_index)
         {
-            std::cout << "cuda_array[" << l_index << "] = " << l_cuda_array[l_index] << std::endl;
+            std::cout << "cuda_array[" << l_index << "] = " << (*l_cuda_array)[l_index] << std::endl;
         }
 
     }
