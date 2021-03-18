@@ -224,7 +224,10 @@ namespace edge_matching_puzzle
                         uint32_t l_info_bits_min = 0xFFFFFFFFu;
                         uint32_t l_info_bits_max = 0;
                         uint32_t l_info_bits_total = 0;
-
+                        if(!threadIdx.x)
+                        {
+                            l_stack.set_piece_unavailable(l_piece_index);
+                        }
                         l_stack.clear_piece_info(threadIdx.x);
                         CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info(threadIdx.x);
 
@@ -329,6 +332,10 @@ namespace edge_matching_puzzle
                             {
                                 l_best_last_index = l_info_index;
                             }
+                        }
+                        if(!threadIdx.x)
+                        {
+                            l_stack.set_piece_available(l_piece_index);
                         }
                     }  while(l_current_available_variables);
 
