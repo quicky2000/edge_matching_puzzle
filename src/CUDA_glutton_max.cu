@@ -25,6 +25,8 @@
 #include "CUDA_common.h"
 #include "emp_situation.h"
 
+#define LOG_EXECUTION
+
 namespace edge_matching_puzzle
 {
 
@@ -273,6 +275,8 @@ namespace edge_matching_puzzle
         while(l_stack.get_level() < l_stack.get_size())
         {
 
+            print_single(0,"Stack level = %i", l_stack.get_level());
+
             uint32_t l_best_total_score = 0;
             uint32_t l_best_min_max_score = 0;
             unsigned int l_best_start_index = 0;
@@ -281,11 +285,15 @@ namespace edge_matching_puzzle
             // Iterate on all level position information to compute the score of each available transition
             for(unsigned int l_info_index = 0; l_info_index < l_stack.get_nb_position(); ++l_info_index)
             {
+                print_single(1,"Info index = %i", l_info_index);
+
                 // At the beginning all threads participates to ballot
                 unsigned int l_ballot_result = 0xFFFFFFFF;
 
                 // Each thread get its word in position info
                 uint32_t l_thread_available_variables = l_stack.get_position_info(l_info_index).get_word(threadIdx.x);
+
+                print_all(2,"Thread available variables = 0x%" PRIx32, l_thread_available_variables);
 
                 // Iterate on non null position info words determined by ballot between threads
                 do
@@ -293,11 +301,15 @@ namespace edge_matching_puzzle
                     // Sync between threads to determine who as some available variables
                     l_ballot_result = __ballot_sync(l_ballot_result, (int) l_thread_available_variables);
 
+                    print_mask(3, l_ballot_result, "Thread available variables = 0x%" PRIx32, l_thread_available_variables);
+
                     // Ballot result cannot be NULL because we are by construction in a valid situation
                     assert(l_ballot_result);
 
                     // Determine first lane/thread having an available variable. Result is greater than 0 due to assert
                     unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
+
+                    print_single(3, "Elected thread : %i", l_elected_thread);
 
                     // Eliminate thread from next ballot
                     l_ballot_result &= ~(1u << l_elected_thread);
@@ -311,8 +323,12 @@ namespace edge_matching_puzzle
                     // Iterate on available variables of elected thread
                     do
                     {
+                        print_single(4, "Current available variables : 0x%" PRIx32, l_current_available_variables);
+
                         // Determine first available variable. Result  cannot be 0 due to ballot
                         unsigned l_bit_index = __ffs((int)l_current_available_variables) - 1;
+
+                        print_single(4, "Bit index : %i", l_bit_index);
 
                         // Set variable bit to zero
                         uint32_t l_mask = ~(1u << l_bit_index);
@@ -321,8 +337,12 @@ namespace edge_matching_puzzle
                         // Compute piece index
                         uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
 
+                        print_single(4, "Piece index : %i", l_piece_index);
+
                         // Piece orientation
                         uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
+
+                        print_single(4, "Piece orientation : %i", l_piece_orientation);
 
                         // Get position index corresponding to this info index
                         uint32_t l_position_index = l_stack.get_position_of_index(l_info_index);
@@ -354,10 +374,13 @@ namespace edge_matching_puzzle
                                 uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
                                 uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
 
+                                //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
                                 if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                 {
                                     break;
                                 }
+                                //print_all(5, "Min %3i Max %3i Total %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             }
                         }
                         uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
@@ -365,22 +388,26 @@ namespace edge_matching_puzzle
                         {
                             for(unsigned int l_result_info_index = 0; l_result_info_index < l_info_index; ++l_result_info_index)
                             {
+                                print_single(5, "Info %i:\n", l_result_info_index);
                                 uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
                                 if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                 {
                                     break;
                                 }
+                                print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             }
                         }
                         if(!l_invalid)
                         {
                             for(unsigned int l_result_info_index = l_info_index + 1; l_result_info_index < l_stack.get_nb_position(); ++l_result_info_index)
                             {
+                                print_single(5, "Info %i:\n", l_result_info_index);
                                 uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
                                 if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                 {
                                     break;
                                 }
+                                print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             }
                         }
                         // Manage pieces info
@@ -398,6 +425,7 @@ namespace edge_matching_puzzle
                                     if(l_stack.is_piece_available(l_info_piece_index))
                                     {
                                         update_stats(l_piece_info, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
+                                        print_all(5, "Piece %i:\nMin %3i\tMax %3i\tTotal %i\n", l_piece_info_index, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
                                     }
                                 }
                                 else
@@ -413,14 +441,18 @@ namespace edge_matching_puzzle
                                 l_info_bits_min = l_piece_info_min_bits < l_info_bits_min ? l_piece_info_min_bits : l_info_bits_min;
                                 l_piece_info_max_bits = reduce_max_sync(l_piece_info_max_bits);
                                 l_info_bits_max = l_piece_info_max_bits > l_info_bits_max ? l_piece_info_max_bits : l_info_bits_max;
+                                print_single(4, "After reduction");
+				print_single(4, "Min %3i\tMax %3i\tTotal %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             }
                         }
                         if(!l_invalid)
                         {
                             // compare with global stats
                             uint32_t l_min_max_score = (l_info_bits_max << 16u) + l_info_bits_min;
+                            print_single(4, "Total %i\tMinMax %i\n", l_info_bits_total, l_min_max_score);
                             if(l_info_bits_total > l_best_total_score || (l_info_bits_total == l_best_total_score && l_min_max_score > l_best_min_max_score))
                             {
+				print_single(4, "New best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
                                 l_best_total_score = l_info_bits_total;
                                 l_best_min_max_score = l_min_max_score;
                                 // Clear previous candidate for best score
@@ -629,13 +661,11 @@ namespace edge_matching_puzzle
 
         p_array[threadIdx.x] = 31 -  threadIdx.x;
 
-        return;
-        if(!threadIdx.x)
+        print_all(0, "managed_array[%i] = %i", threadIdx.x, p_array[threadIdx.x]);
+
+        for(unsigned int l_piece_index = 0; l_piece_index < g_nb_pieces; ++l_piece_index)
         {
-            for(unsigned int l_piece_index = 0; l_piece_index < g_nb_pieces; ++l_piece_index)
-            {
-                printf("Piece[%i]={%i, %i, %i, %i}\n", l_piece_index + 1, g_pieces[l_piece_index][0], g_pieces[l_piece_index][1], g_pieces[l_piece_index][2], g_pieces[l_piece_index][3]);
-            }
+            print_single(1, "Piece[%i]={%i, %i, %i, %i}\n", l_piece_index + 1, g_pieces[l_piece_index][0], g_pieces[l_piece_index][1], g_pieces[l_piece_index][2], g_pieces[l_piece_index][3]);
         }
         return;
         unsigned int l_stack_index = threadIdx.y + blockIdx.x * blockDim.y;
