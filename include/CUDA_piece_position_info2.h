@@ -185,18 +185,36 @@ namespace edge_matching_puzzle
     {
         for(unsigned int l_word_index = 0; l_word_index < 32; ++l_word_index)
         {
-            for(unsigned int l_internal_index = 0; l_internal_index < 8; ++l_internal_index)
-            {
-                p_stream << "|" << std::setw(3) << 8 * l_word_index + l_internal_index ;
-            }
-            p_stream << "|" << std::endl;
             uint32_t l_word = p_info.get_word(l_word_index);
-            for(unsigned int l_internal_index = 0; l_internal_index < 8; ++l_internal_index)
+            if(l_word)
             {
-                p_stream << "|0x" << std::setw(1) << std::hex << (l_word & 0xF) ;
-                l_word = l_word >> 4u;
+		p_stream << "/" << std::string(8,'-') << " Word[" << std::setw(2) << l_word_index << "] : 0x" << std::setfill('0') << std::setw(8) << std::hex << l_word << std::dec << std::setfill(' ') << " " << std::string(8, '-') << "\\" << std::endl;
+                for (unsigned int l_internal_index = 0; l_internal_index < 8; ++l_internal_index)
+                {
+                    p_stream << "|" << std::setw(4) << 8 * l_word_index + l_internal_index;
+                }
+                p_stream << "|" << std::endl;
+                for (unsigned int l_internal_index = 0; l_internal_index < 8; ++l_internal_index)
+                {
+                    p_stream << "|";
+                    uint32_t l_piece_info = l_word & 0xF;
+                    std::string l_string;
+                    for (auto l_iter: emp_types::get_orientations())
+                    {
+                        if ((1u << static_cast<uint32_t>(l_iter)) & l_piece_info)
+                        {
+                            l_string += emp_types::orientation2short_string(l_iter);
+                        }
+                        else
+                        {
+                            l_string += " ";
+                        }
+                    }
+                    p_stream << l_string;
+                    l_word = l_word >> 4u;
+                }
+                p_stream << "|" << std::endl;
             }
-            p_stream << "|" << std::endl;
         }
         return p_stream;
     }
