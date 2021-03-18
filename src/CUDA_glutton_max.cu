@@ -396,6 +396,8 @@ namespace edge_matching_puzzle
                         }
                     }
                 }
+                std::cout << "Color " << l_iter_color << emp_types::orientation2short_string(l_color_orientation) << ":" << std::endl;
+                std::cout << l_color_constraints->get_info(l_color_index, static_cast<unsigned int>(l_color_orientation)) << std::endl;
             }
         }
 
@@ -445,6 +447,11 @@ namespace edge_matching_puzzle
             }
         }
 
+        for(unsigned int l_position_index = 0; l_position_index < p_info.get_nb_pieces(); ++l_position_index)
+        {
+	    std::cout << "Position " << l_position_index << "(" << p_info.get_x(l_position_index) << "," <<p_info.get_y(l_position_index) << "):" << std::endl;
+	    std::cout << l_initial_capability[l_position_index] << std::endl;
+        }
         std::unique_ptr<CUDA_memory_managed_array<uint32_t>> l_cuda_array{new CUDA_memory_managed_array<uint32_t>(32)};
         for(unsigned int l_index = 0; l_index < 32 ; ++l_index)
         {
