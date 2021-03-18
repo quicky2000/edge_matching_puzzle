@@ -47,6 +47,114 @@ namespace edge_matching_puzzle
      */
     __constant__ unsigned int g_nb_pieces;
 
+    __device__
+    unsigned int my_strlen(const char * p_string)
+    {
+        unsigned int l_index = 0;
+        while('\0' != p_string[l_index])
+        {
+            ++l_index;
+        }
+        return l_index;
+    }
+
+    __device__
+    unsigned int count_cr(const char * p_string)
+    {
+        unsigned int l_nb_cr = 0;
+        unsigned int l_index = 0;
+        while('\0' != p_string[l_index])
+        {
+            l_nb_cr += ('\n' == p_string[l_index++]);
+        }
+        return l_nb_cr;
+    }
+
+    __device__
+    char * prepare_format(unsigned int p_level
+                         ,const char * p_header
+                         ,const char * p_format
+                         )
+    {
+        unsigned int l_len = my_strlen(p_format);
+        unsigned int l_nb_cr = count_cr(p_format);
+        bool l_additional_cr = (!l_len) || (p_format[l_len - 1] != '\n');
+        unsigned int l_total_cr = l_nb_cr + l_additional_cr;
+        unsigned int l_header_len = my_strlen(p_header);
+        char * l_format = static_cast<char*>(malloc(l_len + l_additional_cr + l_total_cr * (l_header_len + 2 * p_level)));
+        unsigned int l_index = 0;
+        unsigned int l_char_index = 0;
+        for(unsigned int l_line_index = 0; l_line_index < l_total_cr; ++l_line_index)
+        {
+            for(unsigned int l_level_index = 0; l_level_index < 2 * p_level; ++l_level_index)
+            {
+                l_format[l_index++] = ' ';
+            }
+            for(unsigned int l_header_index = 0; l_header_index < l_header_len; ++l_header_index)
+            {
+                l_format[l_index++] = l_line_index ? ' ' : p_header[l_header_index];
+            }
+            while('\0' != p_format[l_char_index] && '\n' != p_format[l_char_index])
+            {
+                l_format[l_index++] = p_format[l_char_index++];
+            }
+            ++l_char_index;
+            l_format[l_index++] = '\n';
+        }
+        l_format[l_index++] = '\0';
+        return l_format;
+    }
+
+    template<typename... Targs>
+    __device__
+    void print_all(unsigned int p_level
+                  ,const char * p_format
+                  ,Targs... Fargs
+                  )
+    {
+#ifdef LOG_EXECUTION
+        char * l_format = prepare_format(p_level, "Thread%3i : ", p_format);
+        printf(l_format, threadIdx.x, Fargs...);
+        free(l_format);
+#endif // LOG_EXECUTION
+    }
+
+    template<typename... Targs>
+    __device__
+    void print_mask(unsigned int p_level
+                   ,uint32_t p_mask
+                   ,const char * p_format
+                   ,Targs... Fargs
+                   )
+    {
+#ifdef LOG_EXECUTION
+        // Do format treatment in all threads to minimise divergence
+        char * l_format = prepare_format(p_level, "Thread%3i : ", p_format);
+        if((1u << threadIdx.x) & p_mask)
+        {
+            printf(l_format, threadIdx.x, Fargs...);
+        }
+        free(l_format);
+#endif // LOG_EXECUTION
+    }
+
+    template<typename... Targs>
+    __device__
+    void print_single(unsigned int p_level
+                     ,const char * p_format
+                     ,Targs... Fargs
+                     )
+    {
+#ifdef LOG_EXECUTION
+        char * l_format = prepare_format(p_level, "", p_format);
+        if(!threadIdx.x)
+        {
+            printf(l_format, Fargs...);
+        }
+        free(l_format);
+#endif // LOG_EXECUTION
+    }
+
     __global__
     void test_kernel(CUDA_glutton_max_stack * p_stacks
                     ,unsigned int p_nb_stack
