@@ -1,5 +1,5 @@
 #-----------------------------------------
-# CMakeLists Skeleton 2020/12/10
+# CMakeLists Skeleton 2020/03/21
 #-----------------------------------------
 cmake_minimum_required(VERSION 3.11.4)
 project(edge_matching_puzzle LANGUAGES CXX)
@@ -156,7 +156,7 @@ foreach(SOURCE_FILE IN ITEMS ${MY_SOURCE_FILES})
         if(NOT DEFINED CMAKE_CUDA_STANDARD)
             set(CMAKE_CUDA_STANDARD 11)
             set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-            set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} " --ptxas-options=-v -arch=sm_75 -gencode=arch=compute_75,code=sm_75")
+            set(CMAKE_CUDA_FLAGS ${CMAKE_CUDA_FLAGS} " --keep --keep-dir=${CMAKE_BINARY_DIR}/${CMAKE_FILES_DIRECTORY} --source-in-ptx --ptxas-options=-v -arch=sm_75 -gencode=arch=compute_75,code=sm_75")
             if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
                 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -G")
             else()
