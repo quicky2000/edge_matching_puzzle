@@ -234,6 +234,7 @@ namespace edge_matching_puzzle
                      ,uint32_t & p_max
                      ,uint32_t & p_total
                      ,CUDA_glutton_max_stack::t_piece_infos & p_piece_info
+                     ,bool p_analyze_pieces
                      )
     {
         uint32_t l_result_capability = p_capability & p_constraint_capability;
@@ -243,12 +244,13 @@ namespace edge_matching_puzzle
         {
             uint32_t l_info_bits = reduce_add_sync(__popc(l_result_capability));
             update_stats(l_info_bits, p_min, p_max, p_total);
-            unsigned int l_piece_index = 0;
-            while(l_result_capability)
+            if(p_analyze_pieces)
             {
-                p_piece_info[l_piece_index] += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(l_result_capability & 0xFu)));
-                l_result_capability = l_result_capability >> 4;
-                ++l_piece_index;
+                for(unsigned short & l_piece_index : p_piece_info)
+                {
+                    l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(l_result_capability & 0xFu)));
+                    l_result_capability = l_result_capability >> 4;
+                }
             }
             return false;
         }
@@ -375,7 +377,7 @@ namespace edge_matching_puzzle
                                 uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
 
                                 //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
-                                if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos, false)))
                                 {
                                     break;
                                 }
@@ -390,7 +392,7 @@ namespace edge_matching_puzzle
                             {
                                 print_single(5, "Info %i:\n", l_result_info_index);
                                 uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos, true)))
                                 {
                                     break;
                                 }
@@ -403,7 +405,7 @@ namespace edge_matching_puzzle
                             {
                                 print_single(5, "Info %i:\n", l_result_info_index);
                                 uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos, true)))
                                 {
                                     break;
                                 }
