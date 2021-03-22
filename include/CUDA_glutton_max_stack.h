@@ -158,7 +158,7 @@ namespace edge_matching_puzzle
          */
         inline
         __device__
-        t_piece_infos & get_thread_piece_info(unsigned int p_thread_id);
+        t_piece_infos & get_thread_piece_info();
 
         /**
          * Reset values of piece info depending on piece availabilitys
@@ -166,7 +166,7 @@ namespace edge_matching_puzzle
          */
         inline
         __device__
-        void clear_piece_info(unsigned int p_thread_id);
+        void clear_piece_info();
 
       private:
 
@@ -535,21 +535,21 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__
     CUDA_glutton_max_stack::t_piece_infos &
-    CUDA_glutton_max_stack::get_thread_piece_info(unsigned int p_thread_id)
+    CUDA_glutton_max_stack::get_thread_piece_info()
     {
-        assert(p_thread_id < 32);
-        return m_thread_piece_infos[p_thread_id];
+        assert(threadIdx.x < 32);
+        return m_thread_piece_infos[threadIdx.x];
     }
 
     //-------------------------------------------------------------------------
     __device__
     void
-    CUDA_glutton_max_stack::clear_piece_info(unsigned int p_thread_id)
+    CUDA_glutton_max_stack::clear_piece_info()
     {
-        assert(p_thread_id < 32);
+        assert(threadIdx.x < 32);
         for(unsigned int l_index = 0; l_index < 8; ++l_index)
         {
-            m_thread_piece_infos[p_thread_id][l_index] = is_piece_available(8 * p_thread_id + l_index) ? 0 : 0xFFFF;
+            m_thread_piece_infos[threadIdx.x][l_index] = is_piece_available(8 * threadIdx.x + l_index) ? 0 : 0xFFFF;
         }
     }
 

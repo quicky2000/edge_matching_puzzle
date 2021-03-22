@@ -356,8 +356,8 @@ namespace edge_matching_puzzle
                         {
                             l_stack.set_piece_unavailable(l_piece_index);
                         }
-                        l_stack.clear_piece_info(threadIdx.x);
-                        CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info(threadIdx.x);
+                        l_stack.clear_piece_info();
+                        CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info();
 
                         // Apply color constraint
                         for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
