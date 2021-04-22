@@ -234,7 +234,6 @@ namespace edge_matching_puzzle
                      ,uint32_t & p_max
                      ,uint32_t & p_total
                      ,CUDA_glutton_max_stack::t_piece_infos & p_piece_info
-                     ,bool p_analyze_pieces
                      )
     {
         uint32_t l_result_capability = p_capability & p_constraint_capability;
@@ -244,13 +243,10 @@ namespace edge_matching_puzzle
         {
             uint32_t l_info_bits = reduce_add_sync(__popc(l_result_capability));
             update_stats(l_info_bits, p_min, p_max, p_total);
-            if(p_analyze_pieces)
+            for(unsigned short & l_piece_index : p_piece_info)
             {
-                for(unsigned short & l_piece_index : p_piece_info)
-                {
-                    l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(l_result_capability & 0xFu)));
-                    l_result_capability = l_result_capability >> 4;
-                }
+                l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(l_result_capability & 0xFu)));
+                l_result_capability = l_result_capability >> 4;
             }
             return false;
         }
@@ -361,6 +357,11 @@ namespace edge_matching_puzzle
                         l_stack.clear_piece_info();
                         CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info();
 
+                        uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
+
+                        // Each thread store the related info index corresponding to the orientation index
+                        unsigned int l_related_thread_index = 0xFFFFFFFFu;
+
                         // Apply color constraint
                         for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
                         {
@@ -372,12 +373,17 @@ namespace edge_matching_puzzle
 
                                 // Compute corresponding info index
                                 uint32_t l_related_info_index = l_stack.get_index_of_position(l_related_position_index);
+                                print_single(5, "Info %i:\n", l_related_info_index);
+
+                                // Each thread store the related info index corresponding to the orientation index
+                                l_related_thread_index = threadIdx.x == l_orientation_index ? l_related_info_index : l_related_thread_index;
 
                                 uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
                                 uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
+                                l_constraint_capability &= l_mask_to_apply;
 
                                 //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
-                                if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos, false)))
+                                if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                 {
                                     break;
                                 }
@@ -385,31 +391,36 @@ namespace edge_matching_puzzle
                                 print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             }
                         }
-                        uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
                         if(!l_invalid)
                         {
                             for(unsigned int l_result_info_index = 0; l_result_info_index < l_info_index; ++l_result_info_index)
                             {
-                                print_single(5, "Info %i:\n", l_result_info_index);
-                                uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos, true)))
+                                if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
                                 {
-                                    break;
+                                    print_single(5, "Info %i:\n", l_result_info_index);
+                                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                    if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                    {
+                                        break;
+                                    }
+                                    print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                 }
-                                print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             }
                         }
                         if(!l_invalid)
                         {
                             for(unsigned int l_result_info_index = l_info_index + 1; l_result_info_index < l_stack.get_nb_position(); ++l_result_info_index)
                             {
-                                print_single(5, "Info %i:\n", l_result_info_index);
-                                uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos, true)))
+                                if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
                                 {
-                                    break;
+                                    print_single(5, "Info %i:\n", l_result_info_index);
+                                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                    if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                    {
+                                        break;
+                                    }
+                                    print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                 }
-                                print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             }
                         }
                         // Manage pieces info
@@ -427,7 +438,7 @@ namespace edge_matching_puzzle
                                     if(l_stack.is_piece_available(l_info_piece_index))
                                     {
                                         update_stats(l_piece_info, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
-                                        print_all(5, "Piece %i:\nMin %3i\tMax %3i\tTotal %i\n", l_piece_info_index, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
+                                        print_all(5, "Piece %i:\nMin %3i\tMax %3i\tTotal %i\n", l_info_piece_index, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
                                     }
                                 }
                                 else
