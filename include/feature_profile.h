@@ -796,7 +796,19 @@ namespace edge_matching_puzzle
 
         for(const auto & l_iter: l_to_treat)
         {
-            wide<NB_PIECES>(l_solutions, l_solution_stats, l_non_solution_stats, {l_iter.first}, *l_transition_manager, l_iter.second, l_nb_level);
+            bool l_contains_solution = false;
+            for(const auto & l_solution: l_solutions)
+            {
+                if(l_iter.first.is_predecessor(l_solution))
+                {
+                    l_contains_solution = true;
+                    break;
+                }
+            }
+            if(l_contains_solution)
+            {
+                wide<NB_PIECES>(l_solutions, l_solution_stats, l_non_solution_stats, {l_iter.first}, *l_transition_manager, l_iter.second, l_nb_level);
+            }
         }
         VTK_histogram_dumper l_low_min_dumper("profile_low_min_vtk.txt"
                                              ,"Profile_Low_min"
