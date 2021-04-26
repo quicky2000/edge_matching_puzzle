@@ -388,7 +388,7 @@ namespace edge_matching_puzzle
                                     break;
                                 }
                                 //print_all(5, "Min %3i Max %3i Total %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             }
                         }
                         if(!l_invalid)
@@ -403,7 +403,7 @@ namespace edge_matching_puzzle
                                     {
                                         break;
                                     }
-                                    print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                 }
                             }
                         }
@@ -419,7 +419,7 @@ namespace edge_matching_puzzle
                                     {
                                         break;
                                     }
-                                    print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                 }
                             }
                         }
@@ -455,7 +455,7 @@ namespace edge_matching_puzzle
                                 l_piece_info_max_bits = reduce_max_sync(l_piece_info_max_bits);
                                 l_info_bits_max = l_piece_info_max_bits > l_info_bits_max ? l_piece_info_max_bits : l_info_bits_max;
                                 print_single(4, "After reduction");
-				print_single(4, "Min %3i\tMax %3i\tTotal %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                print_single(4, "Min %3i\tMax %3i\tTotal %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             }
                         }
                         if(!l_invalid)
@@ -465,7 +465,7 @@ namespace edge_matching_puzzle
                             print_single(4, "Total %i\tMinMax %i\n", l_info_bits_total, l_min_max_score);
                             if(l_info_bits_total > l_best_total_score || (l_info_bits_total == l_best_total_score && l_min_max_score > l_best_min_max_score))
                             {
-				print_single(4, "New best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
+                                print_single(4, "New best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
                                 l_best_total_score = l_info_bits_total;
                                 l_best_min_max_score = l_min_max_score;
                                 // Clear previous candidate for best score
@@ -602,8 +602,8 @@ namespace edge_matching_puzzle
 
         for(unsigned int l_position_index = 0; l_position_index < p_info.get_nb_pieces(); ++l_position_index)
         {
-	    std::cout << "Position " << l_position_index << "(" << p_info.get_x(l_position_index) << "," <<p_info.get_y(l_position_index) << "):" << std::endl;
-	    std::cout << l_initial_capability[l_position_index] << std::endl;
+            std::cout << "Position " << l_position_index << "(" << p_info.get_x(l_position_index) << "," <<p_info.get_y(l_position_index) << "):" << std::endl;
+            std::cout << l_initial_capability[l_position_index] << std::endl;
         }
         std::unique_ptr<CUDA_memory_managed_array<uint32_t>> l_cuda_array{new CUDA_memory_managed_array<uint32_t>(32)};
         for(unsigned int l_index = 0; l_index < 32 ; ++l_index)
