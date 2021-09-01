@@ -1,6 +1,6 @@
 # Edge matching puzzle
 
-Continuous integration with [Travis-Ci](https://travis-ci.org/quicky2000/edge_matching_puzzle) : ![Build Status](https://travis-ci.org/quicky2000/edge_matching_puzzle.svg?branch=master)
+Continuous integration with [Travis-Ci](https://travis-ci.com/quicky2000/edge_matching_puzzle) : ![Build Status](https://travis-ci.com/quicky2000/edge_matching_puzzle.svg?branch=master)
 
 The aim of this project is the exploration of edge matching puzzles
 
@@ -16,7 +16,7 @@ Build
 -----
 
 Build process is the same used in [Travis file](.travis.yml)
-Reference build can be found [here](https://travis-ci.org/quicky2000/edge_matching_puzzle)
+Reference build can be found [here](https://travis-ci.com/quicky2000/edge_matching_puzzle)
 
 
 CUDA
