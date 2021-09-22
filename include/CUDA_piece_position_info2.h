@@ -63,6 +63,13 @@ namespace edge_matching_puzzle
                       );
 
         inline
+        __device__
+        void
+        clear_bit(unsigned int p_word_index
+                 ,unsigned int p_bit_index
+                 );
+
+        inline
         __host__ __device__
         void set_bit(unsigned int p_index
                     ,emp_types::t_orientation p_orientation
@@ -115,6 +122,16 @@ namespace edge_matching_puzzle
     {
         assert(p_index < 256);
         CUDA_piece_position_info_base::clear_bit(compute_word_index(p_index, p_orientation), compute_bit_index(p_index, p_orientation));
+    }
+
+    //-------------------------------------------------------------------------
+    __device__
+    void
+    CUDA_piece_position_info2::clear_bit(unsigned int p_word_index
+                                        ,unsigned int p_bit_index
+                                        )
+    {
+        CUDA_piece_position_info_base::clear_bit(p_word_index, p_bit_index);
     }
 
     //-------------------------------------------------------------------------

@@ -94,6 +94,7 @@ namespace edge_matching_puzzle
          CUDA_piece_position_info_base & operator=(const CUDA_piece_position_info_base &) = default;
 
          inline
+         __host__ __device__
          void clear_bit(unsigned int p_word_index
                        ,unsigned int p_bit_index
                        );
@@ -222,6 +223,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    __host__ __device__
     void
     CUDA_piece_position_info_base::clear_bit(unsigned int p_word_index
                                             ,unsigned int p_bit_index
