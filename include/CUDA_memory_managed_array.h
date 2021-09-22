@@ -20,6 +20,7 @@
 #define EDGE_MATCHING_PUZZLE_CUDA_MEMORY_MANAGED_ARRAY_H
 
 #include "CUDA_memory_managed_item.h"
+#include <algorithm>
 
 namespace edge_matching_puzzle
 {
@@ -35,6 +36,16 @@ namespace edge_matching_puzzle
 
         explicit
         CUDA_memory_managed_array(size_t p_size);
+
+        /**
+         * Constuctor with itnit value applye to all array items
+         * @param p_size size of array
+         * @param p_init_value init value for each item
+         */
+        explicit
+        CUDA_memory_managed_array(size_t p_size
+                                 ,T p_init_value
+                                 );
 
         __host__ __device__
         T & operator[](std::size_t p_index);
@@ -54,6 +65,16 @@ namespace edge_matching_puzzle
     CUDA_memory_managed_array<T>::CUDA_memory_managed_array(size_t p_size)
     :m_array_ptr(static_cast<T*>(CUDA_memory_managed_item::allocate(p_size * sizeof(T))))
     {
+    }
+
+    //-------------------------------------------------------------------------
+    template<typename T>
+    CUDA_memory_managed_array<T>::CUDA_memory_managed_array(size_t p_size
+                                                           ,T p_init_value
+                                                           )
+    :CUDA_memory_managed_array(p_size)
+    {
+        std::transform(&m_array_ptr[0], &m_array_ptr[p_size], &m_array_ptr[0], [&](T p_item){return p_init_value;});
     }
 
     //-------------------------------------------------------------------------
