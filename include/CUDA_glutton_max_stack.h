@@ -121,6 +121,26 @@ namespace edge_matching_puzzle
         uint32_t get_position_of_index(uint32_t p_index) const;
 
         /**
+         * Indicate if a position is associated to this index.
+         * Dependant on current stack level
+         * @param p_index index in array
+         * @return true if a position is associated
+         */
+        inline
+        __device__ __host__
+        bool is_position_index_used(unsigned int p_index) const;
+
+        /**
+         * Indicate if position is indexed. Once occupied a position is no more
+         * indexed so indexed == free
+         * @param p_position_index position index
+         * @return true if position is not set
+         */
+        inline
+        __device__ __host__
+        bool is_position_free(unsigned int p_position_index) const;
+
+        /**
          * Indicate if piece designed by piece index is used or not
          * @param p_piece_index
          * @return true if piece not used, false if used
@@ -281,8 +301,8 @@ namespace edge_matching_puzzle
                                                   )
     :m_size(p_size)
     ,m_level{0}
-    ,m_index_to_position(p_size)
-    ,m_position_to_index(p_nb_pieces)
+    ,m_index_to_position(p_size, std::numeric_limits<uint32_t>::max())
+    ,m_position_to_index(p_nb_pieces, std::numeric_limits<uint32_t>::max())
     ,m_available_pieces{0, 0, 0, 0, 0, 0, 0, 0}
     ,m_thread_piece_infos{{0, 0, 0, 0, 0, 0, 0, 0}
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
@@ -454,6 +474,8 @@ namespace edge_matching_puzzle
                                                uint32_t p_position_index
                                               )
     {
+        // Should check m_position_to_index array size but consider that the
+        // check is done by caller
         assert(p_index < m_size);
         m_position_to_index[p_position_index] = p_index;
         m_index_to_position[p_index] = p_position_index;
@@ -464,6 +486,11 @@ namespace edge_matching_puzzle
     uint32_t
     CUDA_glutton_max_stack::get_index_of_position(uint32_t p_position_index) const
     {
+        // Should check array size but consider that is method is mainly used
+        // with a position index comming from get_position_of_index so correct
+        // by construction and when considering neighbourood check on piece
+        // color avoid out of boundaries positions
+        //assert(p_position_index < m_nb_pieces);
         return m_position_to_index[p_position_index];
     }
 
@@ -474,6 +501,25 @@ namespace edge_matching_puzzle
     {
         assert(p_index < m_size);
         return m_index_to_position[p_index];
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    bool
+    CUDA_glutton_max_stack::is_position_index_used(unsigned int p_index) const
+    {
+        assert(p_index < m_size);
+        return (p_index < m_size - m_level) && m_index_to_position[p_index] != 0xFFFFFFFFu; //std::numeric_limits<uint32_t>::max();
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    bool
+    CUDA_glutton_max_stack::is_position_free(unsigned int p_position_index) const
+    {
+        // Should check array size
+        //assert(p_position_index < m_nb_pieces);
+        return m_position_to_index[p_position_index] < m_size - m_level;
     }
 
     //-------------------------------------------------------------------------
