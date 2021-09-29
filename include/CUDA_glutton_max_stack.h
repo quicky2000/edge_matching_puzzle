@@ -68,13 +68,28 @@ namespace edge_matching_puzzle
                               ,const CUDA_piece_position_info2 & p_info
                               );
 
+        /**
+         * Make stack switch to next level
+         * @param p_info_index index of info where piece is eet
+         * @param p_position_index index of position where piece is eet
+         * @param p_piece_index index of piece that is set
+         * @param p_orientation_index index of orientation used to set piece
+         */
         inline
-        __device__ __host__
-        void push();
+        __device__
+        void push(unsigned int p_info_index
+                 ,unsigned int p_position_index
+                 ,unsigned int p_piece_index
+                 ,unsigned int p_orientation_index
+                 );
 
+        /**
+         * come back to previous level
+         * @return released info index
+         */
         inline
-        __device__ __host__
-        void pop();
+        __device__
+        uint32_t pop();
 
         inline
         __device__ __host__
@@ -267,6 +282,17 @@ namespace edge_matching_puzzle
         __device__ __host__
         uint32_t compute_bit_index(uint32_t p_index);
 
+        /**
+         * Perform a swap between last info of level and info where a piece is set
+         * @param p_info_index information index where a piece is set
+         * @param p_position_index position index where a piece is set
+         */
+        inline
+        __device__
+        void swap_position_and_index(unsigned int p_info_index
+                                    ,unsigned int p_position_index
+                                    );
+
         uint32_t m_size;
 
         uint32_t m_level;
@@ -280,6 +306,11 @@ namespace edge_matching_puzzle
          * Store correspondence between position and position info
          */
         CUDA_memory_managed_array<uint32_t> m_position_to_index;
+
+        /**
+         * Store position/piece/orientation selected at level
+         */
+        CUDA_memory_managed_array<uint32_t> m_played_info;
 
         /**
          * Store available pieces
@@ -303,6 +334,7 @@ namespace edge_matching_puzzle
     ,m_level{0}
     ,m_index_to_position(p_size, std::numeric_limits<uint32_t>::max())
     ,m_position_to_index(p_nb_pieces, std::numeric_limits<uint32_t>::max())
+    ,m_played_info(p_size, std::numeric_limits<uint32_t>::max())
     ,m_available_pieces{0, 0, 0, 0, 0, 0, 0, 0}
     ,m_thread_piece_infos{{0, 0, 0, 0, 0, 0, 0, 0}
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
@@ -435,21 +467,91 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
-    __device__ __host__
+    __device__
     void
-    CUDA_glutton_max_stack::push()
+    CUDA_glutton_max_stack::swap_position_and_index(unsigned int p_info_index
+                                                   ,unsigned int p_position_index
+                                                   )
     {
+        unsigned int l_last_index = m_size - m_level - 1;
+        unsigned int l_last_position = m_index_to_position[l_last_index];
+        if(threadIdx.x < 2)
+        {
+            uint32_t * l_ptr1 = threadIdx.x ? &m_index_to_position[l_last_index] : &m_position_to_index[l_last_position];
+            uint32_t * l_ptr2 = threadIdx.x ? &m_index_to_position[p_info_index] : &m_position_to_index[p_position_index];
+            // Set a synchro to be sure that thread 1 will write
+            // m_index_to_position[l_last_index] only after is has been read by
+            // thread 0 to detemine value of l_last_position used in previously
+            // executed indexing m_position_to_index[l_last_position]
+            __syncwarp(0x3);
+            *l_ptr2 = atomicExch(l_ptr1, threadIdx.x ? p_position_index : p_info_index);
+            // Above code is equivalent to the following
+            //if(1 == threadIdx.x)
+            //{
+            //    m_index_to_position[l_last_index] = atomicExch(m_index_to_position[p_info_index], p_position_index);
+            //}
+            //if(0 == threadIdx.x)
+            //{
+            //    m_position_to_index[l_last_position] = atomicExch(m_position_to_index[p_position_index], p_info_index);
+            //}
+        }
+        __syncwarp(0xFFFFFFFF);
+    }
+
+
+    //-------------------------------------------------------------------------
+    __device__
+    void
+    CUDA_glutton_max_stack::push(unsigned int p_info_index
+                                ,unsigned int p_position_index
+                                ,unsigned int p_piece_index
+                                ,unsigned int p_orientation_index
+                                )
+    {
+        assert(p_info_index < m_size - m_level);
         assert(m_level < m_size);
-        ++m_level;
+        assert(p_orientation_index < 4);
+        // Save info of position/piece/orientation
+        uint32_t l_set_info = (p_position_index << 10u) | (p_piece_index << 2u) | p_orientation_index;
+        if(!threadIdx.x)
+        {
+            m_played_info[m_level] = l_set_info;
+            set_piece_unavailable(p_piece_index);
+        }
+        __syncwarp(0xFFFFFFFF);
+        // Save info of info index for restoration during pop
+        swap_position_and_index(p_info_index, p_position_index);
+        if(!threadIdx.x)
+        {
+            ++m_level;
+            m_index_to_position[m_size - m_level] = p_info_index;
+        }
+        __syncwarp(0xFFFFFFFF);
     }
 
     //-------------------------------------------------------------------------
-    __device__ __host__
-    void
+    __device__
+    uint32_t
     CUDA_glutton_max_stack::pop()
     {
         assert(m_level);
-        --m_level;
+        uint32_t * l_ptr = &m_index_to_position[m_size - m_level];
+        uint32_t l_info_index = *l_ptr;
+        if(!threadIdx.x)
+        {
+            set_piece_available((m_played_info[m_level] >> 2u) & 0xFFu);
+            --m_level;
+        }
+        __syncwarp(0xFFFFFFFF);
+        uint32_t l_played_info = m_played_info[m_level];
+        uint32_t l_position_index = l_played_info >> 10;
+        if(!threadIdx.x)
+        {
+            *l_ptr = l_position_index;
+        }
+        __syncwarp(0xFFFFFFFF);
+        swap_position_and_index(l_info_index, l_position_index);
+        return l_info_index;
     }
 
     //-------------------------------------------------------------------------
