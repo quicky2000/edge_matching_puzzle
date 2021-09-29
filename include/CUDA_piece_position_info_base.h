@@ -78,6 +78,22 @@ namespace edge_matching_puzzle
          __host__ __device__
          void set_word(unsigned int p_index, uint32_t p_word);
 
+         /**
+          * Apply result of xor operator between information contained in 2 oprerands
+          * @param p_a first operand
+          * @param p_b second operand
+          */
+         inline
+         __device__
+         void apply_xor(const CUDA_piece_position_info_base & p_a
+                       ,const CUDA_piece_position_info_base & p_b
+                       );
+
+         inline
+         __device__
+         void CUDA_and(const CUDA_piece_position_info_base & p_a
+                      ,const CUDA_piece_position_info_base & p_b
+                      );
        protected:
 
          inline
@@ -124,7 +140,6 @@ namespace edge_matching_puzzle
          inline
          __host__ __device__
          bool operator==(const CUDA_piece_position_info_base &) const;
-
 
          uint32_t m_info[32];
 
@@ -251,6 +266,26 @@ namespace edge_matching_puzzle
     CUDA_piece_position_info_base::set_init_value(uint32_t p_value)
     {
         s_init_value = p_value;
+    }
+
+    //-------------------------------------------------------------------------
+    __device__
+    void
+    CUDA_piece_position_info_base::apply_xor(const CUDA_piece_position_info_base & p_a
+                                            ,const CUDA_piece_position_info_base & p_b
+                                            )
+    {
+        m_info[threadIdx.x] = p_a.m_info[threadIdx.x] ^ p_b.m_info[threadIdx.x];
+    }
+
+    //-------------------------------------------------------------------------
+    __device__
+    void
+    CUDA_piece_position_info_base::CUDA_and(const CUDA_piece_position_info_base & p_a
+                                           ,const CUDA_piece_position_info_base & p_b
+                                           )
+    {
+        m_info[threadIdx.x] = p_a.m_info[threadIdx.x] & p_b.m_info[threadIdx.x];
     }
 
     //-------------------------------------------------------------------------

@@ -55,6 +55,16 @@ namespace edge_matching_puzzle
 
         inline
         __device__ __host__
+        CUDA_piece_position_info2 &
+        get_position_info(uint32_t p_info_index);
+
+        inline
+        __device__ __host__
+        CUDA_piece_position_info2 &
+        get_next_level_position_info(uint32_t p_info_index);
+
+        inline
+        __device__ __host__
         const CUDA_piece_position_info2 &
         get_best_candidate_info(uint32_t p_info_index) const;
 
@@ -202,6 +212,15 @@ namespace edge_matching_puzzle
         inline
         __device__
         void clear_piece_info();
+
+        /**
+         * Remove best candidates from position piece info to avoid to treat
+         * them multiple times
+         */
+        inline
+        __device__
+        void
+        unmark_best_candidates();
 
       private:
 
@@ -387,6 +406,23 @@ namespace edge_matching_puzzle
     CUDA_glutton_max_stack::get_position_info(uint32_t p_info_index) const
     {
         return get_position_info(m_level, p_info_index);
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    CUDA_piece_position_info2 &
+    CUDA_glutton_max_stack::get_position_info(uint32_t p_info_index)
+    {
+        return get_position_info(m_level, p_info_index);
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    CUDA_piece_position_info2 &
+    CUDA_glutton_max_stack::get_next_level_position_info(uint32_t p_info_index)
+    {
+        assert(m_level + 1 < m_size);
+        return get_position_info(m_level + 1, p_info_index);
     }
 
     //-------------------------------------------------------------------------
@@ -698,6 +734,17 @@ namespace edge_matching_puzzle
         for(unsigned int l_index = 0; l_index < 8; ++l_index)
         {
             m_thread_piece_infos[threadIdx.x][l_index] = is_piece_available(8 * threadIdx.x + l_index) ? 0 : 0xFFFF;
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    __device__
+    void
+    CUDA_glutton_max_stack::unmark_best_candidates()
+    {
+        for(unsigned int l_info_index = 0; l_info_index < get_nb_position(); ++l_info_index)
+        {
+            get_position_info(l_info_index).apply_xor(get_position_info(l_info_index), get_best_candidate_info(l_info_index));
         }
     }
 
