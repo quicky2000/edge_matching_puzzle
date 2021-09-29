@@ -270,237 +270,401 @@ namespace edge_matching_puzzle
 
         CUDA_glutton_max_stack & l_stack = p_stacks[l_stack_index];
 
+        bool l_new_level = true;
+        unsigned int l_best_start_index = 0;
+
         while(l_stack.get_level() < l_stack.get_size())
         {
 
             print_single(0,"Stack level = %i", l_stack.get_level());
 
-            uint32_t l_best_total_score = 0;
-            uint32_t l_best_min_max_score = 0;
-            unsigned int l_best_start_index = 0;
-            unsigned int l_best_last_index = 0;
 
-            // Iterate on all level position information to compute the score of each available transition
-            for(unsigned int l_info_index = 0; l_info_index < l_stack.get_nb_position(); ++l_info_index)
+            if(l_new_level)
             {
-                print_single(1,"Info index = %i", l_info_index);
+                print_single(0,"Search for best score");
+                uint32_t l_best_total_score = 0;
+                uint32_t l_best_min_max_score = 0;
+                unsigned int l_best_last_index = 0;
 
-                // At the beginning all threads participates to ballot
-                unsigned int l_ballot_result = 0xFFFFFFFF;
-
-                // Each thread get its word in position info
-                uint32_t l_thread_available_variables = l_stack.get_position_info(l_info_index).get_word(threadIdx.x);
-
-                print_all(2,"Thread available variables = 0x%" PRIx32, l_thread_available_variables);
-
-                // Iterate on non null position info words determined by ballot between threads
-                do
+                // Iterate on all level position information to compute the score of each available transition
+                for(unsigned int l_info_index = 0; l_info_index < l_stack.get_nb_position(); ++l_info_index)
                 {
-                    // Sync between threads to determine who as some available variables
-                    l_ballot_result = __ballot_sync(l_ballot_result, (int) l_thread_available_variables);
+                    print_single(1,"Info index = %i", l_info_index);
 
-                    print_mask(3, l_ballot_result, "Thread available variables = 0x%" PRIx32, l_thread_available_variables);
+                    // At the beginning all threads participates to ballot
+                    unsigned int l_ballot_result = 0xFFFFFFFF;
 
-                    // Ballot result cannot be NULL because we are by construction in a valid situation
-                    assert(l_ballot_result);
+                    // Each thread get its word in position info
+                    uint32_t l_thread_available_variables = l_stack.get_position_info(l_info_index).get_word(threadIdx.x);
 
-                    // Determine first lane/thread having an available variable. Result is greater than 0 due to assert
-                    unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
+                    print_all(2,"Thread available variables = 0x%" PRIx32, l_thread_available_variables);
 
-                    print_single(3, "Elected thread : %i", l_elected_thread);
-
-                    // Eliminate thread from next ballot
-                    l_ballot_result &= ~(1u << l_elected_thread);
-
-                    // Copy available variables because we will iterate on it
-                    uint32_t l_current_available_variables = l_thread_available_variables;
-
-                    // Share current available variables with all other threads so they can select the same variable
-                    l_current_available_variables = __shfl_sync(0xFFFFFFFF, l_current_available_variables, (int)l_elected_thread);
-
-                    // Iterate on available variables of elected thread
+                    // Iterate on non null position info words determined by ballot between threads
                     do
                     {
-                        print_single(4, "Current available variables : 0x%" PRIx32, l_current_available_variables);
+                        // Sync between threads to determine who as some available variables
+                        l_ballot_result = __ballot_sync(l_ballot_result, (int) l_thread_available_variables);
 
-                        // Determine first available variable. Result  cannot be 0 due to ballot
-                        unsigned l_bit_index = __ffs((int)l_current_available_variables) - 1;
+                        print_mask(3, l_ballot_result, "Thread available variables = 0x%" PRIx32, l_thread_available_variables);
 
-                        print_single(4, "Bit index : %i", l_bit_index);
+                        // Ballot result cannot be NULL because we are by construction in a valid situation
+                        assert(l_ballot_result);
 
-                        // Set variable bit to zero
-                        uint32_t l_mask = ~(1u << l_bit_index);
-                        l_current_available_variables &= l_mask;
+                        // Determine first lane/thread having an available variable. Result is greater than 0 due to assert
+                        unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
 
-                        // Compute piece index
-                        uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
+                        print_single(3, "Elected thread : %i", l_elected_thread);
 
-                        print_single(4, "Piece index : %i", l_piece_index);
+                        // Eliminate thread from next ballot
+                        l_ballot_result &= ~(1u << l_elected_thread);
 
-                        // Piece orientation
-                        uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
+                        // Copy available variables because we will iterate on it
+                        uint32_t l_current_available_variables = l_thread_available_variables;
 
-                        print_single(4, "Piece orientation : %i", l_piece_orientation);
+                        // Share current available variables with all other threads so they can select the same variable
+                        l_current_available_variables = __shfl_sync(0xFFFFFFFF, l_current_available_variables, (int)l_elected_thread);
 
-                        // Get position index corresponding to this info index
-                        uint32_t l_position_index = l_stack.get_position_of_index(l_info_index);
-
-                        bool l_invalid = false;
-
-                        uint32_t l_info_bits_min = 0xFFFFFFFFu;
-                        uint32_t l_info_bits_max = 0;
-                        uint32_t l_info_bits_total = 0;
-                        if(!threadIdx.x)
+                        // Iterate on available variables of elected thread
+                        do
                         {
-                            l_stack.set_piece_unavailable(l_piece_index);
-                        }
-                        l_stack.clear_piece_info();
-                        CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info();
+                            print_single(4, "Current available variables : 0x%" PRIx32, l_current_available_variables);
 
-                        uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
+                            // Determine first available variable. Result  cannot be 0 due to ballot
+                            unsigned l_bit_index = __ffs((int)l_current_available_variables) - 1;
 
-                        // Each thread store the related info index corresponding to the orientation index
-                        unsigned int l_related_thread_index = 0xFFFFFFFFu;
+                            print_single(4, "Bit index : %i", l_bit_index);
 
-                        // Apply color constraint
-                        for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
-                        {
-                            uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
-                            if(l_color_id)
+                            // Set variable bit to zero
+                            uint32_t l_mask = ~(1u << l_bit_index);
+                            l_current_available_variables &= l_mask;
+
+                            // Compute piece index
+                            uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
+
+                            print_single(4, "Piece index : %i", l_piece_index);
+
+                            // Piece orientation
+                            uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
+
+                            print_single(4, "Piece orientation : %i", l_piece_orientation);
+
+                            // Get position index corresponding to this info index
+                            uint32_t l_position_index = l_stack.get_position_of_index(l_info_index);
+
+                            bool l_invalid = false;
+
+                            uint32_t l_info_bits_min = 0xFFFFFFFFu;
+                            uint32_t l_info_bits_max = 0;
+                            uint32_t l_info_bits_total = 0;
+
+                            if(!threadIdx.x)
                             {
-                                // Compute position index related to piece side
-                                uint32_t l_related_position_index = l_position_index + g_position_offset[l_orientation_index];
-
-                                // Compute corresponding info index
-                                uint32_t l_related_info_index = l_stack.get_index_of_position(l_related_position_index);
-                                print_single(5, "Info %i:\n", l_related_info_index);
-
-                                // Each thread store the related info index corresponding to the orientation index
-                                l_related_thread_index = threadIdx.x == l_orientation_index ? l_related_info_index : l_related_thread_index;
-
-                                uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
-                                uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
-                                l_constraint_capability &= l_mask_to_apply;
-
-                                //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
-                                if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
-                                {
-                                    break;
-                                }
-                                //print_all(5, "Min %3i Max %3i Total %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                l_stack.set_piece_unavailable(l_piece_index);
                             }
-                        }
-                        if(!l_invalid)
-                        {
-                            for(unsigned int l_result_info_index = 0; l_result_info_index < l_info_index; ++l_result_info_index)
+                            __syncwarp(0xFFFFFFFF);
+                            l_stack.clear_piece_info();
+                            CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info();
+
+                            uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
+
+                            // Each thread store the related info index corresponding to the orientation index
+                            unsigned int l_related_thread_index = 0xFFFFFFFFu;
+
+                            // Apply color constraint
+                            for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
                             {
-                                if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
+                                uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
+                                if(l_color_id)
                                 {
-                                    print_single(5, "Info %i:\n", l_result_info_index);
-                                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                    if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                    // Compute position index related to piece side
+                                    uint32_t l_related_position_index = l_position_index + g_position_offset[l_orientation_index];
+
+                                    // Check if position is free, if this not the case there is no corresponding index
+                                    if(!l_stack.is_position_free(l_related_position_index))
+                                    {
+                                        print_single(5, "Position %i is not free:\n", l_related_position_index);
+                                        continue;
+                                    }
+
+                                    // Compute corresponding info index
+                                    uint32_t l_related_info_index = l_stack.get_index_of_position(l_related_position_index);
+                                    print_single(5, "Info %i:\n", l_related_info_index);
+
+                                    // Each thread store the related info index corresponding to the orientation index
+                                    l_related_thread_index = threadIdx.x == l_orientation_index ? l_related_info_index : l_related_thread_index;
+
+                                    uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
+                                    uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
+                                    l_constraint_capability &= l_mask_to_apply;
+
+                                    //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
+                                    if((l_invalid = analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                     {
                                         break;
                                     }
-                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                }
-                            }
-                        }
-                        if(!l_invalid)
-                        {
-                            for(unsigned int l_result_info_index = l_info_index + 1; l_result_info_index < l_stack.get_nb_position(); ++l_result_info_index)
-                            {
-                                if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
-                                {
-                                    print_single(5, "Info %i:\n", l_result_info_index);
-                                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                    if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
-                                    {
-                                        break;
-                                    }
-                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                }
-                            }
-                        }
-                        // Manage pieces info
-                        if(!l_invalid)
-                        {
-                            uint32_t l_piece_info_total_bit = 0;
-                            uint32_t l_piece_info_min_bits = 0xFFFFFFFFu;
-                            uint32_t l_piece_info_max_bits = 0;
-                            for(unsigned int l_piece_info_index = 0; l_piece_info_index < 8; ++l_piece_info_index)
-                            {
-                                CUDA_glutton_max_stack::t_piece_info l_piece_info = l_piece_infos[l_piece_info_index];
-                                if(__all_sync(0xFFFFFFFFu, l_piece_info))
-                                {
-                                    unsigned int l_info_piece_index = 8 * threadIdx.x + l_piece_info_index;
-                                    if(l_stack.is_piece_available(l_info_piece_index))
-                                    {
-                                        update_stats(l_piece_info, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
-                                        print_all(5, "Piece %i:\nMin %3i\tMax %3i\tTotal %i\n", l_info_piece_index, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
-                                    }
-                                }
-                                else
-                                {
-                                    l_invalid = true;
-                                    break;
+                                    //print_all(5, "Min %3i Max %3i Total %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                 }
                             }
                             if(!l_invalid)
                             {
-                                l_info_bits_total += reduce_add_sync(l_piece_info_total_bit);
-                                l_piece_info_min_bits = reduce_min_sync(l_piece_info_min_bits);
-                                l_info_bits_min = l_piece_info_min_bits < l_info_bits_min ? l_piece_info_min_bits : l_info_bits_min;
-                                l_piece_info_max_bits = reduce_max_sync(l_piece_info_max_bits);
-                                l_info_bits_max = l_piece_info_max_bits > l_info_bits_max ? l_piece_info_max_bits : l_info_bits_max;
-                                print_single(4, "After reduction");
-                                print_single(4, "Min %3i\tMax %3i\tTotal %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                            }
-                        }
-                        if(!l_invalid)
-                        {
-                            // compare with global stats
-                            uint32_t l_min_max_score = (l_info_bits_max << 16u) + l_info_bits_min;
-                            print_single(4, "Total %i\tMinMax %i\n", l_info_bits_total, l_min_max_score);
-                            if(l_info_bits_total > l_best_total_score || (l_info_bits_total == l_best_total_score && l_min_max_score > l_best_min_max_score))
-                            {
-                                print_single(4, "New best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
-                                l_best_total_score = l_info_bits_total;
-                                l_best_min_max_score = l_min_max_score;
-                                // Clear previous candidate for best score
-                                for(unsigned int l_clear_info_index = l_best_start_index; l_clear_info_index <= l_best_last_index; ++l_clear_info_index)
+                                for(unsigned int l_result_info_index = 0; l_result_info_index < l_info_index; ++l_result_info_index)
                                 {
-                                    // Clear previous candidate capability
-                                    l_stack.get_best_candidate_info(l_clear_info_index).set_word(threadIdx.x, 0);
-                                }
-                                l_best_start_index = l_info_index;
-                                l_best_last_index = l_info_index;
-                                if(!threadIdx.x)
-                                {
-                                    l_stack.get_best_candidate_info(l_info_index).set_bit(l_piece_index, static_cast<emp_types::t_orientation>(l_piece_orientation));
+                                    if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
+                                    {
+                                        print_single(5, "Info %i:\n", l_result_info_index);
+                                        uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                        if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                        {
+                                            break;
+                                        }
+                                        print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    }
                                 }
                             }
-                            else if(l_info_bits_total == l_best_total_score && l_min_max_score == l_best_min_max_score)
+                            if(!l_invalid)
                             {
-                                l_best_last_index = l_info_index;
+                                for(unsigned int l_result_info_index = l_info_index + 1; l_result_info_index < l_stack.get_nb_position(); ++l_result_info_index)
+                                {
+                                    if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
+                                    {
+                                        print_single(5, "Info %i:\n", l_result_info_index);
+                                        uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                        if((l_invalid = analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                        {
+                                            break;
+                                        }
+                                        print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    }
+                                }
                             }
-                        }
-                        if(!threadIdx.x)
-                        {
-                            l_stack.set_piece_available(l_piece_index);
-                        }
-                    }  while(l_current_available_variables);
+                            // Manage pieces info
+                            if(!l_invalid)
+                            {
+                                uint32_t l_piece_info_total_bit = 0;
+                                uint32_t l_piece_info_min_bits = 0xFFFFFFFFu;
+                                uint32_t l_piece_info_max_bits = 0;
+                                for(unsigned int l_piece_info_index = 0; l_piece_info_index < 8; ++l_piece_info_index)
+                                {
+                                    CUDA_glutton_max_stack::t_piece_info l_piece_info = l_piece_infos[l_piece_info_index];
+                                    if(__all_sync(0xFFFFFFFFu, l_piece_info))
+                                    {
+                                        unsigned int l_info_piece_index = 8 * threadIdx.x + l_piece_info_index;
+                                        if(l_stack.is_piece_available(l_info_piece_index))
+                                        {
+                                            update_stats(l_piece_info, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
+                                            print_all(5, "Piece %i:\nMin %3i\tMax %3i\tTotal %i\n", l_info_piece_index, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        l_invalid = true;
+                                        break;
+                                    }
+                                }
+                                if(!l_invalid)
+                                {
+                                    l_info_bits_total += reduce_add_sync(l_piece_info_total_bit);
+                                    l_piece_info_min_bits = reduce_min_sync(l_piece_info_min_bits);
+                                    l_info_bits_min = l_piece_info_min_bits < l_info_bits_min ? l_piece_info_min_bits : l_info_bits_min;
+                                    l_piece_info_max_bits = reduce_max_sync(l_piece_info_max_bits);
+                                    l_info_bits_max = l_piece_info_max_bits > l_info_bits_max ? l_piece_info_max_bits : l_info_bits_max;
+                                    print_single(4, "After reduction");
+                                    print_single(4, "Min %3i\tMax %3i\tTotal %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                }
+                            }
+                            if(!l_invalid)
+                            {
+                                // compare with global stats
+                                uint32_t l_min_max_score = (l_info_bits_max << 16u) + l_info_bits_min;
+                                print_single(4, "Total %i\tMinMax %i\n", l_info_bits_total, l_min_max_score);
+                                if(l_info_bits_total > l_best_total_score || (l_info_bits_total == l_best_total_score && l_min_max_score > l_best_min_max_score))
+                                {
+                                    print_single(4, "New best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
+                                    l_best_total_score = l_info_bits_total;
+                                    l_best_min_max_score = l_min_max_score;
+                                    // Clear previous candidate for best score
+                                    for(unsigned int l_clear_info_index = l_best_start_index; l_clear_info_index <= l_best_last_index; ++l_clear_info_index)
+                                    {
+                                        // Clear previous candidate capability
+                                        l_stack.get_best_candidate_info(l_clear_info_index).set_word(threadIdx.x, 0);
+                                    }
+                                    l_best_start_index = l_info_index;
+                                    l_best_last_index = l_info_index;
+                                    if(!threadIdx.x)
+                                    {
+                                        l_stack.get_best_candidate_info(l_info_index).set_bit(l_piece_index, static_cast<emp_types::t_orientation>(l_piece_orientation));
+                                    }
+                                    __syncwarp(0xFFFFFFFF);
+                                }
+                                else if(l_info_bits_total == l_best_total_score && l_min_max_score == l_best_min_max_score)
+                                {
+                                    l_best_last_index = l_info_index;
+                                }
+                            }
+                            if(!threadIdx.x)
+                            {
+                                l_stack.set_piece_available(l_piece_index);
+                            }
+                            __syncwarp(0xFFFFFFFF);
+                        }  while(l_current_available_variables);
 
-                } while(l_ballot_result);
+                    } while(l_ballot_result);
+                }
+
+                // If no best score found there is no interesting transition so go back
+                if(!l_best_total_score)
+                {
+                    print_single(0, "No best score found, go up from one level");
+                    l_best_start_index = l_stack.pop();
+                    l_new_level = false;
+                    continue;
+                }
+                l_stack.unmark_best_candidates();
             }
 
-            // Iterate on best score to prepare next level
-            for(unsigned int l_best_candidate_index = l_best_start_index; l_best_candidate_index <= l_best_last_index; ++l_best_candidate_index)
+
+            // At the beginning all threads participates to ballot
+            unsigned int l_ballot_result = 0xFFFFFFFF;
+            unsigned int l_best_candidate_index = l_best_start_index;
+            uint32_t l_thread_best_candidates;
+
+            print_single(0, "Iterate on best candidate from index %i", l_best_candidate_index);
+            // Iterate on best candidates to prepare next level until we find a
+            // candidate of reach the end of candidate info
+            do
             {
+                print_single(1,"Best Info index = %i", l_best_candidate_index);
 
+                // Each thread get its word in position info
+                l_thread_best_candidates = l_stack.get_best_candidate_info(l_best_candidate_index).get_word(threadIdx.x);
+
+                print_all(1,"Thread best candidates = 0x%" PRIx32, l_thread_best_candidates);
+
+                // Sync between threads to determine who as some available variables
+                l_ballot_result = __ballot_sync(l_ballot_result, (int) l_thread_best_candidates);
+
+                print_mask(1, l_ballot_result, "Thread best candidates = 0x%" PRIx32, l_thread_best_candidates);
+
+                // Ballot result cannot be NULL because we are by construction in a valid situation
+                if(l_ballot_result)
+                {
+                    break;
+                }
+                ++l_best_candidate_index;
+
+            } while(l_best_candidate_index < l_stack.get_nb_position());
+
+            // No candidate found so we go up from one level
+            if(l_best_candidate_index == l_stack.get_nb_position())
+            {
+                print_single(0, "No more best score, go up from one level");
+                l_best_start_index = l_stack.pop();
+                l_new_level = false;
+                continue;
             }
+
+            assert(l_ballot_result);
+
+            // Determine first lane/thread having a candidate. Result is greater than 0 due to assert
+            unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
+
+            print_single(0, "Elected thread : %i", l_elected_thread);
+
+            // Share current best candidate with all other threads so they can select the same candidate
+            l_thread_best_candidates = __shfl_sync(0xFFFFFFFF, l_thread_best_candidates, (int)l_elected_thread);
+
+            // Determine first available candidate. Result  cannot be 0 due to ballot result
+            unsigned l_bit_index = __ffs((int)l_thread_best_candidates) - 1;
+
+            print_single(0, "Bit index : %i", l_bit_index);
+
+            // Compute piece index
+            uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
+
+            print_single(0, "Piece index : %i", l_piece_index);
+
+            // Piece orientation
+            uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
+
+            print_single(0, "Piece orientation : %i", l_piece_orientation);
+
+            // Get position index corresponding to this info index
+            uint32_t l_position_index = l_stack.get_position_of_index(l_best_candidate_index);
+
+            {
+                // Compute mask to apply which set piece bit to 0
+                uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
+                for (unsigned int l_result_info_index = 0; l_result_info_index < l_best_candidate_index; ++l_result_info_index)
+                {
+                    print_single(1, "Info %i -> %i:\n", l_result_info_index, l_result_info_index);
+                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                    uint32_t l_constraint = l_mask_to_apply;
+                    uint32_t l_result = l_capability & l_constraint;
+                    print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_mask_to_apply, l_result);
+                    l_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
+                }
+
+                // Last position is not treated here because next level has 1 position less
+                for (unsigned int l_result_info_index = l_best_candidate_index + 1; l_result_info_index < l_stack.get_nb_position() - 1; ++l_result_info_index)
+                {
+                    print_single(1, "Info %i -> %i:\n", l_result_info_index, l_result_info_index);
+                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                    uint32_t l_constraint = l_mask_to_apply;
+                    uint32_t l_result = l_capability & l_constraint;
+                    print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_mask_to_apply, l_result);
+                    l_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
+                }
+
+                // Last position in next level it will be located at l_best_candidate_index
+                print_single(0, "Info %i -> %i:\n", l_stack.get_nb_position() - 1, l_best_candidate_index);
+                uint32_t l_capability = l_stack.get_position_info(l_stack.get_nb_position() - 1).get_word(threadIdx.x);
+                uint32_t l_constraint = l_mask_to_apply;
+                uint32_t l_result = l_capability & l_constraint;
+                print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_mask_to_apply, l_result);
+                l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
+
+                l_stack.push(l_best_candidate_index, l_position_index, l_piece_index, l_piece_orientation);
+
+                // Apply color constraint
+                for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
+                {
+                    uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
+                    if(l_color_id)
+                    {
+                        // Compute position index related to piece side
+                        uint32_t l_related_position_index = l_position_index + g_position_offset[l_orientation_index];
+
+                        // Check if position is free, if this not the case there is no corresponding index
+                        if(!l_stack.is_position_free(l_related_position_index))
+                        {
+                            print_single(2,"Position %i is not free", l_related_position_index);
+                            continue;
+                        }
+
+                        // Compute corresponding info index
+                        uint32_t l_related_info_index = l_stack.get_index_of_position(l_related_position_index);
+
+                        // If related index correspond to last position than result is stored in postition where we store the piece
+                        uint32_t l_related_target_info_index = l_related_info_index < l_stack.get_nb_position() - 1 ? l_related_info_index : l_position_index;
+
+                        print_single(1, "Color Info %i -> %i:\n", l_related_info_index, l_related_target_info_index);
+                        l_stack.get_position_info(l_related_target_info_index).CUDA_and(l_stack.get_position_info(l_related_info_index), p_color_constraints.get_info(l_color_id - 1, l_orientation_index));
+                    }
+                }
+            }
+
+            // Elected thread set variable bit to zero
+            if(!threadIdx.x)
+            {
+                l_stack.get_best_candidate_info(l_best_candidate_index).clear_bit(l_elected_thread, l_bit_index);
+            }
+            __syncwarp(0xFFFFFFFF);
+            // For latest level we do not search for best score at is zero in any case
+            l_new_level = l_stack.get_level() < (l_stack.get_size() - 1);
         }
+
+        print_single(0, "End with stack level %i", l_stack.get_level());
     }
 
     //-------------------------------------------------------------------------
@@ -644,8 +808,8 @@ namespace edge_matching_puzzle
         std::cout << "Launch kernels" << std::endl;
         dim3 l_block_info(32, 1);
         dim3 l_grid_info(1);
-        //kernel<<<l_grid_info, l_block_info>>>(l_stack.get(), 1, *l_color_constraints);
-        test_kernel<<<l_grid_info, l_block_info>>>(l_stack.get(), 1, *l_cuda_array);
+        kernel<<<l_grid_info, l_block_info>>>(l_stack.get(), 1, *l_color_constraints);
+        //test_kernel<<<l_grid_info, l_block_info>>>(l_stack.get(), 1, *l_cuda_array);
         cudaDeviceSynchronize();
         gpuErrChk(cudaGetLastError());
 
@@ -694,7 +858,7 @@ namespace edge_matching_puzzle
         for(unsigned int l_index = 0; l_index < l_stack.get_size(); ++l_index)
         {
             l_stack.get_position_info(l_index);
-            l_stack.push();
+            l_stack.push(0,0,0,0);
         }
         for(unsigned int l_index = 0; l_index < l_stack.get_size(); ++l_index)
         {
