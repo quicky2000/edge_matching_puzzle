@@ -222,6 +222,46 @@ namespace edge_matching_puzzle
         void
         unmark_best_candidates();
 
+        typedef uint32_t played_info_t;
+
+        /**
+         * Extract position index from played info
+         * @param p_played_info
+         * @return position index
+         */
+        static inline
+        __host__ __device__
+        unsigned int
+        decode_position_index(played_info_t p_played_info);
+
+        /**
+         * Extract piece index from played info
+         * @param p_played_info
+         * @return piece index
+         */
+        static inline
+        __host__ __device__
+        unsigned int
+        decode_piece_index(played_info_t p_played_info);
+
+        /**
+         * Extract orientation index from played info
+         * @param p_played_info
+         * @return  orientation index
+         */
+        static inline
+        __host__ __device__
+        unsigned int
+        decode_orientation_index(played_info_t p_played_info);
+
+        /**
+         * Return level played info
+         * @param p_level level
+         * @return played info
+         */
+        played_info_t
+        get_played_info(unsigned int p_level) const;
+
       private:
 
         /**
@@ -312,6 +352,23 @@ namespace edge_matching_puzzle
                                     ,unsigned int p_position_index
                                     );
 
+        /**
+         * Encode information of piece position/id/orientation
+         * @param p_position_index
+         * @param p_piece_index
+         * @param p_orientation_index
+         * @return encoded info
+         */
+        static inline
+        __device__
+        played_info_t
+        generate_played_info(unsigned int p_position_index
+                            ,unsigned int p_piece_index
+                            ,unsigned int p_orientation_index
+                            );
+
+
+
         uint32_t m_size;
 
         uint32_t m_level;
@@ -329,7 +386,7 @@ namespace edge_matching_puzzle
         /**
          * Store position/piece/orientation selected at level
          */
-        CUDA_memory_managed_array<uint32_t> m_played_info;
+        CUDA_memory_managed_array<played_info_t> m_played_info;
 
         /**
          * Store available pieces
@@ -353,7 +410,7 @@ namespace edge_matching_puzzle
     ,m_level{0}
     ,m_index_to_position(p_size, std::numeric_limits<uint32_t>::max())
     ,m_position_to_index(p_nb_pieces, std::numeric_limits<uint32_t>::max())
-    ,m_played_info(p_size, std::numeric_limits<uint32_t>::max())
+    ,m_played_info(p_size, std::numeric_limits<played_info_t>::max())
     ,m_available_pieces{0, 0, 0, 0, 0, 0, 0, 0}
     ,m_thread_piece_infos{{0, 0, 0, 0, 0, 0, 0, 0}
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
@@ -548,7 +605,7 @@ namespace edge_matching_puzzle
         assert(m_level < m_size);
         assert(p_orientation_index < 4);
         // Save info of position/piece/orientation
-        uint32_t l_set_info = (p_position_index << 10u) | (p_piece_index << 2u) | p_orientation_index;
+        played_info_t l_set_info = generate_played_info(p_position_index, p_piece_index, p_orientation_index);
         if(!threadIdx.x)
         {
             m_played_info[m_level] = l_set_info;
@@ -573,14 +630,14 @@ namespace edge_matching_puzzle
         assert(m_level);
         uint32_t * l_ptr = &m_index_to_position[m_size - m_level];
         uint32_t l_info_index = *l_ptr;
+        uint32_t l_played_info = m_played_info[m_level];
         if(!threadIdx.x)
         {
-            set_piece_available((m_played_info[m_level] >> 2u) & 0xFFu);
+            set_piece_available(decode_piece_index(l_played_info));
             --m_level;
         }
         __syncwarp(0xFFFFFFFF);
-        uint32_t l_played_info = m_played_info[m_level];
-        uint32_t l_position_index = l_played_info >> 10;
+        uint32_t l_position_index = decode_position_index(l_played_info);
         if(!threadIdx.x)
         {
             *l_ptr = l_position_index;
@@ -746,6 +803,53 @@ namespace edge_matching_puzzle
         {
             get_position_info(l_info_index).apply_xor(get_position_info(l_info_index), get_best_candidate_info(l_info_index));
         }
+    }
+
+    //-------------------------------------------------------------------------
+    __device__
+    CUDA_glutton_max_stack::played_info_t
+    CUDA_glutton_max_stack::generate_played_info(unsigned int p_position_index,
+                                                 unsigned int p_piece_index,
+                                                 unsigned int p_orientation_index
+                                                )
+    {
+        assert(p_position_index < 256);
+        assert(p_piece_index < 256);
+        assert(p_orientation_index < 4);
+        return (p_orientation_index << 16u) | (p_piece_index << 8u) | p_position_index;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    unsigned int
+    CUDA_glutton_max_stack::decode_position_index(CUDA_glutton_max_stack::played_info_t p_played_info)
+    {
+        return p_played_info & 0xFFu;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    unsigned int
+    CUDA_glutton_max_stack::decode_piece_index(CUDA_glutton_max_stack::played_info_t p_played_info)
+    {
+        return (p_played_info >> 8u) & 0xFFu;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    unsigned int
+    CUDA_glutton_max_stack::decode_orientation_index(CUDA_glutton_max_stack::played_info_t p_played_info)
+    {
+        return p_played_info >> 16u;
+    }
+
+    //-------------------------------------------------------------------------
+    CUDA_glutton_max_stack::played_info_t
+    CUDA_glutton_max_stack::get_played_info(unsigned int p_level) const
+    {
+        assert(p_level <= m_level);
+        assert(p_level < m_size);
+        return m_played_info[p_level];
     }
 
 }
