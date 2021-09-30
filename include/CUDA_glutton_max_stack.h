@@ -46,6 +46,12 @@ namespace edge_matching_puzzle
                               );
 
         inline
+        bool is_empty() const;
+
+        inline
+        bool is_full() const;
+
+        inline
         ~CUDA_glutton_max_stack();
 
         inline
@@ -850,6 +856,20 @@ namespace edge_matching_puzzle
         assert(p_level <= m_level);
         assert(p_level < m_size);
         return m_played_info[p_level];
+    }
+
+    //-------------------------------------------------------------------------
+    bool
+    CUDA_glutton_max_stack::is_empty() const
+    {
+        return m_level > m_size;
+    }
+
+    //-------------------------------------------------------------------------
+    bool
+    CUDA_glutton_max_stack::is_full() const
+    {
+        return m_level == m_size;
     }
 
 }
