@@ -24,6 +24,7 @@
 #include "my_cuda.h"
 #include "CUDA_common.h"
 #include "emp_situation.h"
+#include "situation_string_formatter.h"
 
 #define LOG_EXECUTION
 
@@ -813,6 +814,29 @@ namespace edge_matching_puzzle
         cudaDeviceSynchronize();
         gpuErrChk(cudaGetLastError());
 
+        if(l_stack->is_empty())
+        {
+            std::cout << "Empty stack" << std::endl;
+        }
+        else
+        {
+            unsigned int l_max_level = l_stack->get_level() - (unsigned int)l_stack->is_full();
+            for(unsigned int l_level = 0; l_level <= l_max_level; ++l_level)
+            {
+                CUDA_glutton_max_stack::played_info_t l_played_info = l_stack->get_played_info(l_level);
+                unsigned int l_x = p_info.get_x(CUDA_glutton_max_stack::decode_position_index(l_played_info));
+                unsigned int l_y = p_info.get_y(CUDA_glutton_max_stack::decode_position_index(l_played_info));
+                assert(!l_start_situation.contains_piece(l_x, l_y));
+                l_start_situation.set_piece(l_x
+                                           ,l_y
+                                           ,emp_types::t_oriented_piece{static_cast<emp_types::t_piece_id >(1 + CUDA_glutton_max_stack::decode_piece_index(l_played_info))
+                                                                       ,static_cast<emp_types::t_orientation>(CUDA_glutton_max_stack::decode_orientation_index(l_played_info))
+                                                                       }
+                                           );
+            }
+            std::cout << "Situation with stack played info:" << std::endl;
+            std::cout << situation_string_formatter<emp_situation>::to_string(l_start_situation) << std::endl;
+        }
         for(unsigned int l_index = 0; l_index < l_size; ++l_index)
         {
             std::cout << l_stack->get_position_info(l_index) << std::endl;
