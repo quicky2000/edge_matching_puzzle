@@ -479,6 +479,7 @@ namespace edge_matching_puzzle
                                 // compare with global stats
                                 uint32_t l_min_max_score = (l_info_bits_max << 16u) + l_info_bits_min;
                                 print_single(4, "Total %i\tMinMax %i\n", l_info_bits_total, l_min_max_score);
+                                bool l_record_candidate = false;
                                 if(l_info_bits_total > l_best_total_score || (l_info_bits_total == l_best_total_score && l_min_max_score > l_best_min_max_score))
                                 {
                                     print_single(4, "New best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
@@ -492,16 +493,18 @@ namespace edge_matching_puzzle
                                     }
                                     l_best_start_index = l_info_index;
                                     l_best_last_index = l_info_index;
-                                    if(!threadIdx.x)
-                                    {
-                                        l_stack.get_best_candidate_info(l_info_index).set_bit(l_piece_index, static_cast<emp_types::t_orientation>(l_piece_orientation));
-                                    }
-                                    __syncwarp(0xFFFFFFFF);
+                                    l_record_candidate = true;
                                 }
                                 else if(l_info_bits_total == l_best_total_score && l_min_max_score == l_best_min_max_score)
                                 {
                                     l_best_last_index = l_info_index;
+                                    l_record_candidate = true;
                                 }
+                                if(l_record_candidate && !threadIdx.x)
+                                {
+                                    l_stack.get_best_candidate_info(l_info_index).set_bit(l_piece_index, static_cast<emp_types::t_orientation>(l_piece_orientation));
+                                }
+                                __syncwarp(0xFFFFFFFF);
                             }
                             if(!threadIdx.x)
                             {
