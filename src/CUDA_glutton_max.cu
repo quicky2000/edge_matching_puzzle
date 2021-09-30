@@ -372,6 +372,7 @@ namespace edge_matching_puzzle
                             unsigned int l_related_thread_index = 0xFFFFFFFFu;
 
                             // Apply color constraint
+                            print_single(4, "Apply color constraints");
                             for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
                             {
                                 uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
@@ -409,6 +410,7 @@ namespace edge_matching_puzzle
                             }
                             if(!l_invalid)
                             {
+                                print_single(4, "Apply piece constraints before selected index");
                                 for(unsigned int l_result_info_index = 0; l_result_info_index < l_info_index; ++l_result_info_index)
                                 {
                                     if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
@@ -425,6 +427,7 @@ namespace edge_matching_puzzle
                             }
                             if(!l_invalid)
                             {
+                                print_single(4, "Apply piece constraints after selected index");
                                 for(unsigned int l_result_info_index = l_info_index + 1; l_result_info_index < l_stack.get_nb_position(); ++l_result_info_index)
                                 {
                                     if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
@@ -497,6 +500,7 @@ namespace edge_matching_puzzle
                                 }
                                 else if(l_info_bits_total == l_best_total_score && l_min_max_score == l_best_min_max_score)
                                 {
+                                    print_single(4, "Same best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
                                     l_best_last_index = l_info_index;
                                     l_record_candidate = true;
                                 }
@@ -630,6 +634,14 @@ namespace edge_matching_puzzle
 
                 l_stack.push(l_best_candidate_index, l_position_index, l_piece_index, l_piece_orientation);
 
+                // Print relation index to position
+                for(unsigned int l_warp_index = 0; l_warp_index <= l_stack.get_size() / 32; ++l_warp_index)
+                {
+                    unsigned int l_index = 32 * l_warp_index + threadIdx.x;
+                    bool l_valid_index = l_index < l_stack.get_size() && l_stack.is_position_index_used(l_index);
+                    print_mask(1, __ballot_sync(0xFFFFFFFFu, l_valid_index), "Index %i -> Position %i", l_index, l_valid_index ? l_stack.get_position_of_index(l_index) : 0xDEADCAFEu);
+                }
+
                 // Apply color constraint
                 for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
                 {
@@ -642,7 +654,7 @@ namespace edge_matching_puzzle
                         // Check if position is free, if this not the case there is no corresponding index
                         if(!l_stack.is_position_free(l_related_position_index))
                         {
-                            print_single(2,"Position %i is not free", l_related_position_index);
+                            print_single(1,"Position %i is not free", l_related_position_index);
                             continue;
                         }
 
@@ -653,6 +665,7 @@ namespace edge_matching_puzzle
                         uint32_t l_related_target_info_index = l_related_info_index < l_stack.get_nb_position() - 1 ? l_related_info_index : l_position_index;
 
                         print_single(1, "Color Info %i -> %i:\n", l_related_info_index, l_related_target_info_index);
+                        print_mask(1, __ballot_sync(0xFFFFFFFFu, l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) | p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x)), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x), p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x),l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) & p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x));
                         l_stack.get_position_info(l_related_target_info_index).CUDA_and(l_stack.get_position_info(l_related_info_index), p_color_constraints.get_info(l_color_id - 1, l_orientation_index));
                     }
                 }
