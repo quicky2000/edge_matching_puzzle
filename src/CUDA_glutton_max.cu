@@ -254,6 +254,33 @@ namespace edge_matching_puzzle
         return true;
     }
 
+    __device__
+    void print_position_info(unsigned int p_indent_level
+                            ,const CUDA_glutton_max_stack & p_stack
+                            ,const CUDA_piece_position_info2 & (CUDA_glutton_max_stack::*p_accessor)(unsigned int) const
+                            )
+    {
+        for(unsigned int l_display_index = 0; l_display_index < (p_stack.get_size() - p_stack.get_level()); ++l_display_index)
+        {
+            print_all(6,"Info = 0x%" PRIx32, (p_stack.*p_accessor)(l_display_index).get_word(threadIdx.x));
+        }
+    }
+    __device__
+    void print_position_info(unsigned int p_indent_level
+                            ,const CUDA_glutton_max_stack & p_stack
+                            )
+    {
+        print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_position_info);
+    }
+
+    __device__
+    void print_best_candidate_info(unsigned int p_indent_level
+                                  ,const CUDA_glutton_max_stack & p_stack
+                                  )
+    {
+        print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_best_candidate_info);
+    }
+
     __global__
     void kernel(CUDA_glutton_max_stack * p_stacks
                ,unsigned int p_nb_stack
@@ -587,6 +614,8 @@ namespace edge_matching_puzzle
 
             print_single(0, "Bit index : %i", l_bit_index);
 
+            print_position_info(6, l_stack);
+
             // Set variable bit to zero in best candidate and current info
             if(threadIdx.x < 2)
             {
@@ -594,6 +623,8 @@ namespace edge_matching_puzzle
                 l_position_info.clear_bit(l_elected_thread, l_bit_index);
             }
             __syncwarp(0xFFFFFFFF);
+            print_single(0, "after clear\n");
+            print_position_info(6, l_stack);
 
             // Compute piece index
             uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
