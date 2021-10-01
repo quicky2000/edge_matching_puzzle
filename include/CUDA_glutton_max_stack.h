@@ -529,7 +529,7 @@ namespace edge_matching_puzzle
                                              ) const
     {
         assert(p_info_index < m_size - p_level);
-        return m_position_infos[compute_situation_index(p_level + p_info_index)];
+        return m_position_infos[compute_situation_index(p_level) + p_info_index];
     }
 
     //-------------------------------------------------------------------------
@@ -540,7 +540,7 @@ namespace edge_matching_puzzle
                                              )
     {
         assert(p_info_index < m_size - p_level);
-        return m_position_infos[compute_situation_index(p_level + p_info_index)];
+        return m_position_infos[compute_situation_index(p_level) + p_info_index];
     }
 
     //-------------------------------------------------------------------------
@@ -551,7 +551,7 @@ namespace edge_matching_puzzle
                                                    ) const
     {
         assert(p_info_index < m_size - p_level);
-        return m_best_candidate_infos[compute_situation_index(p_level + p_info_index)];
+        return m_best_candidate_infos[compute_situation_index(p_level) + p_info_index];
     }
 
     //-------------------------------------------------------------------------
@@ -562,7 +562,7 @@ namespace edge_matching_puzzle
                                                    )
     {
         assert(p_info_index < m_size - p_level);
-        return m_best_candidate_infos[compute_situation_index(p_level + p_info_index)];
+        return m_best_candidate_infos[compute_situation_index(p_level) + p_info_index];
     }
 
     //-------------------------------------------------------------------------
