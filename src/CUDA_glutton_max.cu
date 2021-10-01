@@ -528,7 +528,7 @@ namespace edge_matching_puzzle
                     l_new_level = false;
                     continue;
                 }
-                l_stack.unmark_best_candidates();
+                // TO DELETE l_stack.unmark_best_candidates();
             }
 
 
@@ -586,6 +586,14 @@ namespace edge_matching_puzzle
             unsigned l_bit_index = __ffs((int)l_thread_best_candidates) - 1;
 
             print_single(0, "Bit index : %i", l_bit_index);
+
+            // Set variable bit to zero in best candidate and current info
+            if(threadIdx.x < 2)
+            {
+                CUDA_piece_position_info2 & l_position_info = threadIdx.x ? l_stack.get_best_candidate_info(l_best_candidate_index) : l_stack.get_position_info(l_best_candidate_index);
+                l_position_info.clear_bit(l_elected_thread, l_bit_index);
+            }
+            __syncwarp(0xFFFFFFFF);
 
             // Compute piece index
             uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
@@ -671,12 +679,6 @@ namespace edge_matching_puzzle
                 }
             }
 
-            // Elected thread set variable bit to zero
-            if(!threadIdx.x)
-            {
-                l_stack.get_best_candidate_info(l_best_candidate_index).clear_bit(l_elected_thread, l_bit_index);
-            }
-            __syncwarp(0xFFFFFFFF);
             // For latest level we do not search for best score at is zero in any case
             l_new_level = l_stack.get_level() < (l_stack.get_size() - 1);
         }
