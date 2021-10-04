@@ -115,6 +115,10 @@ namespace edge_matching_puzzle
         __device__ __host__
         uint32_t get_level() const;
 
+        inline
+        __device__ __host__
+        uint32_t get_nb_pieces() const;
+
         /**
          * Number of positions available at current level
          * @return number of positions
@@ -379,6 +383,8 @@ namespace edge_matching_puzzle
 
         uint32_t m_level;
 
+        uint32_t m_nb_pieces;
+
         /**
          * Store correspondence between position info and position
          */
@@ -414,6 +420,7 @@ namespace edge_matching_puzzle
                                                   )
     :m_size(p_size)
     ,m_level{0}
+    ,m_nb_pieces{p_nb_pieces}
     ,m_index_to_position(p_size, std::numeric_limits<uint32_t>::max())
     ,m_position_to_index(p_nb_pieces, std::numeric_limits<uint32_t>::max())
     ,m_played_info(p_size, std::numeric_limits<played_info_t>::max())
@@ -523,6 +530,14 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     __device__ __host__
+    uint32_t
+    CUDA_glutton_max_stack::get_nb_pieces() const
+    {
+        return m_nb_pieces;
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
     const CUDA_piece_position_info2 &
     CUDA_glutton_max_stack::get_position_info(uint32_t p_level
                                              ,uint32_t p_info_index
@@ -609,6 +624,7 @@ namespace edge_matching_puzzle
     {
         assert(p_info_index < m_size - m_level);
         assert(m_level < m_size);
+        assert(p_piece_index < m_nb_pieces);
         assert(p_orientation_index < 4);
         // Save info of position/piece/orientation
         played_info_t l_set_info = generate_played_info(p_position_index, p_piece_index, p_orientation_index);
@@ -678,6 +694,7 @@ namespace edge_matching_puzzle
         // Should check m_position_to_index array size but consider that the
         // check is done by caller
         assert(p_index < m_size);
+        assert(p_position_index < m_nb_pieces);
         m_position_to_index[p_position_index] = p_index;
         m_index_to_position[p_index] = p_position_index;
     }
@@ -691,7 +708,7 @@ namespace edge_matching_puzzle
         // with a position index comming from get_position_of_index so correct
         // by construction and when considering neighbourood check on piece
         // color avoid out of boundaries positions
-        //assert(p_position_index < m_nb_pieces);
+        assert(p_position_index < m_nb_pieces);
         return m_position_to_index[p_position_index];
     }
 
@@ -719,7 +736,7 @@ namespace edge_matching_puzzle
     CUDA_glutton_max_stack::is_position_free(unsigned int p_position_index) const
     {
         // Should check array size
-        //assert(p_position_index < m_nb_pieces);
+        assert(p_position_index < m_nb_pieces);
         return m_position_to_index[p_position_index] < m_size - m_level;
     }
 
