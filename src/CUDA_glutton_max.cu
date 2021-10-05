@@ -281,6 +281,51 @@ namespace edge_matching_puzzle
         print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_best_candidate_info);
     }
 
+    /**
+     * Print information relating info index and position index
+     * @param p_indent_level indentation level
+     * @param p_stack
+     */
+    __device__
+    void
+    print_device_info_position_index(unsigned int p_indent_level
+                                    ,const CUDA_glutton_max_stack & p_stack
+                                    )
+    {
+        print_single(p_indent_level, "====== Position index <-> Info index ======\n");
+        for(unsigned int l_index = 0; l_index <= (p_stack.get_nb_pieces() / 32); ++l_index)
+        {
+            unsigned int l_thread_index = 32 * l_index + threadIdx.x;
+            print_mask(p_indent_level, __ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_nb_pieces()), "Position[%" PRIu32 "] -> Index %" PRIu32 , l_thread_index, l_thread_index < p_stack.get_nb_pieces() ? p_stack.get_index_of_position(l_thread_index) :0xDEADCAFE);
+        }
+        for(unsigned int l_index = 0; l_index <= (p_stack.get_size() / 32); ++l_index)
+        {
+            unsigned int l_thread_index = 32 * l_index + threadIdx.x;
+            print_mask(p_indent_level, __ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_size()), "%c Index[%" PRIu32 "] -> Position %" PRIu32 , l_thread_index < p_stack.get_size() - p_stack.get_level() ? '*' : ' ', l_thread_index, l_thread_index < p_stack.get_size() ? p_stack.get_position_of_index(l_thread_index) : 0xDEADCAFE);
+        }
+    }
+
+    /**
+     * Print information relating info index and position index
+     * @param p_indent_level indentation level
+     * @param p_stack
+     */
+    void
+    print_host_info_position_index(unsigned int p_indent_level
+                                  ,const CUDA_glutton_max_stack & p_stack
+                                  )
+    {
+        std::cout << std::string(p_indent_level,' ') <<  "====== Position index <-> Info index ======" << std::endl;
+        for(unsigned int l_index = 0; l_index < p_stack.get_nb_pieces(); ++l_index)
+        {
+            std::cout << std::string(p_indent_level,' ') << "Position[" << l_index << "] -> Index " << p_stack.get_index_of_position(l_index) << std::endl;
+        }
+        for(unsigned int l_index = 0; l_index < p_stack.get_size(); ++l_index)
+        {
+            std::cout << std::string(p_indent_level,' ') << (l_index < (p_stack.get_size() - p_stack.get_level()) ? '*' : ' ') << " Index[" << l_index << "] -> Position " << p_stack.get_position_of_index(l_index) << std::endl;
+        }
+    }
+
     __global__
     void kernel(CUDA_glutton_max_stack * p_stacks
                ,unsigned int p_nb_stack
@@ -551,7 +596,9 @@ namespace edge_matching_puzzle
                 if(!l_best_total_score)
                 {
                     print_single(0, "No best score found, go up from one level");
+                    print_device_info_position_index(0, l_stack);
                     l_best_start_index = l_stack.pop();
+                    print_device_info_position_index(0, l_stack);
                     l_new_level = false;
                     continue;
                 }
@@ -594,7 +641,9 @@ namespace edge_matching_puzzle
             if(l_best_candidate_index == l_stack.get_nb_position())
             {
                 print_single(0, "No more best score, go up from one level");
+                print_device_info_position_index(0, l_stack);
                 l_best_start_index = l_stack.pop();
+                print_device_info_position_index(0, l_stack);
                 l_new_level = false;
                 continue;
             }
@@ -671,7 +720,9 @@ namespace edge_matching_puzzle
                 print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_mask_to_apply, l_result);
                 l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
 
+                print_device_info_position_index(0, l_stack);
                 l_stack.push(l_best_candidate_index, l_position_index, l_piece_index, l_piece_orientation);
+                print_device_info_position_index(0, l_stack);
 
                 // Print relation index to position
                 for(unsigned int l_warp_index = 0; l_warp_index <= l_stack.get_size() / 32; ++l_warp_index)
@@ -852,6 +903,7 @@ namespace edge_matching_puzzle
             }
         }
         delete[] l_initial_capability;
+        print_host_info_position_index(0, *l_stack);
 
         // Reset CUDA error status
         cudaGetLastError();
