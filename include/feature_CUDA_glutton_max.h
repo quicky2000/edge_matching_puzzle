@@ -22,6 +22,7 @@
 
 #include "emp_FSM_info.h"
 #include "feature_if.h"
+#include "quicky_exception.h"
 
 namespace edge_matching_puzzle
 {
@@ -68,7 +69,11 @@ namespace edge_matching_puzzle
     void
     feature_CUDA_glutton_max::run()
     {
+#ifdef ENABLE_CUDA_CODE
         launch_CUDA_glutton_max(m_piece_db, m_info);
+#else // ENABLE_CUDA_CODE
+        throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
+#endif // ENABLE_CUDA_CODE
     }
 
 }
