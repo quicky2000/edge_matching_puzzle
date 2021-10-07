@@ -362,7 +362,7 @@ namespace edge_matching_puzzle
                 // Iterate on all level position information to compute the score of each available transition
                 for(unsigned int l_info_index = 0; l_info_index < l_stack.get_nb_position(); ++l_info_index)
                 {
-                    print_single(1,"Info index = %i", l_info_index);
+                    print_single(1,"Info index = %i <=> Position = %i", l_info_index, l_stack.get_position_of_index(l_info_index));
 
                     // At the beginning all threads participates to ballot
                     unsigned int l_ballot_result = 0xFFFFFFFF;
@@ -616,7 +616,7 @@ namespace edge_matching_puzzle
             // candidate of reach the end of candidate info
             do
             {
-                print_single(1,"Best Info index = %i", l_best_candidate_index);
+                print_single(1,"Best Info index = %i <=> Position = %i", l_best_candidate_index, l_stack.get_position_of_index(l_best_candidate_index));
 
                 // Each thread get its word in position info
                 l_thread_best_candidates = l_stack.get_best_candidate_info(l_best_candidate_index).get_word(threadIdx.x);
@@ -736,10 +736,12 @@ namespace edge_matching_puzzle
                 for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
                 {
                     uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
+                    print_single(1, "Color Id %i", l_color_id);
                     if(l_color_id)
                     {
                         // Compute position index related to piece side
                         uint32_t l_related_position_index = l_position_index + g_position_offset[l_orientation_index];
+                        print_single(1, "Related position index %i", l_related_position_index);
 
                         // Check if position is free, if this not the case there is no corresponding index
                         if(!l_stack.is_position_free(l_related_position_index))
@@ -750,6 +752,7 @@ namespace edge_matching_puzzle
 
                         // Compute corresponding info index
                         uint32_t l_related_info_index = l_stack.get_index_of_position(l_related_position_index);
+                        print_single(1, "Related info index %i", l_related_info_index);
 
                         // If related index correspond to last position than result is stored in postition where we store the piece
                         uint32_t l_related_target_info_index = l_related_info_index < l_stack.get_nb_position() - 1 ? l_related_info_index : l_position_index;
