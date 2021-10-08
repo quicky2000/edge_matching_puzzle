@@ -296,12 +296,12 @@ namespace edge_matching_puzzle
         for(unsigned int l_index = 0; l_index <= (p_stack.get_nb_pieces() / 32); ++l_index)
         {
             unsigned int l_thread_index = 32 * l_index + threadIdx.x;
-            print_mask(p_indent_level, __ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_nb_pieces()), "Position[%" PRIu32 "] -> Index %" PRIu32 , l_thread_index, l_thread_index < p_stack.get_nb_pieces() ? p_stack.get_index_of_position(l_thread_index) :0xDEADCAFE);
+            print_mask(p_indent_level, __ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_nb_pieces()), "Position[%" PRIu32 "] -> Index %" PRIu32 , l_thread_index, l_thread_index < p_stack.get_nb_pieces() ? p_stack.get_info_index(l_thread_index) : 0xDEADCAFE);
         }
         for(unsigned int l_index = 0; l_index <= (p_stack.get_size() / 32); ++l_index)
         {
             unsigned int l_thread_index = 32 * l_index + threadIdx.x;
-            print_mask(p_indent_level, __ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_size()), "%c Index[%" PRIu32 "] -> Position %" PRIu32 , l_thread_index < p_stack.get_size() - p_stack.get_level() ? '*' : ' ', l_thread_index, l_thread_index < p_stack.get_size() ? p_stack.get_position_of_index(l_thread_index) : 0xDEADCAFE);
+            print_mask(p_indent_level, __ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_size()), "%c Index[%" PRIu32 "] -> Position %" PRIu32 , l_thread_index < p_stack.get_size() - p_stack.get_level() ? '*' : ' ', l_thread_index, l_thread_index < p_stack.get_size() ? p_stack.get_position_index(l_thread_index) : 0xDEADCAFE);
         }
     }
 
@@ -318,11 +318,11 @@ namespace edge_matching_puzzle
         std::cout << std::string(p_indent_level,' ') <<  "====== Position index <-> Info index ======" << std::endl;
         for(unsigned int l_index = 0; l_index < p_stack.get_nb_pieces(); ++l_index)
         {
-            std::cout << std::string(p_indent_level,' ') << "Position[" << l_index << "] -> Index " << p_stack.get_index_of_position(l_index) << std::endl;
+            std::cout << std::string(p_indent_level,' ') << "Position[" << l_index << "] -> Index " << p_stack.get_info_index(l_index) << std::endl;
         }
         for(unsigned int l_index = 0; l_index < p_stack.get_size(); ++l_index)
         {
-            std::cout << std::string(p_indent_level,' ') << (l_index < (p_stack.get_size() - p_stack.get_level()) ? '*' : ' ') << " Index[" << l_index << "] -> Position " << p_stack.get_position_of_index(l_index) << std::endl;
+            std::cout << std::string(p_indent_level,' ') << (l_index < (p_stack.get_size() - p_stack.get_level()) ? '*' : ' ') << " Index[" << l_index << "] -> Position " << p_stack.get_position_index(l_index) << std::endl;
         }
     }
 
@@ -360,9 +360,9 @@ namespace edge_matching_puzzle
                 unsigned int l_best_last_index = 0;
 
                 // Iterate on all level position information to compute the score of each available transition
-                for(unsigned int l_info_index = 0; l_info_index < l_stack.get_nb_position(); ++l_info_index)
+                for(unsigned int l_info_index = 0; l_info_index < l_stack.get_level_nb_info(); ++l_info_index)
                 {
-                    print_single(1,"Info index = %i <=> Position = %i", l_info_index, l_stack.get_position_of_index(l_info_index));
+                    print_single(1,"Info index = %i <=> Position = %i", l_info_index, l_stack.get_position_index(l_info_index));
 
                     // At the beginning all threads participates to ballot
                     unsigned int l_ballot_result = 0xFFFFFFFF;
@@ -422,7 +422,7 @@ namespace edge_matching_puzzle
                             print_single(4, "Piece orientation : %i", l_piece_orientation);
 
                             // Get position index corresponding to this info index
-                            uint32_t l_position_index = l_stack.get_position_of_index(l_info_index);
+                            uint32_t l_position_index = l_stack.get_position_index(l_info_index);
 
                             bool l_invalid = false;
 
@@ -461,7 +461,7 @@ namespace edge_matching_puzzle
                                     }
 
                                     // Compute corresponding info index
-                                    uint32_t l_related_info_index = l_stack.get_index_of_position(l_related_position_index);
+                                    uint32_t l_related_info_index = l_stack.get_info_index(l_related_position_index);
                                     print_single(5, "Info %i:\n", l_related_info_index);
 
                                     // Each thread store the related info index corresponding to the orientation index
@@ -500,7 +500,7 @@ namespace edge_matching_puzzle
                             if(!l_invalid)
                             {
                                 print_single(4, "Apply piece constraints after selected index");
-                                for(unsigned int l_result_info_index = l_info_index + 1; l_result_info_index < l_stack.get_nb_position(); ++l_result_info_index)
+                                for(unsigned int l_result_info_index = l_info_index + 1; l_result_info_index < l_stack.get_level_nb_info(); ++l_result_info_index)
                                 {
                                     if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
                                     {
@@ -616,7 +616,7 @@ namespace edge_matching_puzzle
             // candidate of reach the end of candidate info
             do
             {
-                print_single(1,"Best Info index = %i <=> Position = %i", l_best_candidate_index, l_stack.get_position_of_index(l_best_candidate_index));
+                print_single(1,"Best Info index = %i <=> Position = %i", l_best_candidate_index, l_stack.get_position_index(l_best_candidate_index));
 
                 // Each thread get its word in position info
                 l_thread_best_candidates = l_stack.get_best_candidate_info(l_best_candidate_index).get_word(threadIdx.x);
@@ -635,10 +635,10 @@ namespace edge_matching_puzzle
                 }
                 ++l_best_candidate_index;
 
-            } while(l_best_candidate_index < l_stack.get_nb_position());
+            } while(l_best_candidate_index < l_stack.get_level_nb_info());
 
             // No candidate found so we go up from one level
-            if(l_best_candidate_index == l_stack.get_nb_position())
+            if(l_best_candidate_index == l_stack.get_level_nb_info())
             {
                 print_single(0, "No more best score, go up from one level");
                 print_device_info_position_index(0, l_stack);
@@ -686,7 +686,7 @@ namespace edge_matching_puzzle
             print_single(0, "Piece orientation : %i", l_piece_orientation);
 
             // Get position index corresponding to this info index
-            uint32_t l_position_index = l_stack.get_position_of_index(l_best_candidate_index);
+            uint32_t l_position_index = l_stack.get_position_index(l_best_candidate_index);
 
             {
                 // Compute mask to apply which set piece bit to 0
@@ -702,7 +702,7 @@ namespace edge_matching_puzzle
                 }
 
                 // Last position is not treated here because next level has 1 position less
-                for (unsigned int l_result_info_index = l_best_candidate_index + 1; l_result_info_index < l_stack.get_nb_position() - 1; ++l_result_info_index)
+                for (unsigned int l_result_info_index = l_best_candidate_index + 1; l_result_info_index < l_stack.get_level_nb_info() - 1; ++l_result_info_index)
                 {
                     print_single(1, "Info %i -> %i:\n", l_result_info_index, l_result_info_index);
                     uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
@@ -713,8 +713,8 @@ namespace edge_matching_puzzle
                 }
 
                 // Last position in next level it will be located at l_best_candidate_index
-                print_single(0, "Info %i -> %i:\n", l_stack.get_nb_position() - 1, l_best_candidate_index);
-                uint32_t l_capability = l_stack.get_position_info(l_stack.get_nb_position() - 1).get_word(threadIdx.x);
+                print_single(0, "Info %i -> %i:\n", l_stack.get_level_nb_info() - 1, l_best_candidate_index);
+                uint32_t l_capability = l_stack.get_position_info(l_stack.get_level_nb_info() - 1).get_word(threadIdx.x);
                 uint32_t l_constraint = l_mask_to_apply;
                 uint32_t l_result = l_capability & l_constraint;
                 print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_mask_to_apply, l_result);
@@ -729,7 +729,7 @@ namespace edge_matching_puzzle
                 {
                     unsigned int l_index = 32 * l_warp_index + threadIdx.x;
                     bool l_valid_index = l_index < l_stack.get_size() && l_stack.is_position_index_used(l_index);
-                    print_mask(1, __ballot_sync(0xFFFFFFFFu, l_valid_index), "Index %i -> Position %i", l_index, l_valid_index ? l_stack.get_position_of_index(l_index) : 0xDEADCAFEu);
+                    print_mask(1, __ballot_sync(0xFFFFFFFFu, l_valid_index), "Index %i -> Position %i", l_index, l_valid_index ? l_stack.get_position_index(l_index) : 0xDEADCAFEu);
                 }
 
                 // Apply color constraint
@@ -751,11 +751,11 @@ namespace edge_matching_puzzle
                         }
 
                         // Compute corresponding info index
-                        uint32_t l_related_info_index = l_stack.get_index_of_position(l_related_position_index);
+                        uint32_t l_related_info_index = l_stack.get_info_index(l_related_position_index);
                         print_single(1, "Related info index %i", l_related_info_index);
 
                         // If related index correspond to last position than result is stored in postition where we store the piece
-                        uint32_t l_related_target_info_index = l_related_info_index < l_stack.get_nb_position() - 1 ? l_related_info_index : l_position_index;
+                        uint32_t l_related_target_info_index = l_related_info_index < l_stack.get_level_nb_info() - 1 ? l_related_info_index : l_position_index;
 
                         print_single(1, "Color Info %i -> %i:\n", l_related_info_index, l_related_target_info_index);
                         print_mask(1, __ballot_sync(0xFFFFFFFFu, l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) | p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x)), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x), p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x),l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) & p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x));
@@ -896,7 +896,7 @@ namespace edge_matching_puzzle
             unsigned int l_y = p_info.get_y(l_position_index);
             if(!l_start_situation.contains_piece(l_x, l_y))
             {
-                l_stack->set_position_index(l_info_index, l_position_index);
+                l_stack->set_position_info_relation(l_info_index, l_position_index);
                 l_stack->set_position_info(l_info_index, l_initial_capability[l_position_index]);
                 ++l_info_index;
             }

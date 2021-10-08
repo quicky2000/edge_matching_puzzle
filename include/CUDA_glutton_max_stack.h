@@ -120,22 +120,22 @@ namespace edge_matching_puzzle
         uint32_t get_nb_pieces() const;
 
         /**
-         * Number of positions available at current level
-         * @return number of positions
+         * Number of position info available at current level
+         * @return number of position info
          */
         inline
         __device__ __host__
-        uint32_t get_nb_position() const;
+        uint32_t get_level_nb_info() const;
 
         /**
-         * Store correspondant between index of position info and position index
+         * Store relation between index of position info and position index
          * @param p_index Index of position info
          * @param p_position_index Position index
          */
         inline
-        void set_position_index(uint32_t p_index
-                               ,uint32_t p_position_index
-                               );
+        void set_position_info_relation(uint32_t p_index
+                                       , uint32_t p_position_index
+                                       );
 
         /**
          * Indicate at which index information related to position index is stored
@@ -144,7 +144,7 @@ namespace edge_matching_puzzle
          */
         inline
         __host__ __device__
-        uint32_t get_index_of_position(uint32_t p_position_index) const;
+        uint32_t get_info_index(uint32_t p_position_index) const;
 
         /**
          * Indicate which position corresponds to info stored at index
@@ -153,7 +153,7 @@ namespace edge_matching_puzzle
          */
         inline
         __host__ __device__
-        uint32_t get_position_of_index(uint32_t p_index) const;
+        uint32_t get_position_index(uint32_t p_index) const;
 
         /**
          * Indicate if a position is associated to this index.
@@ -680,16 +680,16 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__ __host__
     uint32_t
-    CUDA_glutton_max_stack::get_nb_position() const
+    CUDA_glutton_max_stack::get_level_nb_info() const
     {
         return m_size - m_level;
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_max_stack::set_position_index(uint32_t p_index,
-                                               uint32_t p_position_index
-                                              )
+    CUDA_glutton_max_stack::set_position_info_relation(uint32_t p_index
+                                                      ,uint32_t p_position_index
+                                                      )
     {
         // Should check m_position_to_index array size but consider that the
         // check is done by caller
@@ -702,10 +702,10 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __host__ __device__
     uint32_t
-    CUDA_glutton_max_stack::get_index_of_position(uint32_t p_position_index) const
+    CUDA_glutton_max_stack::get_info_index(uint32_t p_position_index) const
     {
         // Should check array size but consider that is method is mainly used
-        // with a position index comming from get_position_of_index so correct
+        // with a position index comming from get_position_index so correct
         // by construction and when considering neighbourood check on piece
         // color avoid out of boundaries positions
         assert(p_position_index < m_nb_pieces);
@@ -715,7 +715,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __host__ __device__
     uint32_t
-    CUDA_glutton_max_stack::get_position_of_index(uint32_t p_index) const
+    CUDA_glutton_max_stack::get_position_index(uint32_t p_index) const
     {
         assert(p_index < m_size);
         return m_index_to_position[p_index];
@@ -822,7 +822,7 @@ namespace edge_matching_puzzle
     void
     CUDA_glutton_max_stack::unmark_best_candidates()
     {
-        for(unsigned int l_info_index = 0; l_info_index < get_nb_position(); ++l_info_index)
+        for(unsigned int l_info_index = 0; l_info_index < get_level_nb_info(); ++l_info_index)
         {
             get_position_info(l_info_index).apply_xor(get_position_info(l_info_index), get_best_candidate_info(l_info_index));
         }
