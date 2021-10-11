@@ -24,7 +24,9 @@ set(MY_SOURCE_FILES
     include/CUDA_piece_position_info2.h
     include/CUDA_piece_position_info_base.h
     include/CUDA_situation_capability.h
+    include/CUDA_strong_primitive.h
     include/CUDA_transition_manager.h
+    include/CUDA_types.h
     include/emp_advanced_feature_base.h
     include/emp_basic_strategy_generator.h
     include/emp_constraint.h

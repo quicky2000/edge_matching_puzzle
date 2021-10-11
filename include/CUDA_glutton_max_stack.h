@@ -22,6 +22,7 @@
 #include "CUDA_memory_managed_item.h"
 #include "CUDA_memory_managed_array.h"
 #include "CUDA_piece_position_info2.h"
+#include "CUDA_types.h"
 #include <cinttypes>
 
 namespace edge_matching_puzzle
@@ -57,30 +58,30 @@ namespace edge_matching_puzzle
         inline
         __device__ __host__
         const CUDA_piece_position_info2 &
-        get_position_info(uint32_t p_info_index) const;
+        get_position_info(info_index_t p_info_index) const;
 
         inline
         __device__ __host__
         CUDA_piece_position_info2 &
-        get_position_info(uint32_t p_info_index);
+        get_position_info(info_index_t p_info_index);
 
         inline
         __device__ __host__
         CUDA_piece_position_info2 &
-        get_next_level_position_info(uint32_t p_info_index);
+        get_next_level_position_info(info_index_t p_info_index);
 
         inline
         __device__ __host__
         const CUDA_piece_position_info2 &
-        get_best_candidate_info(uint32_t p_info_index) const;
+        get_best_candidate_info(info_index_t p_info_index) const;
 
         inline
         __device__ __host__
         CUDA_piece_position_info2 &
-        get_best_candidate_info(uint32_t p_info_index);
+        get_best_candidate_info(info_index_t p_info_index);
 
         inline
-        void set_position_info(uint32_t p_info_index
+        void set_position_info(info_index_t p_info_index
                               ,const CUDA_piece_position_info2 & p_info
                               );
 
@@ -93,8 +94,8 @@ namespace edge_matching_puzzle
          */
         inline
         __device__
-        void push(unsigned int p_info_index
-                 ,unsigned int p_position_index
+        void push(info_index_t p_info_index
+                 ,position_index_t p_position_index
                  ,unsigned int p_piece_index
                  ,unsigned int p_orientation_index
                  );
@@ -105,7 +106,8 @@ namespace edge_matching_puzzle
          */
         inline
         __device__
-        uint32_t pop();
+        info_index_t
+        pop();
 
         inline
         __device__ __host__
@@ -117,7 +119,8 @@ namespace edge_matching_puzzle
 
         inline
         __device__ __host__
-        uint32_t get_nb_pieces() const;
+        position_index_t
+        get_nb_pieces() const;
 
         /**
          * Number of position info available at current level
@@ -125,17 +128,19 @@ namespace edge_matching_puzzle
          */
         inline
         __device__ __host__
-        uint32_t get_level_nb_info() const;
+        info_index_t
+        get_level_nb_info() const;
 
         /**
          * Store relation between index of position info and position index
-         * @param p_index Index of position info
+         * @param p_info_index Index of position info
          * @param p_position_index Position index
          */
         inline
-        void set_position_info_relation(uint32_t p_index
-                                       , uint32_t p_position_index
-                                       );
+        void
+        set_position_info_relation(info_index_t p_info_index
+                                  , position_index_t p_position_index
+                                  );
 
         /**
          * Indicate at which index information related to position index is stored
@@ -144,16 +149,18 @@ namespace edge_matching_puzzle
          */
         inline
         __host__ __device__
-        uint32_t get_info_index(uint32_t p_position_index) const;
+        info_index_t
+        get_info_index(position_index_t p_position_index) const;
 
         /**
          * Indicate which position corresponds to info stored at index
-         * @param p_index index in info array
+         * @param p_info_index index in info array
          * @return Position index whose info is stored
          */
         inline
         __host__ __device__
-        uint32_t get_position_index(uint32_t p_index) const;
+        position_index_t
+        get_position_index(info_index_t p_info_index) const;
 
         /**
          * Indicate if a position is associated to this index.
@@ -163,7 +170,7 @@ namespace edge_matching_puzzle
          */
         inline
         __device__ __host__
-        bool is_position_index_used(unsigned int p_index) const;
+        bool is_position_index_used(position_index_t p_index) const;
 
         /**
          * Indicate if position is indexed. Once occupied a position is no more
@@ -173,7 +180,7 @@ namespace edge_matching_puzzle
          */
         inline
         __device__ __host__
-        bool is_position_free(unsigned int p_position_index) const;
+        bool is_position_free(position_index_t p_position_index) const;
 
         /**
          * Indicate if piece designed by piece index is used or not
@@ -241,7 +248,7 @@ namespace edge_matching_puzzle
          */
         static inline
         __host__ __device__
-        unsigned int
+        position_index_t
         decode_position_index(played_info_t p_played_info);
 
         /**
@@ -284,7 +291,7 @@ namespace edge_matching_puzzle
         __device__ __host__
         const CUDA_piece_position_info2 &
         get_position_info(uint32_t p_level
-                         ,uint32_t p_info_index
+                         ,info_index_t p_info_index
                          ) const;
 
         /**
@@ -297,7 +304,7 @@ namespace edge_matching_puzzle
         __device__ __host__
         CUDA_piece_position_info2 &
         get_position_info(uint32_t p_level
-                         ,uint32_t p_info_index
+                         ,info_index_t p_info_index
                          );
 
         /**
@@ -310,7 +317,7 @@ namespace edge_matching_puzzle
         inline
         __device__ __host__
         const CUDA_piece_position_info2 & get_best_candidate_info(uint32_t p_level
-                                                                 ,uint32_t p_info_index
+                                                                 ,info_index_t p_info_index
                                                                  ) const;
 
         /**
@@ -323,7 +330,7 @@ namespace edge_matching_puzzle
         inline
         __device__ __host__
         CUDA_piece_position_info2 & get_best_candidate_info(uint32_t p_level
-                                                           ,uint32_t p_info_index
+                                                           ,info_index_t p_info_index
                                                            );
 
 
@@ -358,8 +365,8 @@ namespace edge_matching_puzzle
          */
         inline
         __device__
-        void swap_position_and_index(unsigned int p_info_index
-                                    ,unsigned int p_position_index
+        void swap_position_and_index(info_index_t p_info_index
+                                    ,position_index_t p_position_index
                                     );
 
         /**
@@ -372,7 +379,7 @@ namespace edge_matching_puzzle
         static inline
         __device__
         played_info_t
-        generate_played_info(unsigned int p_position_index
+        generate_played_info(position_index_t p_position_index
                             ,unsigned int p_piece_index
                             ,unsigned int p_orientation_index
                             );
@@ -386,14 +393,14 @@ namespace edge_matching_puzzle
         uint32_t m_nb_pieces;
 
         /**
-         * Store correspondence between position info and position
+         * Store correspondence between position index and info index
          */
-        CUDA_memory_managed_array<uint32_t> m_index_to_position;
+        CUDA_memory_managed_array<position_index_t> m_info_index_to_position_index;
 
         /**
-         * Store correspondence between position and position info
+         * Store correspondence between info index and position index
          */
-        CUDA_memory_managed_array<uint32_t> m_position_to_index;
+        CUDA_memory_managed_array<info_index_t> m_position_index_to_info_index;
 
         /**
          * Store position/piece/orientation selected at level
@@ -418,14 +425,14 @@ namespace edge_matching_puzzle
     CUDA_glutton_max_stack::CUDA_glutton_max_stack(uint32_t p_size
                                                   ,uint32_t p_nb_pieces
                                                   )
-    :m_size(p_size)
-    ,m_level{0}
-    ,m_nb_pieces{p_nb_pieces}
-    ,m_index_to_position(p_size, std::numeric_limits<uint32_t>::max())
-    ,m_position_to_index(p_nb_pieces, std::numeric_limits<uint32_t>::max())
-    ,m_played_info(p_size, std::numeric_limits<played_info_t>::max())
-    ,m_available_pieces{0, 0, 0, 0, 0, 0, 0, 0}
-    ,m_thread_piece_infos{{0, 0, 0, 0, 0, 0, 0, 0}
+    : m_size(p_size)
+    , m_level{0}
+    , m_nb_pieces{p_nb_pieces}
+    , m_info_index_to_position_index(p_size, position_index_t(std::numeric_limits<uint32_t>::max()))
+    , m_position_index_to_info_index(p_nb_pieces, info_index_t(std::numeric_limits<uint32_t>::max()))
+    , m_played_info(p_size, std::numeric_limits<played_info_t>::max())
+    , m_available_pieces{0, 0, 0, 0, 0, 0, 0, 0}
+    , m_thread_piece_infos{{0, 0, 0, 0, 0, 0, 0, 0}
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
@@ -458,8 +465,8 @@ namespace edge_matching_puzzle
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
                          }
-    ,m_position_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
-    ,m_best_candidate_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
+    , m_position_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
+    , m_best_candidate_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
     {
     }
 
@@ -473,7 +480,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__ __host__
     const CUDA_piece_position_info2 &
-    CUDA_glutton_max_stack::get_position_info(uint32_t p_info_index) const
+    CUDA_glutton_max_stack::get_position_info(info_index_t p_info_index) const
     {
         return get_position_info(m_level, p_info_index);
     }
@@ -481,7 +488,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__ __host__
     CUDA_piece_position_info2 &
-    CUDA_glutton_max_stack::get_position_info(uint32_t p_info_index)
+    CUDA_glutton_max_stack::get_position_info(info_index_t p_info_index)
     {
         return get_position_info(m_level, p_info_index);
     }
@@ -489,7 +496,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__ __host__
     CUDA_piece_position_info2 &
-    CUDA_glutton_max_stack::get_next_level_position_info(uint32_t p_info_index)
+    CUDA_glutton_max_stack::get_next_level_position_info(info_index_t p_info_index)
     {
         assert(m_level + 1 < m_size);
         return get_position_info(m_level + 1, p_info_index);
@@ -498,7 +505,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__ __host__
     const CUDA_piece_position_info2 &
-    CUDA_glutton_max_stack::get_best_candidate_info(uint32_t p_info_index) const
+    CUDA_glutton_max_stack::get_best_candidate_info(info_index_t p_info_index) const
     {
         return get_best_candidate_info(m_level, p_info_index);
     }
@@ -506,7 +513,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__ __host__
     CUDA_piece_position_info2 &
-    CUDA_glutton_max_stack::get_best_candidate_info(uint32_t p_info_index)
+    CUDA_glutton_max_stack::get_best_candidate_info(info_index_t p_info_index)
     {
         return get_best_candidate_info(m_level, p_info_index);
     }
@@ -530,83 +537,83 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     __device__ __host__
-    uint32_t
+    position_index_t
     CUDA_glutton_max_stack::get_nb_pieces() const
     {
-        return m_nb_pieces;
+        return position_index_t(m_nb_pieces);
     }
 
     //-------------------------------------------------------------------------
     __device__ __host__
     const CUDA_piece_position_info2 &
     CUDA_glutton_max_stack::get_position_info(uint32_t p_level
-                                             ,uint32_t p_info_index
+                                             ,info_index_t p_info_index
                                              ) const
     {
         assert(p_info_index < m_size - p_level);
-        return m_position_infos[compute_situation_index(p_level) + p_info_index];
+        return m_position_infos[compute_situation_index(p_level) + static_cast<uint32_t>(p_info_index)];
     }
 
     //-------------------------------------------------------------------------
     __device__ __host__
     CUDA_piece_position_info2 &
     CUDA_glutton_max_stack::get_position_info(uint32_t p_level
-                                             ,uint32_t p_info_index
+                                             ,info_index_t p_info_index
                                              )
     {
         assert(p_info_index < m_size - p_level);
-        return m_position_infos[compute_situation_index(p_level) + p_info_index];
+        return m_position_infos[compute_situation_index(p_level) + static_cast<uint32_t>(p_info_index)];
     }
 
     //-------------------------------------------------------------------------
     __device__ __host__
     const CUDA_piece_position_info2 &
     CUDA_glutton_max_stack::get_best_candidate_info(uint32_t p_level
-                                                   ,uint32_t p_info_index
+                                                   ,info_index_t p_info_index
                                                    ) const
     {
         assert(p_info_index < m_size - p_level);
-        return m_best_candidate_infos[compute_situation_index(p_level) + p_info_index];
+        return m_best_candidate_infos[compute_situation_index(p_level) + static_cast<uint32_t>(p_info_index)];
     }
 
     //-------------------------------------------------------------------------
     __device__ __host__
     CUDA_piece_position_info2 &
     CUDA_glutton_max_stack::get_best_candidate_info(uint32_t p_level
-                                                   ,uint32_t p_info_index
+                                                   ,info_index_t p_info_index
                                                    )
     {
         assert(p_info_index < m_size - p_level);
-        return m_best_candidate_infos[compute_situation_index(p_level) + p_info_index];
+        return m_best_candidate_infos[compute_situation_index(p_level) + static_cast<uint32_t>(p_info_index)];
     }
 
     //-------------------------------------------------------------------------
     __device__
     void
-    CUDA_glutton_max_stack::swap_position_and_index(unsigned int p_info_index
-                                                   ,unsigned int p_position_index
+    CUDA_glutton_max_stack::swap_position_and_index(info_index_t p_info_index
+                                                   ,position_index_t p_position_index
                                                    )
     {
-        unsigned int l_last_index = m_size - m_level - 1;
-        unsigned int l_last_position = m_index_to_position[l_last_index];
+        info_index_t l_last_info_index{m_size - m_level - 1};
+        position_index_t l_last_position_index = get_position_index(l_last_info_index);
         if(threadIdx.x < 2)
         {
-            uint32_t * l_ptr1 = threadIdx.x ? &m_index_to_position[l_last_index] : &m_position_to_index[l_last_position];
-            uint32_t * l_ptr2 = threadIdx.x ? &m_index_to_position[p_info_index] : &m_position_to_index[p_position_index];
+            uint32_t * l_ptr1 = threadIdx.x ? reinterpret_cast<uint32_t*>(&m_info_index_to_position_index[static_cast<uint32_t>(l_last_info_index)]) : reinterpret_cast<uint32_t*>(&m_position_index_to_info_index[static_cast<uint32_t>(l_last_position_index)]);
+            uint32_t * l_ptr2 = threadIdx.x ? reinterpret_cast<uint32_t*>(&m_info_index_to_position_index[static_cast<uint32_t>(p_info_index)]) : reinterpret_cast<uint32_t*>(&m_position_index_to_info_index[static_cast<uint32_t>(p_position_index)]);
             // Set a synchro to be sure that thread 1 will write
-            // m_index_to_position[l_last_index] only after is has been read by
-            // thread 0 to detemine value of l_last_position used in previously
-            // executed indexing m_position_to_index[l_last_position]
+            // m_info_index_to_position_index[l_last_info_index] only after is has been read by
+            // thread 0 to detemine value of l_last_position_index used in previously
+            // executed indexing m_position_index_to_info_index[l_last_position_index]
             __syncwarp(0x3);
-            *l_ptr2 = atomicExch(l_ptr1, threadIdx.x ? p_position_index : p_info_index);
+            *l_ptr2 = atomicExch(l_ptr1, threadIdx.x ? static_cast<uint32_t>(p_position_index) : static_cast<uint32_t>(p_info_index));
             // Above code is equivalent to the following
             //if(1 == threadIdx.x)
             //{
-            //    m_index_to_position[l_last_index] = atomicExch(m_index_to_position[p_info_index], p_position_index);
+            //    m_info_index_to_position_index[l_last_info_index] = atomicExch(m_info_index_to_position_index[p_info_index], p_position_index);
             //}
             //if(0 == threadIdx.x)
             //{
-            //    m_position_to_index[l_last_position] = atomicExch(m_position_to_index[p_position_index], p_info_index);
+            //    m_position_index_to_info_index[l_last_position_index] = atomicExch(m_position_index_to_info_index[p_position_index], p_info_index);
             //}
         }
         __syncwarp(0xFFFFFFFF);
@@ -616,8 +623,8 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__
     void
-    CUDA_glutton_max_stack::push(unsigned int p_info_index
-                                ,unsigned int p_position_index
+    CUDA_glutton_max_stack::push(info_index_t p_info_index
+                                ,position_index_t p_position_index
                                 ,unsigned int p_piece_index
                                 ,unsigned int p_orientation_index
                                 )
@@ -634,24 +641,26 @@ namespace edge_matching_puzzle
             set_piece_unavailable(p_piece_index);
         }
         __syncwarp(0xFFFFFFFF);
-        // Save info of info index for restoration during pop
+        // Save info index as a position index for restoration during pop
+        // position index is stored in played info
         swap_position_and_index(p_info_index, p_position_index);
         if(!threadIdx.x)
         {
             ++m_level;
-            m_index_to_position[m_size - m_level] = p_info_index;
+            m_info_index_to_position_index[m_size - m_level] = position_index_t(static_cast<uint32_t>(p_info_index));
         }
         __syncwarp(0xFFFFFFFF);
     }
 
     //-------------------------------------------------------------------------
     __device__
-    uint32_t
+    info_index_t
     CUDA_glutton_max_stack::pop()
     {
         assert(m_level);
-        uint32_t * l_ptr = &m_index_to_position[m_size - m_level];
-        uint32_t l_info_index = *l_ptr;
+        position_index_t * l_ptr = &m_info_index_to_position_index[m_size - m_level];
+        // Prepare restoration of info_index that wa stored as position_index
+        info_index_t l_info_index = info_index_t(static_cast<uint32_t>(*l_ptr));
         uint32_t l_played_info = m_played_info[m_level];
         if(!threadIdx.x)
         {
@@ -659,7 +668,7 @@ namespace edge_matching_puzzle
             --m_level;
         }
         __syncwarp(0xFFFFFFFF);
-        uint32_t l_position_index = decode_position_index(l_played_info);
+        position_index_t l_position_index = decode_position_index(l_played_info);
         if(!threadIdx.x)
         {
             *l_ptr = l_position_index;
@@ -679,70 +688,70 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     __device__ __host__
-    uint32_t
+    info_index_t
     CUDA_glutton_max_stack::get_level_nb_info() const
     {
-        return m_size - m_level;
+        return info_index_t(m_size - m_level);
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_max_stack::set_position_info_relation(uint32_t p_index
-                                                      ,uint32_t p_position_index
+    CUDA_glutton_max_stack::set_position_info_relation(info_index_t p_info_index
+                                                      ,position_index_t p_position_index
                                                       )
     {
-        // Should check m_position_to_index array size but consider that the
+        // Should check m_position_index_to_info_index array size but consider that the
         // check is done by caller
-        assert(p_index < m_size);
+        assert(p_info_index < m_size);
         assert(p_position_index < m_nb_pieces);
-        m_position_to_index[p_position_index] = p_index;
-        m_index_to_position[p_index] = p_position_index;
+        m_position_index_to_info_index[static_cast<uint32_t>(p_position_index)] = p_info_index;
+        m_info_index_to_position_index[static_cast<uint32_t>(p_info_index)] = p_position_index;
     }
 
     //-------------------------------------------------------------------------
     __host__ __device__
-    uint32_t
-    CUDA_glutton_max_stack::get_info_index(uint32_t p_position_index) const
+    info_index_t
+    CUDA_glutton_max_stack::get_info_index(position_index_t p_position_index) const
     {
         // Should check array size but consider that is method is mainly used
         // with a position index comming from get_position_index so correct
         // by construction and when considering neighbourood check on piece
         // color avoid out of boundaries positions
         assert(p_position_index < m_nb_pieces);
-        return m_position_to_index[p_position_index];
+        return m_position_index_to_info_index[static_cast<uint32_t>(p_position_index)];
     }
 
     //-------------------------------------------------------------------------
     __host__ __device__
-    uint32_t
-    CUDA_glutton_max_stack::get_position_index(uint32_t p_index) const
+    position_index_t
+    CUDA_glutton_max_stack::get_position_index(info_index_t p_info_index) const
     {
-        assert(p_index < m_size);
-        return m_index_to_position[p_index];
+        assert(p_info_index < m_size);
+        return m_info_index_to_position_index[static_cast<uint32_t>(p_info_index)];
     }
 
     //-------------------------------------------------------------------------
     __device__ __host__
     bool
-    CUDA_glutton_max_stack::is_position_index_used(unsigned int p_index) const
+    CUDA_glutton_max_stack::is_position_index_used(position_index_t p_index) const
     {
         assert(p_index < m_size);
-        return (p_index < m_size - m_level) && m_index_to_position[p_index] != 0xFFFFFFFFu; //std::numeric_limits<uint32_t>::max();
+        return (static_cast<uint32_t>(p_index) < m_size - m_level) && static_cast<uint32_t>(m_info_index_to_position_index[static_cast<uint32_t>(p_index)]) != 0xFFFFFFFFu; //std::numeric_limits<uint32_t>::max();
     }
 
     //-------------------------------------------------------------------------
     __device__ __host__
     bool
-    CUDA_glutton_max_stack::is_position_free(unsigned int p_position_index) const
+    CUDA_glutton_max_stack::is_position_free(position_index_t p_position_index) const
     {
         // Should check array size
         assert(p_position_index < m_nb_pieces);
-        return m_position_to_index[p_position_index] < m_size - m_level;
+        return static_cast<uint32_t>(m_position_index_to_info_index[static_cast<uint32_t>(p_position_index)]) < m_size - m_level;
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_max_stack::set_position_info(uint32_t p_info_index
+    CUDA_glutton_max_stack::set_position_info(info_index_t p_info_index
                                              ,const CUDA_piece_position_info2 & p_info
                                              )
     {
@@ -822,16 +831,16 @@ namespace edge_matching_puzzle
     void
     CUDA_glutton_max_stack::unmark_best_candidates()
     {
-        for(unsigned int l_info_index = 0; l_info_index < get_level_nb_info(); ++l_info_index)
+        for(info_index_t l_info_index{0u}; l_info_index < get_level_nb_info(); ++l_info_index)
         {
-            get_position_info(l_info_index).apply_xor(get_position_info(l_info_index), get_best_candidate_info(l_info_index));
+            get_position_info(info_index_t(l_info_index)).apply_xor(get_position_info(l_info_index), get_best_candidate_info(l_info_index));
         }
     }
 
     //-------------------------------------------------------------------------
     __device__
     CUDA_glutton_max_stack::played_info_t
-    CUDA_glutton_max_stack::generate_played_info(unsigned int p_position_index,
+    CUDA_glutton_max_stack::generate_played_info(position_index_t p_position_index,
                                                  unsigned int p_piece_index,
                                                  unsigned int p_orientation_index
                                                 )
@@ -839,15 +848,15 @@ namespace edge_matching_puzzle
         assert(p_position_index < 256);
         assert(p_piece_index < 256);
         assert(p_orientation_index < 4);
-        return (p_orientation_index << 16u) | (p_piece_index << 8u) | p_position_index;
+        return (p_orientation_index << 16u) | (p_piece_index << 8u) | static_cast<uint32_t>(p_position_index);
     }
 
     //-------------------------------------------------------------------------
     __host__ __device__
-    unsigned int
+    position_index_t
     CUDA_glutton_max_stack::decode_position_index(CUDA_glutton_max_stack::played_info_t p_played_info)
     {
-        return p_played_info & 0xFFu;
+        return position_index_t(p_played_info & 0xFFu);
     }
 
     //-------------------------------------------------------------------------
