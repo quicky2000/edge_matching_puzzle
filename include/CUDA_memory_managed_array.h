@@ -56,6 +56,7 @@ namespace edge_matching_puzzle
         ~CUDA_memory_managed_array();
 
       private:
+        static_assert(!std::is_base_of<CUDA_memory_managed_item, T>::value, "CUDA_memory_managed_array is for basic types not derived from CUDA_memory_managed_item");
 
         T * m_array_ptr;
     };
