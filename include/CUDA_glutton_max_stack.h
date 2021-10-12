@@ -359,14 +359,18 @@ namespace edge_matching_puzzle
         uint32_t compute_bit_index(uint32_t p_index);
 
         /**
-         * Perform a swap between last info of level and info where a piece is set
-         * @param p_info_index information index where a piece is set
-         * @param p_position_index position index where a piece is set
+         * Perform a swap between in info index array and position index array
+         * @param p_info_index1
+         * @param p_info_index1
+         * @param p_position_index1
+         * @param p_position_index2
          */
         inline
         __device__
-        void swap_position_and_index(info_index_t p_info_index
-                                    ,position_index_t p_position_index
+        void swap_position_and_index(info_index_t p_info_index1
+                                    ,info_index_t p_info_index2
+                                    ,position_index_t p_position_index1
+                                    ,position_index_t p_position_index2
                                     );
 
         /**
@@ -590,31 +594,19 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__
     void
-    CUDA_glutton_max_stack::swap_position_and_index(info_index_t p_info_index
-                                                   ,position_index_t p_position_index
+    CUDA_glutton_max_stack::swap_position_and_index(info_index_t p_info_index1
+                                                   ,info_index_t p_info_index2
+                                                   ,position_index_t p_position_index1
+                                                   ,position_index_t p_position_index2
                                                    )
     {
-        info_index_t l_last_info_index{m_size - m_level - 1};
-        position_index_t l_last_position_index = get_position_index(l_last_info_index);
+        __syncwarp(0xFFFFFFFF);
         if(threadIdx.x < 2)
         {
-            uint32_t * l_ptr1 = threadIdx.x ? reinterpret_cast<uint32_t*>(&m_info_index_to_position_index[static_cast<uint32_t>(l_last_info_index)]) : reinterpret_cast<uint32_t*>(&m_position_index_to_info_index[static_cast<uint32_t>(l_last_position_index)]);
-            uint32_t * l_ptr2 = threadIdx.x ? reinterpret_cast<uint32_t*>(&m_info_index_to_position_index[static_cast<uint32_t>(p_info_index)]) : reinterpret_cast<uint32_t*>(&m_position_index_to_info_index[static_cast<uint32_t>(p_position_index)]);
-            // Set a synchro to be sure that thread 1 will write
-            // m_info_index_to_position_index[l_last_info_index] only after is has been read by
-            // thread 0 to detemine value of l_last_position_index used in previously
-            // executed indexing m_position_index_to_info_index[l_last_position_index]
-            __syncwarp(0x3);
-            *l_ptr2 = atomicExch(l_ptr1, threadIdx.x ? static_cast<uint32_t>(p_position_index) : static_cast<uint32_t>(p_info_index));
-            // Above code is equivalent to the following
-            //if(1 == threadIdx.x)
-            //{
-            //    m_info_index_to_position_index[l_last_info_index] = atomicExch(m_info_index_to_position_index[p_info_index], p_position_index);
-            //}
-            //if(0 == threadIdx.x)
-            //{
-            //    m_position_index_to_info_index[l_last_position_index] = atomicExch(m_position_index_to_info_index[p_position_index], p_info_index);
-            //}
+            uint32_t l_value = threadIdx.x ? static_cast<uint32_t>(m_info_index_to_position_index[static_cast<uint32_t>(p_info_index1)]) : static_cast<uint32_t>(m_position_index_to_info_index[static_cast<uint32_t>(p_position_index1)]);
+            uint32_t * l_ptr1 = threadIdx.x ? reinterpret_cast<uint32_t*>(&m_info_index_to_position_index[static_cast<uint32_t>(p_info_index2)]) : reinterpret_cast<uint32_t*>(&m_position_index_to_info_index[static_cast<uint32_t>(p_position_index2)]);
+            uint32_t * l_ptr2 = threadIdx.x ? reinterpret_cast<uint32_t*>(&m_info_index_to_position_index[static_cast<uint32_t>(p_info_index1)]) : reinterpret_cast<uint32_t*>(&m_position_index_to_info_index[static_cast<uint32_t>(p_position_index1)]);
+            *l_ptr2 = atomicExch(l_ptr1, l_value);
         }
         __syncwarp(0xFFFFFFFF);
     }
@@ -639,17 +631,15 @@ namespace edge_matching_puzzle
         {
             m_played_info[m_level] = l_set_info;
             set_piece_unavailable(p_piece_index);
-        }
-        __syncwarp(0xFFFFFFFF);
-        // Save info index as a position index for restoration during pop
-        // position index is stored in played info
-        swap_position_and_index(p_info_index, p_position_index);
-        if(!threadIdx.x)
-        {
             ++m_level;
-            m_info_index_to_position_index[m_size - m_level] = position_index_t(static_cast<uint32_t>(p_info_index));
+            // Save info index as a position index for restoration during pop
+            // position index is stored in played info
+            m_info_index_to_position_index[static_cast<uint32_t>(p_info_index)] = position_index_t(static_cast<uint32_t>(p_info_index));
         }
         __syncwarp(0xFFFFFFFF);
+        info_index_t l_last_info_index{m_size - m_level};
+        position_index_t l_last_position_index = get_position_index(l_last_info_index);
+        swap_position_and_index(p_info_index, l_last_info_index, p_position_index, l_last_position_index);
     }
 
     //-------------------------------------------------------------------------
@@ -658,23 +648,20 @@ namespace edge_matching_puzzle
     CUDA_glutton_max_stack::pop()
     {
         assert(m_level);
-        position_index_t * l_ptr = &m_info_index_to_position_index[m_size - m_level];
-        // Prepare restoration of info_index that wa stored as position_index
+        info_index_t l_last_info_index{m_size - m_level};
+        position_index_t * l_ptr = &m_info_index_to_position_index[static_cast<uint32_t>(l_last_info_index)];
+        // Prepare restoration of info_index that was stored as position_index
         info_index_t l_info_index = info_index_t(static_cast<uint32_t>(*l_ptr));
-        uint32_t l_played_info = m_played_info[m_level];
-        if(!threadIdx.x)
-        {
-            set_piece_available(decode_piece_index(l_played_info));
-            --m_level;
-        }
-        __syncwarp(0xFFFFFFFF);
+        uint32_t l_played_info = m_played_info[m_level - 1];
         position_index_t l_position_index = decode_position_index(l_played_info);
         if(!threadIdx.x)
         {
+            --m_level;
+            set_piece_available(decode_piece_index(l_played_info));
             *l_ptr = l_position_index;
         }
         __syncwarp(0xFFFFFFFF);
-        swap_position_and_index(l_info_index, l_position_index);
+        swap_position_and_index(l_info_index, l_last_info_index, l_position_index, m_info_index_to_position_index[static_cast<uint32_t>(l_info_index)]);
         return l_info_index;
     }
 
