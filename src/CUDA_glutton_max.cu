@@ -742,13 +742,17 @@ namespace edge_matching_puzzle
                     l_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
                 }
 
-                // Last position in next level it will be located at l_best_candidate_index
-                print_single(0, "Info %i -> %i:\n", static_cast<uint32_t>(l_stack.get_level_nb_info()) - 1, static_cast<uint32_t>(l_best_candidate_index));
-                uint32_t l_capability = l_stack.get_position_info(info_index_t(l_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);
-                uint32_t l_constraint = l_mask_to_apply;
-                uint32_t l_result = l_capability & l_constraint;
-                print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_mask_to_apply, l_result);
-                l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
+                // No next level when we set latest piece
+                if(l_stack.get_level() < (l_stack.get_size() - 1))
+                {
+                    // Last position in next level it will be located at l_best_candidate_index
+                    print_single(0, "Info %i -> %i:\n", static_cast<uint32_t>(l_stack.get_level_nb_info()) - 1, static_cast<uint32_t>(l_best_candidate_index));
+                    uint32_t l_capability = l_stack.get_position_info(info_index_t(l_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);
+                    uint32_t l_constraint = l_mask_to_apply;
+                    uint32_t l_result = l_capability & l_constraint;
+                    print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_mask_to_apply, l_result);
+                    l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
+                }
 
                 print_device_info_position_index(0, l_stack);
                 l_stack.push(l_best_candidate_index, l_position_index, l_piece_index, l_piece_orientation);
@@ -786,10 +790,18 @@ namespace edge_matching_puzzle
                 }
             }
 
-            print_single(0, "after applying change\n");
-            print_position_info(6, l_stack);
             // For latest level we do not search for best score at is zero in any case
-            l_new_level = l_stack.get_level() < (l_stack.get_size() - 1);
+            if(l_stack.get_level() < (l_stack.get_size() - 1))
+            {
+                l_new_level = true;
+                print_single(0, "after applying change\n");
+                print_position_info(6, l_stack);
+            }
+            else if(l_stack.get_level() < l_stack.get_size())
+            {
+                l_new_level = false;
+                l_stack.get_best_candidate_info(l_best_candidate_index).set_word(threadIdx.x, l_stack.get_position_info(l_best_candidate_index).get_word(threadIdx.x));
+            }
         }
 
         print_single(0, "End with stack level %i", l_stack.get_level());
