@@ -776,8 +776,8 @@ namespace edge_matching_puzzle
                         info_index_t l_related_info_index = l_stack.get_info_index(l_related_position_index);
                         print_single(1, "Related info index %i", static_cast<uint32_t>(l_related_info_index));
 
-                        // If related index correspond to last position than result is stored in position where we store the piece
-                        info_index_t l_related_target_info_index = l_related_info_index < l_stack.get_level_nb_info() - 1 ? l_related_info_index : l_best_candidate_index;
+                        // If related index correspond to last position of previous level ( we already did the push ) than result is stored in position where we store the piece
+                        info_index_t l_related_target_info_index = l_related_info_index < l_stack.get_level_nb_info() ? l_related_info_index : l_best_candidate_index;
 
                         print_single(1, "Color Info %i -> %i:\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_target_info_index));
                         print_mask(1, __ballot_sync(0xFFFFFFFFu, l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) | p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x)), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x), p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x),l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) & p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x));
