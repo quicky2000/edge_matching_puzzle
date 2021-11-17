@@ -743,7 +743,7 @@ namespace edge_matching_puzzle
                 }
 
                 // No next level when we set latest piece
-                if(l_stack.get_level() < (l_stack.get_size() - 1))
+                if(l_best_candidate_index < (l_stack.get_level_nb_info() - 1) && l_stack.get_level() < (l_stack.get_size() - 1))
                 {
                     // Last position in next level it will be located at l_best_candidate_index
                     print_single(0, "Info %i -> %i:\n", static_cast<uint32_t>(l_stack.get_level_nb_info()) - 1, static_cast<uint32_t>(l_best_candidate_index));
