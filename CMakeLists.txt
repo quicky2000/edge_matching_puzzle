@@ -23,6 +23,7 @@ set(MY_SOURCE_FILES
     include/CUDA_piece_position_info.h
     include/CUDA_piece_position_info2.h
     include/CUDA_piece_position_info_base.h
+    include/CUDA_print.h
     include/CUDA_situation_capability.h
     include/CUDA_strong_primitive.h
     include/CUDA_transition_manager.h
