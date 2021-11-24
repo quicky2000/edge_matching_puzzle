@@ -17,6 +17,7 @@ set(MY_SOURCE_FILES
     include/CUDA_backtracker_stack.h
     include/CUDA_color_constraints.h
     include/CUDA_common.h
+    include/CUDA_glutton_max.h
     include/CUDA_glutton_max_stack.h
     include/CUDA_memory_managed_array.h
     include/CUDA_memory_managed_pointer.h
@@ -96,6 +97,7 @@ set(MY_SOURCE_FILES
     include/VTK_line_plot_dumper.h
     include/VTK_table_based_dumper.h
     src/border_backtracker.cpp
+    src/CUDA_glutton_max.cpp
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp
     src/emp_FSM_situation_analyzer.cpp

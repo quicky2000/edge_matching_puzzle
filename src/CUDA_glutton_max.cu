@@ -16,6 +16,7 @@
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
+#include "CUDA_glutton_max.h"
 #include "emp_FSM_info.h"
 #include "emp_piece_db.h"
 #include "CUDA_glutton_max_stack.h"
