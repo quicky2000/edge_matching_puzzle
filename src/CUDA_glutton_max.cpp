@@ -23,7 +23,7 @@
 #ifndef ENABLE_CUDA_CODE
 
 #include "CUDA_glutton_max.h"
-
+#include "quicky_exception.h"
 namespace edge_matching_puzzle
 {
 
