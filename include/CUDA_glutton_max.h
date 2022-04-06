@@ -57,6 +57,8 @@ namespace edge_matching_puzzle
             std::map<unsigned int, unsigned int> l_variable_translator;
             std::unique_ptr<const transition_manager<NB_PIECES>> l_transition_manager{prepare_run<NB_PIECES>(l_situation_capability, l_variable_translator)};
 
+            std::cout << l_situation_capability << std::endl;
+
             throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
         }
 
