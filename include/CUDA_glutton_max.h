@@ -18,6 +18,8 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_H
 #define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_H
 
+#include "quicky_exception.h"
+
 /**
  * This file declare functions that will be implemented for
  * CUDA: performance. Corresponding implementation is in CUDA_glutton_max.cu
@@ -27,6 +29,12 @@ namespace edge_matching_puzzle
 {
     class emp_piece_db;
     class emp_FSM_info;
+
+    template<unsigned int NB_PIECES>
+    void template_run()
+    {
+        throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
+    }
 
     /**
      * Launch CUDA kernels

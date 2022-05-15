@@ -23,7 +23,8 @@
 #ifndef ENABLE_CUDA_CODE
 
 #include "CUDA_glutton_max.h"
-#include "quicky_exception.h"
+#include "emp_FSM_info.h"
+
 namespace edge_matching_puzzle
 {
 
@@ -31,7 +32,29 @@ namespace edge_matching_puzzle
                                 ,const emp_FSM_info & p_info
                                 )
     {
-        throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
+        switch(p_info.get_nb_pieces())
+        {
+            case 9:
+                template_run<9>();
+                break;
+            case 16:
+                template_run<16>();
+                break;
+            case 25:
+                template_run<25>();
+                break;
+            case 36:
+                template_run<36>();
+                break;
+            case 72:
+                template_run<72>();
+                break;
+            case 256:
+                template_run<256>();
+                break;
+            default:
+                throw quicky_exception::quicky_logic_exception("Unsupported size " + std::to_string(p_info.get_width()) + "x" + std::to_string(p_info.get_height()), __LINE__, __FILE__);
+        }
     }
 
 }
