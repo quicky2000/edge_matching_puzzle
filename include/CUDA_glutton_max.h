@@ -18,7 +18,12 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_H
 #define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_H
 
+#include "feature_sys_equa_CUDA_base.h"
+#include "emp_strategy_generator_factory.h"
 #include "quicky_exception.h"
+#include "situation_capability.h"
+#include "transition_manager.h"
+#include <map>
 
 /**
  * This file declare functions that will be implemented for
@@ -30,11 +35,32 @@ namespace edge_matching_puzzle
     class emp_piece_db;
     class emp_FSM_info;
 
-    template<unsigned int NB_PIECES>
-    void template_run()
+    class CUDA_glutton_max: public feature_sys_equa_CUDA_base
     {
-        throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
-    }
+
+      public:
+
+        inline
+        CUDA_glutton_max(const emp_piece_db & p_piece_db
+                        ,const emp_FSM_info & p_info
+                        ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
+                        ):
+        feature_sys_equa_CUDA_base(p_piece_db, p_info, p_strategy_generator, "")
+        {
+
+        }
+
+        template<unsigned int NB_PIECES>
+        void template_run()
+        {
+            situation_capability<2 * NB_PIECES> l_situation_capability;
+            std::map<unsigned int, unsigned int> l_variable_translator;
+            std::unique_ptr<const transition_manager<NB_PIECES>> l_transition_manager{prepare_run<NB_PIECES>(l_situation_capability, l_variable_translator)};
+
+            throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
+        }
+
+    };
 
     /**
      * Launch CUDA kernels
