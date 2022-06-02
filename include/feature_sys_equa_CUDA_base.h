@@ -8,6 +8,7 @@
 #include "emp_piece_db.h"
 #include "emp_strategy_generator.h"
 #include "system_equation_for_CUDA.h"
+#include "transition_manager.h"
 #include "common.h"
 #include <map>
 
