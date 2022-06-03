@@ -33,6 +33,7 @@ namespace edge_matching_puzzle
                                 )
     {
         std::unique_ptr<emp_strategy_generator> l_strategy_generator(emp_strategy_generator_factory::create("basic", p_info));
+        l_strategy_generator->generate();
         CUDA_glutton_max l_glutton_max{p_piece_db, p_info, l_strategy_generator};
 
         switch(p_info.get_nb_pieces())
