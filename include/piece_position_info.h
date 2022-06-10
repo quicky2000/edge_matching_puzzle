@@ -61,36 +61,45 @@ namespace edge_matching_puzzle
         piece_position_info(const piece_position_info & ) = default;
         piece_position_info & operator=(const piece_position_info &) = default;
 
+        [[maybe_unused]]
         inline
         void clear_bit(unsigned int p_bit_index);
 
+        [[maybe_unused]]
         inline
         void clear_bit( unsigned int p_id
                       , emp_types::t_orientation p_orientation
                       );
 
+        [[maybe_unused]]
         inline
         void set_bit(unsigned int p_bit_index);
 
+        [[maybe_unused]]
         inline
         void set_bit( unsigned int p_index
                     , emp_types::t_orientation p_orientation
                     );
 
+        [[nodiscard]] [[maybe_unused]]
         inline
         bool is_bit(unsigned int p_index
-                   , emp_types::t_orientation p_orientation
+                   ,emp_types::t_orientation p_orientation
                    )const;
 
+        [[maybe_unused]]
         inline static
         void set_init_value(uint32_t p_value);
 
+        [[maybe_unused]]
         inline
         void clear();
 
+        [[nodiscard]]
         inline
         unsigned int get_nb_bits_set() const;
 
+        [[nodiscard]]
         inline
         bool any_bit_set() const;
 
@@ -100,6 +109,7 @@ namespace edge_matching_puzzle
          * @param p_index Index of word
          * @return word value
          */
+        [[nodiscard]]
         inline
         uint32_t get_word(unsigned int p_index) const;
 
@@ -131,6 +141,7 @@ namespace edge_matching_puzzle
                     , unsigned int p_bit_index
                     );
 
+        [[nodiscard]]
         inline
         bool is_bit(unsigned int p_word_index
                    ,unsigned int p_bit_index
@@ -218,6 +229,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
     void
     piece_position_info::clear_bit(unsigned int p_bit_index)
     {
@@ -226,6 +238,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
     void
     piece_position_info::clear_bit( unsigned int p_id
                                   , emp_types::t_orientation p_orientation
@@ -247,6 +260,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
     void
     piece_position_info::set_bit(unsigned int p_bit_index)
     {
@@ -255,6 +269,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
     void
     piece_position_info::set_bit( unsigned int p_index
                                 , emp_types::t_orientation p_orientation
@@ -276,6 +291,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
     bool
     piece_position_info::is_bit(unsigned int p_index
                                ,emp_types::t_orientation p_orientation
@@ -290,7 +306,7 @@ namespace edge_matching_puzzle
     std::ostream & operator<<(std::ostream & p_stream, const piece_position_info & p_info)
     {
 #ifndef RAW_DISPLAY
-        for(unsigned int l_orientation_index = static_cast<unsigned int>(emp_types::t_orientation::NORTH);
+        for(auto l_orientation_index = static_cast<unsigned int>(emp_types::t_orientation::NORTH);
             l_orientation_index <= static_cast<unsigned int>(emp_types::t_orientation::WEST);
             ++l_orientation_index
            )
@@ -323,6 +339,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
     void
     piece_position_info::set_init_value(uint32_t p_value)
     {
@@ -330,6 +347,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
     void
     piece_position_info::clear()
     {
