@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <numeric>
+#include <tuple>
 
 namespace edge_matching_puzzle
 {
@@ -60,6 +61,13 @@ namespace edge_matching_puzzle
 
         piece_position_info(const piece_position_info & ) = default;
         piece_position_info & operator=(const piece_position_info &) = default;
+
+        [[maybe_unused]] [[nodiscard]]
+        static inline
+        std::tuple<unsigned int, emp_types::t_orientation>
+        convert(unsigned int p_word_index
+               ,unsigned int p_bit_index
+               );
 
         [[maybe_unused]]
         inline
@@ -367,6 +375,18 @@ namespace edge_matching_puzzle
     piece_position_info::any_bit_set() const
     {
         return std::any_of(m_info.begin(), m_info.end(), [](uint32_t p_item){return p_item;});
+    }
+
+    //-------------------------------------------------------------------------
+    [[maybe_unused]] [[nodiscard]]
+    std::tuple<unsigned int, emp_types::t_orientation>
+    piece_position_info::convert(unsigned int p_word_index,
+                                 unsigned int p_bit_index
+                                )
+    {
+        assert(p_word_index < 32);
+        assert(p_bit_index < 32);
+        return std::tuple<unsigned int, emp_types::t_orientation>((p_word_index * 32 + p_bit_index) % 256, static_cast<emp_types::t_orientation>(p_word_index / 8));
     }
 
 }
