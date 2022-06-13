@@ -59,6 +59,31 @@ namespace edge_matching_puzzle
 
             std::cout << l_situation_capability << std::endl;
 
+            emp_FSM_situation l_situation;
+            l_situation.set_context(*(new emp_FSM_context(get_info().get_nb_pieces())));
+
+            std::cout << l_situation.to_string() << std::endl;
+
+            for(unsigned int l_position_index =0; l_position_index < get_info().get_nb_pieces(); ++l_position_index)
+            {
+                unsigned int l_x, l_y;
+                std::tie(l_x, l_y) = get_strategy_generator().get_position(l_position_index);
+                const piece_position_info & l_position_info = l_situation_capability.get_capability(l_position_index);
+                for(unsigned int l_word_index = 0; l_word_index < 32; ++l_word_index)
+                {
+                    uint32_t l_word = l_position_info.get_word(l_word_index);
+                    while(l_word)
+                    {
+                        unsigned int l_bit_index = ffs(l_word) - 1;
+                        l_word &= ~(1u << l_bit_index);
+                        unsigned int l_piece_index;
+                        emp_types::t_orientation l_orientation;
+                        std::tie(l_piece_index, l_orientation) = piece_position_info::convert(l_word_index, l_bit_index);
+                        std::cout << "(" << l_x << "," << l_y << ") => Piece index: " << l_piece_index << "\tOrientation: " << emp_types::orientation2short_string(l_orientation) << std::endl;
+                    }
+                }
+            }
+
             throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
         }
 
