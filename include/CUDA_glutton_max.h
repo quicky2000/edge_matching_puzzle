@@ -23,6 +23,7 @@
 #include "quicky_exception.h"
 #include "situation_capability.h"
 #include "transition_manager.h"
+#include "situation_string_formatter.h"
 #include <map>
 
 /**
@@ -63,7 +64,7 @@ namespace edge_matching_puzzle
             l_situation.set_context(*(new emp_FSM_context(get_info().get_nb_pieces())));
 
             std::cout << l_situation.to_string() << std::endl;
-
+            unsigned int l_level = 0;
             for(unsigned int l_position_index =0; l_position_index < get_info().get_nb_pieces(); ++l_position_index)
             {
                 unsigned int l_x, l_y;
@@ -80,6 +81,13 @@ namespace edge_matching_puzzle
                         emp_types::t_orientation l_orientation;
                         std::tie(l_piece_index, l_orientation) = piece_position_info::convert(l_word_index, l_bit_index);
                         std::cout << "(" << l_x << "," << l_y << ") => Piece index: " << l_piece_index << "\tOrientation: " << emp_types::orientation2short_string(l_orientation) << std::endl;
+                        unsigned int l_raw_variable_id = system_equation_for_CUDA::compute_raw_variable_id(l_x, l_y, l_piece_index, l_orientation, get_info());
+                        situation_capability<2 * NB_PIECES> l_new_situation_capability;
+                        l_new_situation_capability.apply_and(l_situation_capability, l_transition_manager->get_transition(l_raw_variable_id));
+                        situation_profile l_profile = l_new_situation_capability.compute_profile(l_level + 1);
+                        emp_FSM_situation l_new_situation{l_situation};
+                        l_new_situation.set_piece(l_x, l_y, emp_types::t_oriented_piece(l_piece_index +1, l_orientation));
+                        std::cout << situation_string_formatter<emp_FSM_situation>::to_string(l_new_situation) << " : " << l_profile.compute_total() << std::endl;
                     }
                 }
             }
