@@ -65,6 +65,11 @@ namespace edge_matching_puzzle
 
             std::cout << l_situation.to_string() << std::endl;
             unsigned int l_level = 0;
+            unsigned int l_min_total = 0;
+            unsigned int l_min_x;
+            unsigned int l_min_y;
+            unsigned int l_min_piece_index;
+            emp_types::t_orientation l_min_orientation;
             for(unsigned int l_position_index =0; l_position_index < get_info().get_nb_pieces(); ++l_position_index)
             {
                 unsigned int l_x, l_y;
@@ -85,9 +90,24 @@ namespace edge_matching_puzzle
                         situation_capability<2 * NB_PIECES> l_new_situation_capability;
                         l_new_situation_capability.apply_and(l_situation_capability, l_transition_manager->get_transition(l_raw_variable_id));
                         situation_profile l_profile = l_new_situation_capability.compute_profile(l_level + 1);
-                        emp_FSM_situation l_new_situation{l_situation};
-                        l_new_situation.set_piece(l_x, l_y, emp_types::t_oriented_piece(l_piece_index +1, l_orientation));
-                        std::cout << situation_string_formatter<emp_FSM_situation>::to_string(l_new_situation) << " : " << l_profile.compute_total() << std::endl;
+                        if(l_profile.is_valid())
+                        {
+                            unsigned int l_total = l_profile.compute_total();
+                            emp_FSM_situation l_new_situation{l_situation};
+                            l_new_situation.set_piece(l_x, l_y, emp_types::t_oriented_piece(l_piece_index + 1
+                                                                                                   , l_orientation)
+                                                                                                   );
+                            std::cout << situation_string_formatter<emp_FSM_situation>::to_string(l_new_situation) \
+                            << " : " << l_total << std::endl;
+                            if(l_min_total < l_total)
+                            {
+                                l_min_total = l_total;
+                                l_min_x = l_x;
+                                l_min_y = l_y;
+                                l_min_orientation = l_orientation;
+                                l_min_piece_index = l_piece_index;
+                            }
+                        }
                     }
                 }
             }
