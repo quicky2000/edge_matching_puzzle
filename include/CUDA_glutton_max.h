@@ -62,51 +62,59 @@ namespace edge_matching_puzzle
 
             emp_situation l_situation;
 
-            std::cout << situation_string_formatter<emp_situation>::to_string(l_situation) << std::endl;
             unsigned int l_level = 0;
-            unsigned int l_min_total = 0;
-            unsigned int l_min_x;
-            unsigned int l_min_y;
-            unsigned int l_min_piece_index;
-            emp_types::t_orientation l_min_orientation;
-            for(unsigned int l_position_index =0; l_position_index < get_info().get_nb_pieces(); ++l_position_index)
+            while(l_level < get_info().get_nb_pieces())
             {
-                unsigned int l_x, l_y;
-                std::tie(l_x, l_y) = get_strategy_generator().get_position(l_position_index);
-                const piece_position_info & l_position_info = l_situation_capability.get_capability(l_position_index);
-                for(unsigned int l_word_index = 0; l_word_index < 32; ++l_word_index)
+                std::cout << "Level : " << l_level << "\t" << situation_string_formatter<emp_situation>::to_string(l_situation) << std::endl;
+                unsigned int l_min_total = 0;
+                unsigned int l_min_x;
+                unsigned int l_min_y;
+                unsigned int l_min_piece_index;
+                emp_types::t_orientation l_min_orientation;
+                for (unsigned int l_position_index = 0; l_position_index < get_info().get_nb_pieces(); ++l_position_index)
                 {
-                    uint32_t l_word = l_position_info.get_word(l_word_index);
-                    while(l_word)
+                    unsigned int l_x, l_y;
+                    std::tie(l_x,l_y) = get_strategy_generator().get_position(l_position_index);
+                    const piece_position_info & l_position_info = l_situation_capability.get_capability(l_position_index);
+                    for (unsigned int l_word_index = 0; l_word_index < 32; ++l_word_index)
                     {
-                        unsigned int l_bit_index = ffs(l_word) - 1;
-                        l_word &= ~(1u << l_bit_index);
-                        unsigned int l_piece_index;
-                        emp_types::t_orientation l_orientation;
-                        std::tie(l_piece_index, l_orientation) = piece_position_info::convert(l_word_index, l_bit_index);
-                        std::cout << "(" << l_x << "," << l_y << ") => Piece index: " << l_piece_index << "\tOrientation: " << emp_types::orientation2short_string(l_orientation) << std::endl;
-                        situation_capability<2 * NB_PIECES> l_new_situation_capability;
-                        emp_situation l_new_situation{l_situation};
-                        set_piece(l_new_situation, l_situation_capability, l_x, l_y, l_piece_index, l_orientation, l_new_situation_capability, *l_transition_manager);
-                        situation_profile l_profile = l_new_situation_capability.compute_profile(l_level + 1);
-                        if(l_profile.is_valid())
+                        uint32_t l_word = l_position_info.get_word(l_word_index);
+                        while (l_word)
                         {
-                            unsigned int l_total = l_profile.compute_total();
-                            std::cout << situation_string_formatter<emp_situation>::to_string(l_new_situation) \
-                            << " : " << l_total << std::endl;
-                            if(l_min_total < l_total)
+                            unsigned int l_bit_index = ffs(l_word) - 1;
+                            l_word &= ~(1u << l_bit_index);
+                            unsigned int l_piece_index;
+                            emp_types::t_orientation l_orientation;
+                            std::tie(l_piece_index,l_orientation) = piece_position_info::convert(l_word_index, l_bit_index);
+                            std::cout << "(" << l_x << "," << l_y << ") => Piece index: " << l_piece_index << "\tOrientation: " << emp_types::orientation2short_string(l_orientation) << std::endl;
+                            situation_capability<2 * NB_PIECES> l_new_situation_capability;
+                            emp_situation l_new_situation{l_situation};
+                            set_piece(l_new_situation, l_situation_capability, l_x, l_y, l_piece_index, l_orientation, l_new_situation_capability, *l_transition_manager);
+                            situation_profile l_profile = l_new_situation_capability.compute_profile(l_level + 1);
+                            if (l_profile.is_valid())
                             {
-                                l_min_total = l_total;
-                                l_min_x = l_x;
-                                l_min_y = l_y;
-                                l_min_orientation = l_orientation;
-                                l_min_piece_index = l_piece_index;
+                                unsigned int l_total = l_profile.compute_total();
+                                std::cout << situation_string_formatter<emp_situation>::to_string(l_new_situation) << " : " << l_total << std::endl;
+                                if (l_min_total < l_total)
+                                {
+                                    l_min_total = l_total;
+                                    l_min_x = l_x;
+                                    l_min_y = l_y;
+                                    l_min_orientation = l_orientation;
+                                    l_min_piece_index = l_piece_index;
+                                }
                             }
                         }
                     }
                 }
+                ++l_level;
+                if (l_level < get_info().get_nb_pieces() && !l_min_total)
+                {
+                    std::cout << "Unable to find a solution" << std::endl;
+                    std::exit(-1);
+                }
+                set_piece(l_situation, l_situation_capability, l_min_x, l_min_y, l_min_piece_index, l_min_orientation, l_situation_capability, *l_transition_manager);
             }
-
             throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
         }
 
