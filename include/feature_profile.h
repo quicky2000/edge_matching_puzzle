@@ -194,18 +194,6 @@ namespace edge_matching_puzzle
                                                                         ,const emp_situation & p_ref_situation
                                                                         );
 
-        template <unsigned int NB_PIECES>
-        static
-        void set_piece(emp_situation & p_situation
-                      ,const situation_capability<2 * NB_PIECES> & p_situation_capability
-                      ,unsigned int p_x
-                      ,unsigned int p_y
-                      ,unsigned int p_piece_index
-                      ,emp_types::t_orientation p_orientation
-                      ,situation_capability<2 * NB_PIECES> & p_result_capability
-                      ,const transition_manager<NB_PIECES> & p_transition_manager
-                      );
-
         const emp_piece_db & m_piece_db;
     };
 
@@ -996,29 +984,6 @@ namespace edge_matching_puzzle
         }
 
         l_solutions_dump.close();
-    }
-
-    //-------------------------------------------------------------------------
-    template <unsigned int NB_PIECES>
-    void
-    feature_profile::set_piece(emp_situation & p_situation
-                              ,const situation_capability<2 * NB_PIECES> & p_situation_capability
-                              ,unsigned int p_x
-                              ,unsigned int p_y
-                              ,unsigned int p_piece_index
-                              ,emp_types::t_orientation p_orientation
-                              ,situation_capability<2 * NB_PIECES> & p_result_capability
-                              ,const transition_manager<NB_PIECES> & p_transition_manager
-                              )
-    {
-        unsigned int l_raw_variable_id = system_equation_for_CUDA::compute_raw_variable_id(p_x
-                                                                                          ,p_y
-                                                                                          ,p_piece_index
-                                                                                          ,p_orientation
-                                                                                          ,p_situation.get_info()
-                                                                                          );
-        p_result_capability.apply_and(p_situation_capability, p_transition_manager.get_transition(l_raw_variable_id));
-        p_situation.set_piece(p_x, p_y, emp_types::t_oriented_piece(p_piece_index + 1, p_orientation));
     }
 
 }

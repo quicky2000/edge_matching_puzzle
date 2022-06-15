@@ -9,6 +9,7 @@
 #include "emp_strategy_generator.h"
 #include "system_equation_for_CUDA.h"
 #include "transition_manager.h"
+#include "emp_situation.h"
 #include "common.h"
 #include <map>
 
@@ -47,6 +48,19 @@ namespace edge_matching_puzzle
 
         [[nodiscard]] inline
         const emp_strategy_generator & get_strategy_generator() const;
+
+        template <unsigned int NB_PIECES>
+        static
+        void set_piece(emp_situation & p_situation
+                      ,const situation_capability<2 * NB_PIECES> & p_situation_capability
+                      ,unsigned int p_x
+                      ,unsigned int p_y
+                      ,unsigned int p_piece_index
+                      ,emp_types::t_orientation p_orientation
+                      ,situation_capability<2 * NB_PIECES> & p_result_capability
+                      ,const transition_manager<NB_PIECES> & p_transition_manager
+                      );
+
 
       private:
 
@@ -132,6 +146,30 @@ namespace edge_matching_puzzle
     {
         return m_strategy_generator;
     }
+
+    //-------------------------------------------------------------------------
+    template <unsigned int NB_PIECES>
+    void
+    feature_sys_equa_CUDA_base::set_piece(emp_situation & p_situation
+                                         ,const situation_capability<2 * NB_PIECES> & p_situation_capability
+                                         ,unsigned int p_x
+                                         ,unsigned int p_y
+                                         ,unsigned int p_piece_index
+                                         ,emp_types::t_orientation p_orientation
+                                         ,situation_capability<2 * NB_PIECES> & p_result_capability
+                                         ,const transition_manager<NB_PIECES> & p_transition_manager
+                                         )
+    {
+        unsigned int l_raw_variable_id = system_equation_for_CUDA::compute_raw_variable_id(p_x
+                                                                                          ,p_y
+                                                                                          ,p_piece_index
+                                                                                          ,p_orientation
+                                                                                          ,p_situation.get_info()
+                                                                                          );
+        p_result_capability.apply_and(p_situation_capability, p_transition_manager.get_transition(l_raw_variable_id));
+        p_situation.set_piece(p_x, p_y, emp_types::t_oriented_piece(p_piece_index + 1, p_orientation));
+    }
+
 }
 
 
