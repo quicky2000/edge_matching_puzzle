@@ -7,6 +7,7 @@ project(edge_matching_puzzle LANGUAGES CXX)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(ENABLE_CUDA_CODE off)
+set(IDENTICAL_PIECES off)
 
 set(MY_SOURCE_FILES
     include/algo_based_feature.h
@@ -128,6 +129,10 @@ if(${ENABLE_CUDA_CODE})
 else(${ENABLE_CUDA_CODE})
     set (MY_CPP_FLAGS -pedantic)
 endif(${ENABLE_CUDA_CODE})
+
+if(${IDENTICAL_PIECES})
+    set (MY_CPP_FLAGS ${MY_CPP_FLAGS} -DHANDLE_IDENTICAL_PIECES)
+endif(${IDENTICAL_PIECES})
 
 # List header directories in project
 set(MY_INCLUDE_DIRECTORIES
