@@ -54,18 +54,18 @@ namespace edge_matching_puzzle
         template<unsigned int NB_PIECES>
         void template_run()
         {
-            situation_capability<2 * NB_PIECES> l_situation_capability;
+            situation_capability<2 * NB_PIECES> l_situation_capability[NB_PIECES + 1];
             std::map<unsigned int, unsigned int> l_variable_translator;
-            std::unique_ptr<const transition_manager<NB_PIECES>> l_transition_manager{prepare_run<NB_PIECES>(l_situation_capability, l_variable_translator)};
+            std::unique_ptr<const transition_manager<NB_PIECES>> l_transition_manager{prepare_run<NB_PIECES>(l_situation_capability[0], l_variable_translator)};
 
-            std::cout << l_situation_capability << std::endl;
+            std::cout << l_situation_capability[0] << std::endl;
 
-            emp_situation l_situation;
+            emp_situation l_situation[NB_PIECES + 1];
 
             unsigned int l_level = 0;
             while(l_level < get_info().get_nb_pieces())
             {
-                std::cout << "Level : " << l_level << "\t" << situation_string_formatter<emp_situation>::to_string(l_situation) << std::endl;
+                std::cout << "Level : " << l_level << "\t" << situation_string_formatter<emp_situation>::to_string(l_situation[l_level]) << std::endl;
                 unsigned int l_min_total = 0;
                 unsigned int l_min_x;
                 unsigned int l_min_y;
@@ -75,7 +75,7 @@ namespace edge_matching_puzzle
                 {
                     unsigned int l_x, l_y;
                     std::tie(l_x,l_y) = get_strategy_generator().get_position(l_position_index);
-                    const piece_position_info & l_position_info = l_situation_capability.get_capability(l_position_index);
+                    piece_position_info & l_position_info = l_situation_capability[l_level].get_capability(l_position_index);
                     for (unsigned int l_word_index = 0; l_word_index < 32; ++l_word_index)
                     {
                         uint32_t l_word = l_position_info.get_word(l_word_index);
@@ -86,16 +86,20 @@ namespace edge_matching_puzzle
                             unsigned int l_piece_index;
                             emp_types::t_orientation l_orientation;
                             std::tie(l_piece_index,l_orientation) = piece_position_info::convert(l_word_index, l_bit_index);
+#ifdef VERBOSE
                             std::cout << "(" << l_x << "," << l_y << ") => Piece index: " << l_piece_index << "\tOrientation: " << emp_types::orientation2short_string(l_orientation) << std::endl;
+#endif // VERBOSE
                             situation_capability<2 * NB_PIECES> l_new_situation_capability;
-                            emp_situation l_new_situation{l_situation};
-                            set_piece(l_new_situation, l_situation_capability, l_x, l_y, l_piece_index, l_orientation, l_new_situation_capability, *l_transition_manager);
+                            emp_situation l_new_situation{l_situation[l_level]};
+                            set_piece(l_new_situation, l_situation_capability[l_level], l_x, l_y, l_piece_index, l_orientation, l_new_situation_capability, *l_transition_manager);
                             situation_profile l_profile = l_new_situation_capability.compute_profile(l_level + 1);
                             if (l_profile.is_valid())
                             {
                                 unsigned int l_total = l_profile.compute_total();
+#ifdef VERBOSE
                                 std::cout << situation_string_formatter<emp_situation>::to_string(l_new_situation) << " : " << l_total << std::endl;
-                                if (l_min_total < l_total)
+#endif // VERBOSE
+                                if (l_min_total <= l_total)
                                 {
                                     l_min_total = l_total;
                                     l_min_x = l_x;
@@ -104,18 +108,34 @@ namespace edge_matching_puzzle
                                     l_min_piece_index = l_piece_index;
                                 }
                             }
+                            else
+                            {
+                                l_position_info.clear_bit(l_piece_index,l_orientation);
+                            }
                         }
                     }
                 }
-                ++l_level;
-                if (l_level < get_info().get_nb_pieces() && !l_min_total)
+                if (l_level + 1 < get_info().get_nb_pieces() && !l_min_total)
                 {
-                    std::cout << "Unable to find a solution" << std::endl;
-                    std::exit(-1);
+                    if(l_level)
+                    {
+                        --l_level;
+                    }
+                    else
+                    {
+                        std::cout << "Unable to find a solution" << std::endl;
+                        std::exit(-1);
+                    }
                 }
-                set_piece(l_situation, l_situation_capability, l_min_x, l_min_y, l_min_piece_index, l_min_orientation, l_situation_capability, *l_transition_manager);
+                else
+                {
+                    ++l_level;
+                    l_situation[l_level] = l_situation[l_level - 1];
+                    l_situation_capability[l_level - 1].get_capability(get_strategy_generator().get_position_index(l_min_x, l_min_y)).clear_bit(l_min_piece_index, l_min_orientation);
+                    set_piece(l_situation[l_level], l_situation_capability[l_level - 1], l_min_x, l_min_y, l_min_piece_index, l_min_orientation, l_situation_capability[l_level], *l_transition_manager);
+                }
             }
-            throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
+            std::cout << "Solution : " << situation_string_formatter<emp_situation>::to_string(l_situation[NB_PIECES]) << std::endl;
         }
 
     };
