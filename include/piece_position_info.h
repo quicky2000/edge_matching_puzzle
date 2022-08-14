@@ -75,7 +75,7 @@ namespace edge_matching_puzzle
 
         [[maybe_unused]]
         inline
-        void clear_bit( unsigned int p_id
+        void clear_bit( unsigned int p_index
                       , emp_types::t_orientation p_orientation
                       );
 
@@ -248,12 +248,12 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     [[maybe_unused]]
     void
-    piece_position_info::clear_bit( unsigned int p_id
+    piece_position_info::clear_bit( unsigned int p_index
                                   , emp_types::t_orientation p_orientation
                                   )
     {
-        assert(p_id < 256);
-        clear_bit(8 * static_cast<unsigned int>(p_orientation) + p_id / 32, p_id % 32);
+        assert(p_index < 256);
+        clear_bit(8 * static_cast<unsigned int>(p_orientation) + p_index / 32, p_index % 32);
     }
 
     //-------------------------------------------------------------------------
