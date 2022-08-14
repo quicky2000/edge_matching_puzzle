@@ -54,11 +54,12 @@ namespace edge_matching_puzzle
         template<unsigned int NB_PIECES>
         void template_run()
         {
-            situation_capability<2 * NB_PIECES> l_situation_capability[NB_PIECES + 1];
+            std::unique_ptr<std::array<situation_capability<2 * NB_PIECES>, NB_PIECES + 1>> l_situation_capabilities_ptr{new std::array<situation_capability<2 * NB_PIECES>, NB_PIECES + 1>()};
+            std::array<situation_capability<2 * NB_PIECES>, NB_PIECES + 1> & l_situation_capabilities = *l_situation_capabilities_ptr;
             std::map<unsigned int, unsigned int> l_variable_translator;
-            std::unique_ptr<const transition_manager<NB_PIECES>> l_transition_manager{prepare_run<NB_PIECES>(l_situation_capability[0], l_variable_translator)};
+            std::unique_ptr<const transition_manager<NB_PIECES>> l_transition_manager{prepare_run<NB_PIECES>(l_situation_capabilities[0], l_variable_translator)};
 
-            std::cout << l_situation_capability[0] << std::endl;
+            std::cout << l_situation_capabilities[0] << std::endl;
 
             emp_situation l_situation[NB_PIECES + 1];
 
@@ -75,7 +76,7 @@ namespace edge_matching_puzzle
                 {
                     unsigned int l_x, l_y;
                     std::tie(l_x,l_y) = get_strategy_generator().get_position(l_position_index);
-                    piece_position_info & l_position_info = l_situation_capability[l_level].get_capability(l_position_index);
+                    piece_position_info & l_position_info = l_situation_capabilities[l_level].get_capability(l_position_index);
                     for (unsigned int l_word_index = 0; l_word_index < 32; ++l_word_index)
                     {
                         uint32_t l_word = l_position_info.get_word(l_word_index);
@@ -91,7 +92,7 @@ namespace edge_matching_puzzle
 #endif // VERBOSE
                             situation_capability<2 * NB_PIECES> l_new_situation_capability;
                             emp_situation l_new_situation{l_situation[l_level]};
-                            set_piece(l_new_situation, l_situation_capability[l_level], l_x, l_y, l_piece_index, l_orientation, l_new_situation_capability, *l_transition_manager);
+                            set_piece(l_new_situation, l_situation_capabilities[l_level], l_x, l_y, l_piece_index, l_orientation, l_new_situation_capability, *l_transition_manager);
                             situation_profile l_profile = l_new_situation_capability.compute_profile(l_level + 1);
                             if (l_profile.is_valid())
                             {
@@ -131,8 +132,8 @@ namespace edge_matching_puzzle
                 {
                     ++l_level;
                     l_situation[l_level] = l_situation[l_level - 1];
-                    l_situation_capability[l_level - 1].get_capability(get_strategy_generator().get_position_index(l_min_x, l_min_y)).clear_bit(l_min_piece_index, l_min_orientation);
-                    set_piece(l_situation[l_level], l_situation_capability[l_level - 1], l_min_x, l_min_y, l_min_piece_index, l_min_orientation, l_situation_capability[l_level], *l_transition_manager);
+                    l_situation_capabilities[l_level - 1].get_capability(get_strategy_generator().get_position_index(l_min_x, l_min_y)).clear_bit(l_min_piece_index, l_min_orientation);
+                    set_piece(l_situation[l_level], l_situation_capabilities[l_level - 1], l_min_x, l_min_y, l_min_piece_index, l_min_orientation, l_situation_capabilities[l_level], *l_transition_manager);
                 }
             }
             std::cout << "Solution : " << situation_string_formatter<emp_situation>::to_string(l_situation[NB_PIECES]) << std::endl;
