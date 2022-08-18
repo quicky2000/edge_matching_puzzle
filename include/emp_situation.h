@@ -93,6 +93,19 @@ namespace edge_matching_puzzle
                       ,const emp_types::t_oriented_piece & p_piece
                       );
 
+        /**
+         * Remove piece from position whose coordinates have been provided
+         * as parameters
+         * Checked by assertion if position is empty
+         * @param p_x X axis position coordinate
+         * @param p_y Y axis position coordinate
+         */
+        [[maybe_unused]]
+        inline
+        void remove_piece(unsigned int p_x
+                         ,unsigned int p_y
+                         );
+
         inline
         bool operator<(const emp_situation & p_situation) const;
 
@@ -169,6 +182,15 @@ namespace edge_matching_puzzle
                       );
 
         /**
+         * Remove piece from position whose index has been provided as
+         * parameter
+         * Checked by assertion if position is occupied
+         * @param p_position_index Position index
+         */
+        inline
+        void remove_piece(unsigned int p_position_index);
+
+        /**
          * Set piece orientation at position whose index has been provided as
          * parameter
          * Checked by assertion if position is empty
@@ -179,6 +201,15 @@ namespace edge_matching_puzzle
         void set_piece_orientation(unsigned int p_position_index
                                   , emp_types::t_orientation p_orientation
                                   );
+
+        /**
+         * Remove piece orientation at position whose index has been provided as
+         * parameter
+         * Checked by assertion if position is empty
+         * @param p_position_index Position index
+         */
+        inline
+        void remove_piece_orientation(unsigned int p_position_index);
 
         /**
          * Set piece id at position whose index has been provided as
@@ -193,11 +224,27 @@ namespace edge_matching_puzzle
                          );
 
         /**
+         * Remove piece id at position whose index has been provided as
+         * parameter
+         * Checked by assertion if position is empty
+         * @param p_position_index Position index
+         */
+        inline
+        void remove_piece_id(unsigned int p_position_index);
+
+        /**
          * Set position whose index has been provided as parameter occupied
          * @param p_position_index
          */
         inline
         void set_position_used(unsigned int p_position_index);
+
+        /**
+         * Set position whose index has been provided as parameter free
+         * @param p_position_index
+         */
+        inline
+        void set_position_unused(unsigned int p_position_index);
 
         /**
          * Compute number of words required to stored piece fields
@@ -319,6 +366,19 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
+    void
+    emp_situation::remove_piece(unsigned int p_x
+                               ,unsigned int p_y
+                               )
+    {
+        unsigned int l_position_index = get_info().get_position_index(p_x, p_y);
+        remove_piece(l_position_index);
+        assert(m_level);
+        --m_level;
+    }
+
+    //-------------------------------------------------------------------------
     bool
     emp_situation::contains_piece(unsigned int p_position_index) const
     {
@@ -375,6 +435,15 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
+    emp_situation::remove_piece(unsigned int p_position_index)
+    {
+        remove_piece_orientation(p_position_index);
+        remove_piece_id(p_position_index);
+        set_position_unused(p_position_index);
+    }
+
+    //-------------------------------------------------------------------------
+    void
     emp_situation::set_piece_orientation(unsigned int p_position_index
                                         ,emp_types::t_orientation p_orientation
                                         )
@@ -386,6 +455,17 @@ namespace edge_matching_puzzle
         auto l_orientation = static_cast<t_word>(p_orientation);
         assert(l_orientation < 4);
         m_pieces_orientation[l_word_index] |= (l_orientation << l_bit_index);
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    emp_situation::remove_piece_orientation(unsigned int p_position_index)
+    {
+        assert(contains_piece(p_position_index));
+        unsigned int l_word_index;
+        unsigned int l_bit_index;
+        std::tie(l_word_index, l_bit_index) = get_field_indexes<2>(p_position_index, m_pieces_orientation);
+        m_pieces_orientation[l_word_index] &= ~(0x3ul << l_bit_index);
     }
 
     //-------------------------------------------------------------------------
@@ -405,6 +485,17 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
+    emp_situation::remove_piece_id(unsigned int p_position_index)
+    {
+        assert(contains_piece(p_position_index));
+        unsigned int l_word_index;
+        unsigned int l_bit_index;
+        std::tie(l_word_index, l_bit_index) = get_field_indexes<8>(p_position_index, m_pieces_index);
+        m_pieces_index[l_word_index] &= ~(0xFFul << l_bit_index);
+    }
+
+    //-------------------------------------------------------------------------
+    void
     emp_situation::set_position_used(unsigned int p_position_index)
     {
         assert(!contains_piece(p_position_index));
@@ -412,6 +503,17 @@ namespace edge_matching_puzzle
         unsigned int l_bit_index;
         std::tie(l_word_index, l_bit_index) = get_field_indexes<1>(p_position_index, m_used_positions);
         m_used_positions[l_word_index] |= (1ul << l_bit_index);
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    emp_situation::set_position_unused(unsigned int p_position_index)
+    {
+        assert(contains_piece(p_position_index));
+        unsigned int l_word_index;
+        unsigned int l_bit_index;
+        std::tie(l_word_index, l_bit_index) = get_field_indexes<1>(p_position_index, m_used_positions);
+        m_used_positions[l_word_index] &= ~(1ul << l_bit_index);
     }
 
     //-------------------------------------------------------------------------
