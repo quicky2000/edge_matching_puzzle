@@ -19,10 +19,6 @@
 #ifndef EMP_CUDA_PIECE_POSITION_INFO_H
 #define EMP_CUDA_PIECE_POSITION_INFO_H
 
-#ifndef __NVCC__
-#error This code should be compiled with nvcc
-#endif // __NVCC__
-
 #include "CUDA_piece_position_info_base.h"
 #include "emp_types.h"
 #include <cassert>

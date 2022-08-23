@@ -24,6 +24,7 @@
 
 #include "CUDA_glutton_max.h"
 #include "emp_FSM_info.h"
+#include "CUDA_piece_position_info.h"
 
 namespace edge_matching_puzzle
 {
@@ -60,6 +61,8 @@ namespace edge_matching_puzzle
                 throw quicky_exception::quicky_logic_exception("Unsupported size " + std::to_string(p_info.get_width()) + "x" + std::to_string(p_info.get_height()), __LINE__, __FILE__);
         }
     }
+
+    uint32_t CUDA_piece_position_info_base::s_init_value = 0;
 
 }
 #endif // ENABLE_CUDA_CODE

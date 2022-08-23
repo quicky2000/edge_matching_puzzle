@@ -20,13 +20,19 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_COLOR_CONSTRAINTS_H
 #define EDGE_MATCHING_PUZZLE_CUDA_COLOR_CONSTRAINTS_H
 
+#include "my_cuda.h"
+#ifdef ENABLE_CUDA_CODE
 #include "CUDA_memory_managed_item.h"
+#endif // ENABLE_CUDA_CODE
 #include "CUDA_piece_position_info2.h"
 #include "common.h"
 
 namespace edge_matching_puzzle
 {
-    class CUDA_color_constraints: public CUDA_memory_managed_item
+    class CUDA_color_constraints
+#ifdef ENABLE_CUDA_CODE
+    : public CUDA_memory_managed_item
+#endif // ENABLE_CUDA_CODE
     {
       public:
 

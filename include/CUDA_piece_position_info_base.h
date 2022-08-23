@@ -20,11 +20,10 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_PIECE_POSITION_INFO_BASE_H
 #define EDGE_MATCHING_PUZZLE_CUDA_PIECE_POSITION_INFO_BASE_H
 
-#ifndef __NVCC__
-#error This code should be compiled with nvcc
-#endif // __NVCC__
-
+#include "my_cuda.h"
+#ifdef ENABLE_CUDA_CODE
 #include "CUDA_memory_managed_item.h"
+#endif // ENABLE_CUDA_CODE
 #include <cassert>
 #include <iostream>
 #include <iomanip>
@@ -45,7 +44,10 @@ namespace edge_matching_puzzle
      * The exact layout of bits is implemented by derived class
      * This class is agnostic and provide raw methods to access words and bits
      */
-     class CUDA_piece_position_info_base: public CUDA_memory_managed_item
+     class CUDA_piece_position_info_base
+#ifdef ENABLE_CUDA_CODE
+     : public CUDA_memory_managed_item
+#endif // ENABLE_CUDA_CODE
      {
 
         friend
@@ -275,7 +277,14 @@ namespace edge_matching_puzzle
                                             ,const CUDA_piece_position_info_base & p_b
                                             )
     {
+#ifdef ENABLE_CUDA_CODE
         m_info[threadIdx.x] = p_a.m_info[threadIdx.x] ^ p_b.m_info[threadIdx.x];
+#else // ENABLE_CUDA_CODE
+        for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+        {
+            m_info[l_threadIdx_x] = p_a.m_info[l_threadIdx_x] ^ p_b.m_info[l_threadIdx_x];
+        }
+#endif // ENABLE_CUDA_CODE
     }
 
     //-------------------------------------------------------------------------
@@ -285,7 +294,14 @@ namespace edge_matching_puzzle
                                            ,const CUDA_piece_position_info_base & p_b
                                            )
     {
+#ifdef ENABLE_CUDA_CODE
         m_info[threadIdx.x] = p_a.m_info[threadIdx.x] & p_b.m_info[threadIdx.x];
+#else // ENABLE_CUDA_CODE
+        for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+        {
+            m_info[l_threadIdx_x] = p_a.m_info[l_threadIdx_x] & p_b.m_info[l_threadIdx_x];
+        }
+#endif // ENABLE_CUDA_CODE
     }
 
     //-------------------------------------------------------------------------
