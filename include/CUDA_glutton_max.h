@@ -21,6 +21,7 @@
 #include "my_cuda.h"
 #include "CUDA_common.h"
 #include "CUDA_color_constraints.h"
+#include "CUDA_glutton_max_stack.h"
 #include "feature_sys_equa_CUDA_base.h"
 #include "emp_strategy_generator_factory.h"
 #include "quicky_exception.h"
@@ -207,6 +208,67 @@ namespace edge_matching_puzzle
             return l_initial_capability;
         }
 
+        inline static
+        std::unique_ptr<CUDA_glutton_max_stack>
+        prepare_stack(const emp_piece_db & p_piece_db
+                     ,const emp_FSM_info & p_info
+                     ,emp_situation & p_start_situation
+                     )
+        {
+            auto * l_initial_capability = prepare_initial_capability(p_piece_db, p_info);
+            unsigned int l_nb_pieces = p_info.get_nb_pieces();
+            unsigned int l_size = l_nb_pieces - p_start_situation.get_level();
+            std::unique_ptr<CUDA_glutton_max_stack> l_stack{new CUDA_glutton_max_stack(l_size,l_nb_pieces)};
+            for(unsigned int l_piece_index = 0; l_piece_index < l_nb_pieces; ++l_piece_index)
+            {
+                l_stack->set_piece_available(l_piece_index);
+            }
+
+            // Prepare stack with info of initial situation
+            info_index_t l_info_index{0u};
+            for(unsigned int l_position_index = 0; l_position_index < l_nb_pieces; ++l_position_index)
+            {
+                unsigned int l_x = p_info.get_x(l_position_index);
+                unsigned int l_y = p_info.get_y(l_position_index);
+                if(!p_start_situation.contains_piece(l_x, l_y))
+                {
+                    l_stack->set_position_info_relation(l_info_index, position_index_t(l_position_index));
+                    l_stack->set_position_info(l_info_index, l_initial_capability[l_position_index]);
+                    ++l_info_index;
+                }
+                else
+                {
+                    l_stack->set_piece_unavailable(p_start_situation.get_piece(l_x, l_y).first - 1);
+                }
+            }
+            delete[] l_initial_capability;
+            print_host_info_position_index(0, *l_stack);
+            return l_stack;
+        }
+
+        /**
+         * Print information relating info index and position index
+         * @param p_indent_level indentation level
+         * @param p_stack
+         */
+        inline static
+        void
+        print_host_info_position_index(unsigned int p_indent_level
+                                      ,const CUDA_glutton_max_stack & p_stack
+                                      )
+        {
+            std::cout << std::string(p_indent_level,' ') <<  "====== Position index <-> Info index ======" << std::endl;
+            for(position_index_t l_index{0u}; l_index < p_stack.get_nb_pieces(); ++l_index)
+            {
+                std::cout << std::string(p_indent_level,' ') << "Position[" << l_index << "] -> Index " << p_stack.get_info_index(l_index) << std::endl;
+            }
+            for(info_index_t l_index{0u}; l_index < p_stack.get_size(); ++l_index)
+            {
+                std::cout << std::string(p_indent_level,' ') << (l_index < p_stack.get_level_nb_info() ? '*' : ' ') << " Index[" << l_index << "] -> Position " << p_stack.get_position_index(l_index) << std::endl;
+            }
+        }
+
+
         /**
          * CPU debug version of CUDA algorithm
          */
@@ -214,9 +276,8 @@ namespace edge_matching_puzzle
         {
             prepare_constants(get_piece_db(),get_info());
             std::unique_ptr<CUDA_color_constraints> l_color_constraints = prepare_color_constraints(get_piece_db(),get_info());
-            auto * l_initial_capability = prepare_initial_capability(get_piece_db(), get_info());
-
-            delete[] l_initial_capability;
+            emp_situation l_start_situation;
+            std::unique_ptr<CUDA_glutton_max_stack> l_stack = prepare_stack(get_piece_db(), get_info(), l_start_situation);
         }
 
         template<unsigned int NB_PIECES>

@@ -214,27 +214,6 @@ namespace edge_matching_puzzle
         }
     }
 
-    /**
-     * Print information relating info index and position index
-     * @param p_indent_level indentation level
-     * @param p_stack
-     */
-    void
-    print_host_info_position_index(unsigned int p_indent_level
-                                  ,const CUDA_glutton_max_stack & p_stack
-                                  )
-    {
-        std::cout << std::string(p_indent_level,' ') <<  "====== Position index <-> Info index ======" << std::endl;
-        for(position_index_t l_index{0u}; l_index < p_stack.get_nb_pieces(); ++l_index)
-        {
-            std::cout << std::string(p_indent_level,' ') << "Position[" << l_index << "] -> Index " << p_stack.get_info_index(l_index) << std::endl;
-        }
-        for(info_index_t l_index{0u}; l_index < p_stack.get_size(); ++l_index)
-        {
-            std::cout << std::string(p_indent_level,' ') << (l_index < p_stack.get_level_nb_info() ? '*' : ' ') << " Index[" << l_index << "] -> Position " << p_stack.get_position_index(l_index) << std::endl;
-        }
-    }
-
     __global__
     void kernel(CUDA_glutton_max_stack * p_stacks
                ,unsigned int p_nb_stack
@@ -709,90 +688,8 @@ namespace edge_matching_puzzle
         CUDA_glutton_max::prepare_constants(p_piece_db, p_info);
         std::unique_ptr<CUDA_color_constraints> l_color_constraints = CUDA_glutton_max::prepare_color_constraints(p_piece_db, p_info);
 
-        // Prepare initial situation vector
-#if 0
-        CUDA_piece_position_info2::set_init_value(0x0);
-        auto * l_initial_capability = new CUDA_piece_position_info2[p_info.get_nb_pieces()];
-        for(unsigned int l_position_index = 0; l_position_index < p_info.get_nb_pieces(); ++l_position_index)
-        {
-            switch(p_info.get_position_kind(p_info.get_x(l_position_index), p_info.get_y(l_position_index)))
-            {
-                case emp_types::t_kind::CORNER:
-                {
-                    emp_types::t_orientation l_border1;
-                    emp_types::t_orientation l_border2;
-                    std::tie(l_border1,l_border2) = p_info.get_corner_orientation(l_position_index);
-                    for (unsigned int l_corner_index = 0; l_corner_index < 4; ++l_corner_index)
-                    {
-                        const emp_piece_corner & l_corner = p_piece_db.get_corner(l_corner_index);
-                        l_initial_capability[l_position_index].set_bit(l_corner.get_id() - 1, l_corner.compute_orientation(l_border1, l_border2));
-                    }
-                }
-                    break;
-                case emp_types::t_kind::BORDER:
-                {
-                    emp_types::t_orientation l_border_orientation = p_info.get_border_orientation(l_position_index);
-                    for(unsigned int l_border_index = 0; l_border_index < p_info.get_nb_borders(); ++l_border_index)
-                    {
-                        const emp_piece_border & l_border = p_piece_db.get_border(l_border_index);
-                        l_initial_capability[l_position_index].set_bit(l_border.get_id() - 1, l_border.compute_orientation(l_border_orientation));
-                    }
-                }
-                    break;
-                case emp_types::t_kind::CENTER:
-                    for(unsigned int l_center_index = 0; l_center_index < p_info.get_nb_centers(); ++l_center_index)
-                    {
-                        const emp_piece & l_center = p_piece_db.get_center(l_center_index);
-                        for (auto l_iter: emp_types::get_orientations())
-                        {
-                            l_initial_capability[l_position_index].set_bit(l_center.get_id() - 1, l_iter);
-                        }
-                    }
-                    break;
-                case emp_types::t_kind::UNDEFINED:
-                    throw quicky_exception::quicky_logic_exception("Undefined position type", __LINE__, __FILE__);
-                default:
-                    throw quicky_exception::quicky_logic_exception("Unknown position type", __LINE__, __FILE__);
-            }
-        }
-
-        for(unsigned int l_position_index = 0; l_position_index < p_info.get_nb_pieces(); ++l_position_index)
-        {
-            std::cout << "Position " << l_position_index << "(" << p_info.get_x(l_position_index) << "," <<p_info.get_y(l_position_index) << "):" << std::endl;
-            std::cout << l_initial_capability[l_position_index] << std::endl;
-        }
-#else // 0
-        auto * l_initial_capability = CUDA_glutton_max::prepare_initial_capability(p_piece_db, p_info);
-#endif // 0
-
         emp_situation l_start_situation;
-        unsigned int l_nb_pieces = p_info.get_nb_pieces();
-        unsigned int l_size = l_nb_pieces - l_start_situation.get_level();
-        std::unique_ptr<CUDA_glutton_max_stack> l_stack{new CUDA_glutton_max_stack(l_size,l_nb_pieces)};
-        for(unsigned int l_piece_index = 0; l_piece_index < l_nb_pieces; ++l_piece_index)
-        {
-            l_stack->set_piece_available(l_piece_index);
-        }
-
-        // Prepare stack with info of initial situation
-        info_index_t l_info_index{0u};
-        for(unsigned int l_position_index = 0; l_position_index < l_nb_pieces; ++l_position_index)
-        {
-            unsigned int l_x = p_info.get_x(l_position_index);
-            unsigned int l_y = p_info.get_y(l_position_index);
-            if(!l_start_situation.contains_piece(l_x, l_y))
-            {
-                l_stack->set_position_info_relation(l_info_index, position_index_t(l_position_index));
-                l_stack->set_position_info(l_info_index, l_initial_capability[l_position_index]);
-                ++l_info_index;
-            }
-            else
-            {
-                l_stack->set_piece_unavailable(l_start_situation.get_piece(l_x, l_y).first - 1);
-            }
-        }
-        delete[] l_initial_capability;
-        print_host_info_position_index(0, *l_stack);
+        std::unique_ptr<CUDA_glutton_max_stack> l_stack = CUDA_glutton_max::prepare_stack(p_piece_db, p_info, l_start_situation);
 
 #ifdef TEST_KERNEL
         std::unique_ptr<CUDA_memory_managed_array<uint32_t>> l_cuda_array{new CUDA_memory_managed_array<uint32_t>(32)};
