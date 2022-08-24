@@ -707,26 +707,7 @@ namespace edge_matching_puzzle
                                 ,const emp_FSM_info & p_info
                                 )
     {
-        // Prepare piece description
-        std::array<uint32_t, 256 * 4> l_pieces{};
-        for(unsigned int l_piece_index = 0; l_piece_index < p_info.get_nb_pieces(); ++l_piece_index)
-        {
-            for(auto l_orientation: emp_types::get_orientations())
-            {
-                l_pieces[l_piece_index * 4 + static_cast<unsigned int>(l_orientation)] = p_piece_db.get_piece(l_piece_index + 1).get_color(l_orientation);
-            }
-        }
-
-        // Prepare position offset
-        std::array<int,4> l_x_offset{- static_cast<int>(p_info.get_width()), 1, static_cast<int>(p_info.get_width()), -1};
-        unsigned int l_nb_pieces = p_info.get_nb_pieces();
-
-        CUDA_info();
-
-        // Fill constant variables
-        cudaMemcpyToSymbol(g_pieces, l_pieces.data(), l_pieces.size() * sizeof(uint32_t ));
-        cudaMemcpyToSymbol(g_position_offset, l_x_offset.data(), l_x_offset.size() * sizeof(int));
-        cudaMemcpyToSymbol(g_nb_pieces, &l_nb_pieces, sizeof(unsigned int));
+        CUDA_glutton_max::prepare_constants(p_piece_db, p_info);
 
         // Prepare color constraints
         CUDA_piece_position_info2::set_init_value(0);
@@ -806,7 +787,7 @@ namespace edge_matching_puzzle
         }
 
         emp_situation l_start_situation;
-
+        unsigned int l_nb_pieces = p_info.get_nb_pieces();
         unsigned int l_size = l_nb_pieces - l_start_situation.get_level();
         std::unique_ptr<CUDA_glutton_max_stack> l_stack{new CUDA_glutton_max_stack(l_size,l_nb_pieces)};
         for(unsigned int l_piece_index = 0; l_piece_index < l_nb_pieces; ++l_piece_index)

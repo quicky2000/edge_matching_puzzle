@@ -19,6 +19,7 @@
 #define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_H
 
 #include "my_cuda.h"
+#include "CUDA_common.h"
 #include "feature_sys_equa_CUDA_base.h"
 #include "emp_strategy_generator_factory.h"
 #include "quicky_exception.h"
@@ -72,11 +73,52 @@ namespace edge_matching_puzzle
 
         }
 
+        inline static
+        void prepare_constants(const emp_piece_db & p_piece_db
+                              ,const emp_FSM_info & p_info
+                              )
+        {
+            // Prepare piece description
+            std::array<uint32_t, 256 * 4> l_pieces{};
+            for(unsigned int l_piece_index = 0; l_piece_index < p_info.get_nb_pieces(); ++l_piece_index)
+            {
+                for(auto l_orientation: emp_types::get_orientations())
+                {
+                    l_pieces[l_piece_index * 4 + static_cast<unsigned int>(l_orientation)] = p_piece_db.get_piece(l_piece_index + 1).get_color(l_orientation);
+                }
+            }
+
+            // Prepare position offset
+            std::array<int,4> l_x_offset{- static_cast<int>(p_info.get_width()), 1, static_cast<int>(p_info.get_width()), -1};
+            unsigned int l_nb_pieces = p_info.get_nb_pieces();
+
+#ifdef ENABLE_CUDA_CODE
+            CUDA_info();
+
+            // Fill constant variables
+            cudaMemcpyToSymbol(g_pieces, l_pieces.data(), l_pieces.size() * sizeof(uint32_t ));
+            cudaMemcpyToSymbol(g_position_offset, l_x_offset.data(), l_x_offset.size() * sizeof(int));
+            cudaMemcpyToSymbol(g_nb_pieces, &l_nb_pieces, sizeof(unsigned int));
+#else // ENABLE_CUDA_CODE
+            for(unsigned int l_index = 0; l_index < 256 * 4; ++l_index)
+            {
+                g_pieces[l_index / 4][l_index % 4] = l_pieces[l_index];
+            }
+            for(unsigned int l_index = 0; l_index < 4; ++l_index)
+            {
+                g_position_offset[l_index] = l_x_offset[l_index];
+            }
+            g_nb_pieces = l_nb_pieces;
+
+#endif // ENABLE_CUDA_CODE
+        }
+
         /**
          * CPU debug version of CUDA algorithm
          */
         void run()
         {
+            prepare_constants(get_piece_db(),get_info());
         }
 
         template<unsigned int NB_PIECES>
