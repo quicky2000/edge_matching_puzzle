@@ -19,6 +19,7 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_STACK_H
 #define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_STACK_H
 
+#include "my_cuda.h"
 #include "CUDA_memory_managed_item.h"
 #include "CUDA_memory_managed_array.h"
 #include "CUDA_piece_position_info2.h"
@@ -36,7 +37,10 @@ namespace edge_matching_puzzle
      * between position and index is not constant through level and must be
      * computed
      */
-    class CUDA_glutton_max_stack: public CUDA_memory_managed_item
+    class CUDA_glutton_max_stack
+#ifdef ENABLE_CUDA_CODE
+    : public CUDA_memory_managed_item
+#endif // ENABLE_CUDA_CODE
     {
 
       public:
@@ -215,12 +219,16 @@ namespace edge_matching_puzzle
 
         /**
          * Return piece information related to a thread
-         * @param p_thread_id
+         * @param threadIdx_x
          * @return piece information
          */
         inline
         __device__
-        t_piece_infos & get_thread_piece_info();
+        t_piece_infos & get_thread_piece_info(
+#ifndef ENABLE_CUDA_CODE
+                                              unsigned int threadIdx_x
+#endif // ENABLE_CUDA_CODE
+                                             );
 
         /**
          * Reset values of piece info depending on piece availabilitys
@@ -600,6 +608,7 @@ namespace edge_matching_puzzle
                                                    ,position_index_t p_position_index2
                                                    )
     {
+#ifdef ENABLE_CUDA_CODE
         __syncwarp(0xFFFFFFFF);
         if(threadIdx.x < 2)
         {
@@ -609,6 +618,10 @@ namespace edge_matching_puzzle
             *l_ptr2 = atomicExch(l_ptr1, l_value);
         }
         __syncwarp(0xFFFFFFFF);
+#else // ENABLE_CUDA_CODE
+        std::swap(m_info_index_to_position_index[static_cast<uint32_t>(p_info_index2)], m_info_index_to_position_index[static_cast<uint32_t>(p_info_index1)]);
+        std::swap(m_position_index_to_info_index[static_cast<uint32_t>(p_position_index2)], m_position_index_to_info_index[static_cast<uint32_t>(p_position_index1)]);
+#endif // ENABLE_CUDA_CODE
     }
 
 
@@ -627,7 +640,9 @@ namespace edge_matching_puzzle
         assert(p_orientation_index < 4);
         // Save info of position/piece/orientation
         played_info_t l_set_info = generate_played_info(p_position_index, p_piece_index, p_orientation_index);
+#ifdef ENABLE_CUDA_CODE
         if(!threadIdx.x)
+#endif // ENABLE_CUDA_CODE
         {
             m_played_info[m_level] = l_set_info;
             set_piece_unavailable(p_piece_index);
@@ -636,7 +651,9 @@ namespace edge_matching_puzzle
             // position index is stored in played info
             m_info_index_to_position_index[static_cast<uint32_t>(p_info_index)] = position_index_t(static_cast<uint32_t>(p_info_index));
         }
+#ifdef ENABLE_CUDA_CODE
         __syncwarp(0xFFFFFFFF);
+#endif // ENABLE_CUDA_CODE
         info_index_t l_last_info_index{m_size - m_level};
         position_index_t l_last_position_index = get_position_index(l_last_info_index);
         swap_position_and_index(p_info_index, l_last_info_index, p_position_index, l_last_position_index);
@@ -654,13 +671,17 @@ namespace edge_matching_puzzle
         info_index_t l_info_index = info_index_t(static_cast<uint32_t>(*l_ptr));
         uint32_t l_played_info = m_played_info[m_level - 1];
         position_index_t l_position_index = decode_position_index(l_played_info);
+#ifdef ENABLE_CUDA_CODE
         if(!threadIdx.x)
+#endif // ENABLE_CUDA_CODE
         {
             --m_level;
             set_piece_available(decode_piece_index(l_played_info));
             *l_ptr = l_position_index;
         }
+#ifdef ENABLE_CUDA_CODE
         __syncwarp(0xFFFFFFFF);
+#endif // ENABLE_CUDA_CODE
         swap_position_and_index(l_info_index, l_last_info_index, l_position_index, m_info_index_to_position_index[static_cast<uint32_t>(l_info_index)]);
         return l_info_index;
     }
@@ -795,10 +816,19 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__
     CUDA_glutton_max_stack::t_piece_infos &
-    CUDA_glutton_max_stack::get_thread_piece_info()
+    CUDA_glutton_max_stack::get_thread_piece_info(
+#ifndef ENABLE_CUDA_CODE
+                                                  unsigned int threadIdx_x
+#endif // ENABLE_CUDA_CODE
+                                                 )
     {
+#ifdef ENABLE_CUDA_CODE
         assert(threadIdx.x < 32);
         return m_thread_piece_infos[threadIdx.x];
+#else // ENABLE_CUDA_CODE
+        assert(threadIdx_x < 32);
+        return m_thread_piece_infos[threadIdx_x];
+#endif // ENABLE_CUDA_CODE
     }
 
     //-------------------------------------------------------------------------
@@ -806,11 +836,21 @@ namespace edge_matching_puzzle
     void
     CUDA_glutton_max_stack::clear_piece_info()
     {
+#ifdef ENABLE_CUDA_CODE
         assert(threadIdx.x < 32);
         for(unsigned int l_index = 0; l_index < 8; ++l_index)
         {
             m_thread_piece_infos[threadIdx.x][l_index] = is_piece_available(8 * threadIdx.x + l_index) ? 0 : 0xFFFF;
         }
+#else // ENABLE_CUDA_CODE
+        for(unsigned int threadIdx_x = 0; threadIdx_x < 32; ++threadIdx_x)
+        {
+            for(unsigned int l_index = 0; l_index < 8; ++l_index)
+            {
+                m_thread_piece_infos[threadIdx_x][l_index] = is_piece_available(8 * threadIdx_x + l_index) ? 0 : 0xFFFF;
+            }
+        }
+#endif // ENABLE_CUDA_CODE
     }
 
     //-------------------------------------------------------------------------
