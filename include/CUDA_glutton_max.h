@@ -72,6 +72,13 @@ namespace edge_matching_puzzle
 
         }
 
+        /**
+         * CPU debug version of CUDA algorithm
+         */
+        void run()
+        {
+        }
+
         template<unsigned int NB_PIECES>
         void template_run()
         {
