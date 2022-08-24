@@ -20,7 +20,10 @@
 #define EDGE_MATCHING_PUZZLE_CUDA_COMMON_H
 
 #include "my_cuda.h"
+#ifdef ENABLE_CUDA_CODE
 #include "thrust/version.h"
+#include "quicky_exception.h"
+#endif // ENABLE_CUDA_CODE
 #include <iostream>
 
 namespace edge_matching_puzzle
@@ -28,6 +31,7 @@ namespace edge_matching_puzzle
     inline
     void CUDA_info()
     {
+#ifdef ENABLE_CUDA_CODE
         std::cout << "CUDA version  : " << CUDART_VERSION << std::endl;
         std::cout << "THRUST version: " << THRUST_MAJOR_VERSION << "." << THRUST_MINOR_VERSION << "." << THRUST_SUBMINOR_VERSION << std::endl;
 
@@ -59,6 +63,10 @@ namespace edge_matching_puzzle
             }
             std::cout << std::endl;
         }
+#else // ENABLE_CUDA_CODE
+        std::cout << "Software not compiled with CUDA" << std::endl;
+#endif // ENABLE_CUDA_CODE
+
     }
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_COMMON_H
