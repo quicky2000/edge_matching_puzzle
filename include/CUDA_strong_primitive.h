@@ -18,6 +18,8 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_STRONG_PRIMITIVE_H
 #define EDGE_MATCHING_PUZZLE_CUDA_STRONG_PRIMITIVE_H
 
+#include "my_cuda.h"
+
 namespace edge_matching_puzzle
 {
     template <typename T, typename PHANTOM>
@@ -38,6 +40,15 @@ namespace edge_matching_puzzle
         operator<<(std::ostream &
                   ,const CUDA_strong_primitive<U, PHANTOM_U> &
                   );
+
+        inline
+        explicit
+        __host__ __device__
+        CUDA_strong_primitive()
+#ifndef ENABLE_CUDA_CODE
+        = default
+#endif // ENABLE_CUDA_CODE
+        ;
 
         inline
         explicit
