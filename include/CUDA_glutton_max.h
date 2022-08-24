@@ -18,6 +18,7 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_H
 #define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_H
 
+#include "my_cuda.h"
 #include "feature_sys_equa_CUDA_base.h"
 #include "emp_strategy_generator_factory.h"
 #include "quicky_exception.h"
@@ -33,6 +34,26 @@
  */
 namespace edge_matching_puzzle
 {
+
+    /**
+     * Store piece representation.
+     * First dimension is piece index ( ie piece id -1 )
+     * Second dimension is border orientation
+     */
+    extern __constant__ uint32_t g_pieces[256][4];
+
+    /**
+     * Return position offset for each orientation
+     * NORTH : 0 EAST:1 SOUTH:2 WEST:3
+     * Position offset depend on puzzle dimensions
+     */
+    extern __constant__ int g_position_offset[4];
+
+    /**
+     * Number of pieces remaining to set
+     */
+    extern __constant__ unsigned int g_nb_pieces;
+
     class emp_piece_db;
     class emp_FSM_info;
 

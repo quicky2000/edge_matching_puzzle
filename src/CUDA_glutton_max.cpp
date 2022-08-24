@@ -29,6 +29,25 @@
 namespace edge_matching_puzzle
 {
 
+    /**
+     * Store piece representation.
+     * First dimension is piece index ( ie piece id -1 )
+     * Second dimension is border orientation
+     */
+    __constant__ uint32_t g_pieces[256][4];
+
+    /**
+     * Return position offset for each orientation
+     * NORTH : 0 EAST:1 SOUTH:2 WEST:3
+     * Position offset depend on puzzle dimensions
+     */
+    __constant__ int g_position_offset[4];
+
+    /**
+     * Number of pieces remaining to set
+     */
+    __constant__ unsigned int g_nb_pieces;
+
     void launch_CUDA_glutton_max(const emp_piece_db & p_piece_db
                                 ,const emp_FSM_info & p_info
                                 )
