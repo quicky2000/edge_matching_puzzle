@@ -804,11 +804,6 @@ namespace edge_matching_puzzle
             std::cout << "Position " << l_position_index << "(" << p_info.get_x(l_position_index) << "," <<p_info.get_y(l_position_index) << "):" << std::endl;
             std::cout << l_initial_capability[l_position_index] << std::endl;
         }
-        std::unique_ptr<CUDA_memory_managed_array<uint32_t>> l_cuda_array{new CUDA_memory_managed_array<uint32_t>(32)};
-        for(unsigned int l_index = 0; l_index < 32 ; ++l_index)
-        {
-            (*l_cuda_array)[l_index] = 0;
-        }
 
         emp_situation l_start_situation;
 
@@ -839,13 +834,23 @@ namespace edge_matching_puzzle
         delete[] l_initial_capability;
         print_host_info_position_index(0, *l_stack);
 
+#ifdef TEST_KERNEL
+        std::unique_ptr<CUDA_memory_managed_array<uint32_t>> l_cuda_array{new CUDA_memory_managed_array<uint32_t>(32)};
+        for(unsigned int l_index = 0; l_index < 32 ; ++l_index)
+        {
+            (*l_cuda_array)[l_index] = 0;
+        }
+#endif // TEST_KERNEL
+
         // Reset CUDA error status
         cudaGetLastError();
         std::cout << "Launch kernels" << std::endl;
         dim3 l_block_info(32, 1);
         dim3 l_grid_info(1);
         kernel<<<l_grid_info, l_block_info>>>(l_stack.get(), 1, *l_color_constraints);
-        //test_kernel<<<l_grid_info, l_block_info>>>(l_stack.get(), 1, *l_cuda_array);
+#ifdef TEST_KERNEL
+        test_kernel<<<l_grid_info, l_block_info>>>(l_stack.get(), 1, *l_cuda_array);
+#endif // TEST_KERNEL
         cudaDeviceSynchronize();
         gpuErrChk(cudaGetLastError());
 
@@ -878,12 +883,13 @@ namespace edge_matching_puzzle
             //l_stack->push();
         }
 
+#ifdef TEST_KERNEL
         std::cout << "CUDA array content" << std::endl;
         for(unsigned int l_index = 0; l_index < 32; ++l_index)
         {
             std::cout << "cuda_array[" << l_index << "] = " << (*l_cuda_array)[l_index] << std::endl;
         }
-
+#endif // TEST_KERNEL
     }
 
     //-------------------------------------------------------------------------
