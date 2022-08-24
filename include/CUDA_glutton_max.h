@@ -148,6 +148,65 @@ namespace edge_matching_puzzle
 
         }
 
+        inline static
+        CUDA_piece_position_info2 *
+        prepare_initial_capability(const emp_piece_db & p_piece_db
+                                  ,const emp_FSM_info & p_info
+                                  )
+        {
+            CUDA_piece_position_info2::set_init_value(0x0);
+            auto * l_initial_capability = new CUDA_piece_position_info2[p_info.get_nb_pieces()];
+            for(unsigned int l_position_index = 0; l_position_index < p_info.get_nb_pieces(); ++l_position_index)
+            {
+                switch(p_info.get_position_kind(p_info.get_x(l_position_index), p_info.get_y(l_position_index)))
+                {
+                    case emp_types::t_kind::CORNER:
+                    {
+                        emp_types::t_orientation l_border1;
+                        emp_types::t_orientation l_border2;
+                        std::tie(l_border1,l_border2) = p_info.get_corner_orientation(l_position_index);
+                        for (unsigned int l_corner_index = 0; l_corner_index < 4; ++l_corner_index)
+                        {
+                            const emp_piece_corner & l_corner = p_piece_db.get_corner(l_corner_index);
+                            l_initial_capability[l_position_index].set_bit(l_corner.get_id() - 1, l_corner.compute_orientation(l_border1, l_border2));
+                        }
+                    }
+                    break;
+                    case emp_types::t_kind::BORDER:
+                    {
+                        emp_types::t_orientation l_border_orientation = p_info.get_border_orientation(l_position_index);
+                        for(unsigned int l_border_index = 0; l_border_index < p_info.get_nb_borders(); ++l_border_index)
+                        {
+                            const emp_piece_border & l_border = p_piece_db.get_border(l_border_index);
+                            l_initial_capability[l_position_index].set_bit(l_border.get_id() - 1, l_border.compute_orientation(l_border_orientation));
+                        }
+                    }
+                    break;
+                    case emp_types::t_kind::CENTER:
+                    for(unsigned int l_center_index = 0; l_center_index < p_info.get_nb_centers(); ++l_center_index)
+                    {
+                        const emp_piece & l_center = p_piece_db.get_center(l_center_index);
+                        for (auto l_iter: emp_types::get_orientations())
+                        {
+                            l_initial_capability[l_position_index].set_bit(l_center.get_id() - 1, l_iter);
+                        }
+                    }
+                    break;
+                    case emp_types::t_kind::UNDEFINED:
+                        throw quicky_exception::quicky_logic_exception("Undefined position type", __LINE__, __FILE__);
+                    default:
+                        throw quicky_exception::quicky_logic_exception("Unknown position type", __LINE__, __FILE__);
+                }
+            }
+
+            for(unsigned int l_position_index = 0; l_position_index < p_info.get_nb_pieces(); ++l_position_index)
+            {
+                std::cout << "Position " << l_position_index << "(" << p_info.get_x(l_position_index) << "," <<p_info.get_y(l_position_index) << "):" << std::endl;
+                std::cout << l_initial_capability[l_position_index] << std::endl;
+            }
+            return l_initial_capability;
+        }
+
         /**
          * CPU debug version of CUDA algorithm
          */
@@ -155,6 +214,9 @@ namespace edge_matching_puzzle
         {
             prepare_constants(get_piece_db(),get_info());
             std::unique_ptr<CUDA_color_constraints> l_color_constraints = prepare_color_constraints(get_piece_db(),get_info());
+            auto * l_initial_capability = prepare_initial_capability(get_piece_db(), get_info());
+
+            delete[] l_initial_capability;
         }
 
         template<unsigned int NB_PIECES>

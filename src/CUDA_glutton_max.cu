@@ -710,6 +710,7 @@ namespace edge_matching_puzzle
         std::unique_ptr<CUDA_color_constraints> l_color_constraints = CUDA_glutton_max::prepare_color_constraints(p_piece_db, p_info);
 
         // Prepare initial situation vector
+#if 0
         CUDA_piece_position_info2::set_init_value(0x0);
         auto * l_initial_capability = new CUDA_piece_position_info2[p_info.get_nb_pieces()];
         for(unsigned int l_position_index = 0; l_position_index < p_info.get_nb_pieces(); ++l_position_index)
@@ -760,6 +761,9 @@ namespace edge_matching_puzzle
             std::cout << "Position " << l_position_index << "(" << p_info.get_x(l_position_index) << "," <<p_info.get_y(l_position_index) << "):" << std::endl;
             std::cout << l_initial_capability[l_position_index] << std::endl;
         }
+#else // 0
+        auto * l_initial_capability = CUDA_glutton_max::prepare_initial_capability(p_piece_db, p_info);
+#endif // 0
 
         emp_situation l_start_situation;
         unsigned int l_nb_pieces = p_info.get_nb_pieces();
