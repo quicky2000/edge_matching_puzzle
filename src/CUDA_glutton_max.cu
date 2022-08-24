@@ -20,7 +20,6 @@
 #include "emp_FSM_info.h"
 #include "emp_piece_db.h"
 #include "CUDA_glutton_max_stack.h"
-#include "CUDA_color_constraints.h"
 #include "CUDA_memory_managed_array.h"
 #include "my_cuda.h"
 #include "CUDA_common.h"
@@ -708,31 +707,7 @@ namespace edge_matching_puzzle
                                 )
     {
         CUDA_glutton_max::prepare_constants(p_piece_db, p_info);
-
-        // Prepare color constraints
-        CUDA_piece_position_info2::set_init_value(0);
-        std::unique_ptr<CUDA_color_constraints> l_color_constraints{new CUDA_color_constraints(static_cast<unsigned int>(p_piece_db.get_colors().size()))};
-        for(auto l_iter_color: p_piece_db.get_colors())
-        {
-            unsigned int l_color_index = l_iter_color - 1;
-            for(auto l_color_orientation: emp_types::get_orientations())
-            {
-                auto l_opposite_orientation = emp_types::get_opposite(l_color_orientation);
-                for(unsigned int l_piece_index = 0; l_piece_index < p_info.get_nb_pieces(); ++l_piece_index)
-                {
-                    for(auto l_piece_orientation: emp_types::get_orientations())
-                    {
-                        emp_types::t_color_id l_color_id{p_piece_db.get_piece(l_piece_index + 1).get_color(l_opposite_orientation, l_piece_orientation)};
-                        if(l_color_id == l_iter_color)
-                        {
-                            l_color_constraints->get_info(l_color_index, static_cast<unsigned int>(l_color_orientation)).set_bit(l_piece_index, l_piece_orientation);
-                        }
-                    }
-                }
-                std::cout << "Color " << l_iter_color << emp_types::orientation2short_string(l_color_orientation) << ":" << std::endl;
-                std::cout << l_color_constraints->get_info(l_color_index, static_cast<unsigned int>(l_color_orientation)) << std::endl;
-            }
-        }
+        std::unique_ptr<CUDA_color_constraints> l_color_constraints = CUDA_glutton_max::prepare_color_constraints(p_piece_db, p_info);
 
         // Prepare initial situation vector
         CUDA_piece_position_info2::set_init_value(0x0);
