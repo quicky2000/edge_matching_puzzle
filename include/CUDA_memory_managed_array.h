@@ -19,6 +19,7 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_MEMORY_MANAGED_ARRAY_H
 #define EDGE_MATCHING_PUZZLE_CUDA_MEMORY_MANAGED_ARRAY_H
 
+#include "my_cuda.h"
 #include "CUDA_memory_managed_item.h"
 #include <algorithm>
 
@@ -30,7 +31,10 @@ namespace edge_matching_puzzle
      * @tparam T array type
      */
     template<typename T>
-    class CUDA_memory_managed_array: public CUDA_memory_managed_item
+    class CUDA_memory_managed_array
+#ifdef ENABLE_CUDA_CODE
+    : public CUDA_memory_managed_item
+#endif // 0
     {
       public:
 
@@ -56,15 +60,20 @@ namespace edge_matching_puzzle
         ~CUDA_memory_managed_array();
 
       private:
+#ifdef ENABLE_CUDA_CODE
         static_assert(!std::is_base_of<CUDA_memory_managed_item, T>::value, "CUDA_memory_managed_array is for basic types not derived from CUDA_memory_managed_item");
-
+#endif // ENABLE_CUDA_CODE
         T * m_array_ptr;
     };
 
     //-------------------------------------------------------------------------
     template<typename T>
     CUDA_memory_managed_array<T>::CUDA_memory_managed_array(size_t p_size)
+#ifdef ENABLE_CUDA_CODE
     :m_array_ptr(static_cast<T*>(CUDA_memory_managed_item::allocate(p_size * sizeof(T))))
+#else // ENABLE_CUDA_CODE
+    :m_array_ptr(new T[p_size])
+#endif // ENABLE_CUDA_CODE
     {
     }
 
@@ -82,7 +91,11 @@ namespace edge_matching_puzzle
     template <typename T>
     CUDA_memory_managed_array<T>::~CUDA_memory_managed_array()
     {
+#ifdef ENABLE_CUDA_CODE
         deallocate(m_array_ptr);
+#else // ENABLE_CUDA_CODE
+        delete[] m_array_ptr;
+#endif // ENABLE_CUDA_CODE
     }
 
     //-------------------------------------------------------------------------
