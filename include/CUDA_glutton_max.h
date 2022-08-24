@@ -211,12 +211,6 @@ namespace edge_matching_puzzle
 
     };
 
-    /**
-     * Launch CUDA kernels
-     */
-    void launch_CUDA_glutton_max(const emp_piece_db & p_piece_db
-                                ,const emp_FSM_info & p_info
-                                );
 
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_MAX_H

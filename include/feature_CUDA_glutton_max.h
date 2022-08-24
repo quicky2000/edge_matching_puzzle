@@ -20,7 +20,6 @@
 #ifndef EDGE_MATCHING_PUZZLE_FEATURE_CUDA_GLUTTON_MAX_H
 #define EDGE_MATCHING_PUZZLE_FEATURE_CUDA_GLUTTON_MAX_H
 
-#include "CUDA_glutton_max.h"
 #include "emp_FSM_info.h"
 #include "feature_if.h"
 #include "quicky_exception.h"
@@ -48,6 +47,15 @@ namespace edge_matching_puzzle
 
         const emp_FSM_info & m_info;
     };
+
+    /**
+     * Launch CUDA glutton maxs
+     */
+    void
+    launch_CUDA_glutton_max(const emp_piece_db & p_piece_db
+                           ,const emp_FSM_info & p_info
+                           );
+
 
     //-------------------------------------------------------------------------
     feature_CUDA_glutton_max::feature_CUDA_glutton_max(const emp_piece_db & p_piece_db
