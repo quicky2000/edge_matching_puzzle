@@ -23,11 +23,38 @@
 #ifndef ENABLE_CUDA_CODE
 
 #include "CUDA_glutton_max.h"
-#include "emp_FSM_info.h"
+#include "feature_sys_equa_CUDA_base.h"
+#include "emp_strategy_generator_factory.h"
+#include "transition_manager.h"
+#include "situation_capability.h"
+#include "situation_string_formatter.h"
+#include <map>
 #include "CUDA_piece_position_info.h"
 
 namespace edge_matching_puzzle
 {
+
+    class CUDA_glutton_max_naive: public CUDA_glutton_max, public feature_sys_equa_CUDA_base
+    {
+      public:
+
+        inline
+        CUDA_glutton_max_naive(const emp_piece_db & p_piece_db
+                              ,const emp_FSM_info & p_info
+                              ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
+                              )
+        :CUDA_glutton_max(p_piece_db, p_info)
+        ,feature_sys_equa_CUDA_base(p_piece_db, p_info, p_strategy_generator, "")
+        {
+
+        }
+
+        template<unsigned int NB_PIECES>
+        void template_run();
+
+
+      private:
+    };
 
     /**
      * Store piece representation.
@@ -49,7 +76,7 @@ namespace edge_matching_puzzle
     __constant__ unsigned int g_nb_pieces;
 
     template<unsigned int NB_PIECES>
-    void CUDA_glutton_max::template_run()
+    void CUDA_glutton_max_naive::template_run()
     {
         std::unique_ptr<std::array<situation_capability<2 * NB_PIECES>, NB_PIECES + 1>> l_situation_capabilities_ptr{new std::array<situation_capability<2 * NB_PIECES>, NB_PIECES + 1>()};
         std::array<situation_capability<2 * NB_PIECES>, NB_PIECES + 1> & l_situation_capabilities = *l_situation_capabilities_ptr;
@@ -142,7 +169,7 @@ namespace edge_matching_puzzle
     {
         std::unique_ptr<emp_strategy_generator> l_strategy_generator(emp_strategy_generator_factory::create("basic", p_info));
         l_strategy_generator->generate();
-        CUDA_glutton_max l_glutton_max{p_piece_db, p_info, l_strategy_generator};
+        CUDA_glutton_max_naive l_glutton_max{p_piece_db, p_info, l_strategy_generator};
 
         l_glutton_max.run();
 

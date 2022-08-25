@@ -22,13 +22,10 @@
 #include "CUDA_common.h"
 #include "CUDA_color_constraints.h"
 #include "CUDA_glutton_max_stack.h"
-#include "feature_sys_equa_CUDA_base.h"
-#include "emp_strategy_generator_factory.h"
+#include "emp_FSM_info.h"
+#include "emp_piece_db.h"
+#include "emp_situation.h"
 #include "quicky_exception.h"
-#include "situation_capability.h"
-#include "transition_manager.h"
-#include "situation_string_formatter.h"
-#include <map>
 
 /**
  * This file declare functions that will be implemented for
@@ -57,10 +54,7 @@ namespace edge_matching_puzzle
      */
     extern __constant__ unsigned int g_nb_pieces;
 
-    class emp_piece_db;
-    class emp_FSM_info;
-
-    class CUDA_glutton_max: public feature_sys_equa_CUDA_base
+    class CUDA_glutton_max
     {
 
       public:
@@ -68,15 +62,12 @@ namespace edge_matching_puzzle
         inline
         CUDA_glutton_max(const emp_piece_db & p_piece_db
                         ,const emp_FSM_info & p_info
-                        ,std::unique_ptr<emp_strategy_generator> & p_strategy_generator
-                        ):
-        feature_sys_equa_CUDA_base(p_piece_db, p_info, p_strategy_generator, "")
+                        )
+        :m_piece_db{p_piece_db}
+        ,m_info(p_info)
         {
 
         }
-
-        template<unsigned int NB_PIECES>
-        void template_run();
 
         inline static
         void prepare_constants(const emp_piece_db & p_piece_db
@@ -278,12 +269,16 @@ namespace edge_matching_puzzle
         inline
         void run()
         {
-            prepare_constants(get_piece_db(),get_info());
-            std::unique_ptr<CUDA_color_constraints> l_color_constraints = prepare_color_constraints(get_piece_db(),get_info());
+            prepare_constants(m_piece_db, m_info);
+            std::unique_ptr<CUDA_color_constraints> l_color_constraints = prepare_color_constraints(m_piece_db, m_info);
             emp_situation l_start_situation;
-            std::unique_ptr<CUDA_glutton_max_stack> l_stack = prepare_stack(get_piece_db(), get_info(), l_start_situation);
+            std::unique_ptr<CUDA_glutton_max_stack> l_stack = prepare_stack(m_piece_db, m_info, l_start_situation);
         }
 
+      private:
+
+        const emp_piece_db & m_piece_db;
+        const emp_FSM_info & m_info;
 
     };
 
