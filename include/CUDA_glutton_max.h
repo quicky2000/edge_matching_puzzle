@@ -25,6 +25,7 @@
 #include "emp_FSM_info.h"
 #include "emp_piece_db.h"
 #include "emp_situation.h"
+#include "situation_string_formatter.h"
 #include "quicky_exception.h"
 
 /**
@@ -262,6 +263,39 @@ namespace edge_matching_puzzle
             }
         }
 
+        inline static
+        void display_result(const CUDA_glutton_max_stack & p_stack
+                           ,emp_situation & p_start_situation
+                           ,const emp_FSM_info & p_info
+                           )
+        {
+            if(p_stack.is_empty())
+            {
+                std::cout << "Empty stack" << std::endl;
+            }
+            else
+            {
+                unsigned int l_max_level = p_stack.get_level() - (unsigned int)p_stack.is_full();
+                for(unsigned int l_level = 0; l_level <= l_max_level; ++l_level)
+                {
+                    CUDA_glutton_max_stack::played_info_t l_played_info = p_stack.get_played_info(l_level);
+                    unsigned int l_x = p_info.get_x(static_cast<uint32_t>(CUDA_glutton_max_stack::decode_position_index(l_played_info)));
+                    unsigned int l_y = p_info.get_y(static_cast<uint32_t>(CUDA_glutton_max_stack::decode_position_index(l_played_info)));
+                    assert(!p_start_situation.contains_piece(l_x, l_y));
+                    p_start_situation.set_piece(l_x, l_y
+                                               ,emp_types::t_oriented_piece{static_cast<emp_types::t_piece_id >(1 + CUDA_glutton_max_stack::decode_piece_index(l_played_info))
+                                               ,static_cast<emp_types::t_orientation>(CUDA_glutton_max_stack::decode_orientation_index(l_played_info))}
+                                               );
+                }
+                std::cout << "Situation with stack played info:" << std::endl;
+                std::cout << situation_string_formatter<emp_situation>::to_string(p_start_situation) << std::endl;
+            }
+            for(info_index_t l_index{0u}; l_index < p_stack.get_level_nb_info(); ++l_index)
+            {
+                std::cout << p_stack.get_position_info(l_index) << std::endl;
+                //l_stack->push();
+            }
+        }
 
         /**
          * CPU debug version of CUDA algorithm
@@ -273,6 +307,7 @@ namespace edge_matching_puzzle
             std::unique_ptr<CUDA_color_constraints> l_color_constraints = prepare_color_constraints(m_piece_db, m_info);
             emp_situation l_start_situation;
             std::unique_ptr<CUDA_glutton_max_stack> l_stack = prepare_stack(m_piece_db, m_info, l_start_situation);
+            display_result(*l_stack, l_start_situation, m_info);
         }
 
       private:

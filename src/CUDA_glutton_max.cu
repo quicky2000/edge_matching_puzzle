@@ -24,7 +24,6 @@
 #include "my_cuda.h"
 #include "CUDA_common.h"
 #include "emp_situation.h"
-#include "situation_string_formatter.h"
 
 #define LOG_EXECUTION
 
@@ -711,6 +710,7 @@ namespace edge_matching_puzzle
         cudaDeviceSynchronize();
         gpuErrChk(cudaGetLastError());
 
+#if 0
         if(l_stack->is_empty())
         {
             std::cout << "Empty stack" << std::endl;
@@ -739,6 +739,9 @@ namespace edge_matching_puzzle
             std::cout << l_stack->get_position_info(l_index) << std::endl;
             //l_stack->push();
         }
+#else // 0
+        CUDA_glutton_max::display_result(*l_stack, l_start_situation, p_info);
+#endif // 0
 
 #ifdef TEST_KERNEL
         std::cout << "CUDA array content" << std::endl;
