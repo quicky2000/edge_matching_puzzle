@@ -118,7 +118,10 @@ namespace edge_matching_puzzle
         {
             // Prepare color constraints
             CUDA_piece_position_info2::set_init_value(0);
-            std::unique_ptr<CUDA_color_constraints> l_color_constraints{new CUDA_color_constraints(static_cast<unsigned int>(p_piece_db.get_colors().size()))};
+            // We want to allocate an array able to contains all colors so with
+            // size == color max Id + 1 because in some cases number of color
+            // is less than color max id
+            std::unique_ptr<CUDA_color_constraints> l_color_constraints{new CUDA_color_constraints(static_cast<unsigned int>(p_piece_db.get_border_color_id()))};
             for(auto l_iter_color: p_piece_db.get_colors())
             {
                 unsigned int l_color_index = l_iter_color - 1;
