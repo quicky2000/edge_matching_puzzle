@@ -74,7 +74,8 @@ namespace edge_matching_puzzle
         bool l_additional_cr = (!l_len) || (p_format[l_len - 1] != '\n');
         unsigned int l_total_cr = l_nb_cr + l_additional_cr;
         unsigned int l_header_len = my_strlen(p_header);
-        char * l_format = static_cast<char*>(malloc(l_len + l_additional_cr + l_total_cr * (l_header_len + 2 * p_level)));
+        // Don't forget to add + 1 to the allocated size as strlen does not count final '/0'
+        char * l_format = static_cast<char*>(malloc(1 + l_len + l_additional_cr + l_total_cr * (l_header_len + 2 * p_level)));
         unsigned int l_index = 0;
         unsigned int l_char_index = 0;
         for(unsigned int l_line_index = 0; l_line_index < l_total_cr; ++l_line_index)
