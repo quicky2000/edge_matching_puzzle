@@ -19,6 +19,8 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_PRINT_H
 #define EDGE_MATCHING_PUZZLE_CUDA_PRINT_H
 
+#include "my_cuda.h"
+
 namespace edge_matching_puzzle
 {
     /**
@@ -109,6 +111,9 @@ namespace edge_matching_puzzle
     template<typename... Targs>
     __device__
     void print_all(unsigned int p_level
+#ifndef ENABLE_CUDA_CODE
+                  ,dim3 threadIdx
+#endif // ENABLE_CUDA_CODE
                   ,const char * p_format
                   ,Targs... p_fargs
                   )
@@ -131,6 +136,9 @@ namespace edge_matching_puzzle
     __device__
     void print_mask(unsigned int p_level
                    ,uint32_t p_mask
+#ifndef ENABLE_CUDA_CODE
+                   ,dim3 threadIdx
+#endif // ENABLE_CUDA_CODE
                    ,const char * p_format
                    ,Targs... p_fargs
                    )
@@ -156,8 +164,11 @@ namespace edge_matching_puzzle
     template<typename... Targs>
     __device__
     void print_single(unsigned int p_level
-            ,const char * p_format
-            ,Targs... Fargs
+#ifndef ENABLE_CUDA_CODE
+                     ,dim3 threadIdx
+#endif // ENABLE_CUDA_CODE
+                     ,const char * p_format
+                     ,Targs... Fargs
                      )
     {
 #ifdef LOG_EXECUTION
@@ -169,6 +180,45 @@ namespace edge_matching_puzzle
         free(l_format);
 #endif // LOG_EXECUTION
     }
+
+#ifndef ENABLE_CUDA_CODE
+    /**
+     * Wrappers emulating
+     * @tparam Targs
+     * @param p_level
+     * @param p_format
+     * @param p_fargs
+     */
+    template<typename... Targs>
+    __device__
+    void print_single(unsigned int p_level
+            ,const char * p_format
+            ,Targs... p_fargs
+                     )
+    {
+#ifdef LOG_EXECUTION
+        print_single(p_level,{0, 1, 1}, p_format, p_fargs...);
+#endif // LOG_EXECUTION
+    }
+
+    /**
+     * Wrappers emulating
+     * @tparam Targs
+     * @param p_level
+     * @param p_format
+     * @param p_fargs
+     */
+    template<typename... Targs>
+    __device__
+    void print_single(unsigned int p_level
+                     ,const char * p_format
+                     )
+    {
+#ifdef LOG_EXECUTION
+        print_single(p_level,{0, 1, 1}, p_format, 0);
+#endif // LOG_EXECUTION
+    }
+#endif // ENABLE_CUDA_CODE
 
 
 }
