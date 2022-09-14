@@ -53,33 +53,6 @@ namespace edge_matching_puzzle
                     ,CUDA_memory_managed_array<uint32_t> & p_array
                     );
 
-    inline
-    __device__
-    bool analyze_info(uint32_t p_capability
-                     ,uint32_t p_constraint_capability
-                     ,uint32_t & p_min
-                     ,uint32_t & p_max
-                     ,uint32_t & p_total
-                     ,CUDA_glutton_max_stack::t_piece_infos & p_piece_info
-                     )
-    {
-        uint32_t l_result_capability = p_capability & p_constraint_capability;
-
-        // Check result of mask except for selected piece and current position
-        if(__any_sync(0xFFFFFFFFu, l_result_capability))
-        {
-            uint32_t l_info_bits = reduce_add_sync(__popc(l_result_capability));
-            update_stats(l_info_bits, p_min, p_max, p_total);
-            for(unsigned short & l_piece_index : p_piece_info)
-            {
-                l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(l_result_capability & 0xFu)));
-                l_result_capability = l_result_capability >> 4;
-            }
-            return false;
-        }
-        return true;
-    }
-
     __device__
     void print_position_info(unsigned int p_indent_level
                             ,const CUDA_glutton_max_stack & p_stack
