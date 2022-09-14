@@ -25,6 +25,9 @@
 #include "CUDA_piece_position_info2.h"
 #include "CUDA_types.h"
 #include <cinttypes>
+#ifndef ENABLE_CUDA_CODE
+#include <array>
+#endif // ENABLE_CUDA_CODE
 
 namespace edge_matching_puzzle
 {
@@ -215,7 +218,11 @@ namespace edge_matching_puzzle
          * Alias to improve code readibility
          */
         typedef uint16_t t_piece_info;
+#ifdef ENABLE_CUDA_CODE
         typedef t_piece_info t_piece_infos[8];
+#else // ENABLE_CUDA_CODE
+        typedef std::array<t_piece_info,8> t_piece_infos;
+#endif // ENABLE_CUDA_CODE
 
         /**
          * Return piece information related to a thread
