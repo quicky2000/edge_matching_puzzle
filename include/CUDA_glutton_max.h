@@ -333,6 +333,32 @@ namespace edge_matching_puzzle
         }
 #endif // ENABLE_CUDA_CODE
 
+        inline static
+#ifdef ENABLE_CUDA_CODE
+        __device__
+        uint32_t reduce_min_sync(uint32_t p_word)
+        {
+            unsigned l_mask = 0xFFFF;
+            unsigned int l_width = 16;
+            do
+            {
+                uint32_t l_received_word = __shfl_down_sync(l_mask, p_word, l_width);
+                p_word = l_received_word < p_word ? l_received_word : p_word;
+                l_width = l_width >> 1;
+                l_mask = l_mask >> l_width;
+            }
+            while(l_width);
+            return __shfl_sync(0xFFFFFFFFu, p_word, 0);
+        }
+#else // ENABLE_CUDA_CODE
+        uint32_t reduce_min_sync(std::array<uint32_t,32> & p_word)
+        {
+            uint32_t l_min = *std::min_element(p_word.begin(), p_word.end());
+            std::transform(p_word.begin(), p_word.end(), p_word.begin(), [=](uint32_t){return l_min;});
+            return l_min;
+        }
+#endif // ENABLE_CUDA_CODE
+
         /**
          * CPU debug version of CUDA algorithm
          */
