@@ -385,6 +385,19 @@ namespace edge_matching_puzzle
         }
 #endif // ENABLE_CUDA_CODE
 
+        inline static
+        __device__
+        void update_stats(uint32_t p_value
+                         ,uint32_t & p_min
+                         ,uint32_t & p_max
+                         ,uint32_t & p_total
+                         )
+        {
+            p_max = p_value > p_max ? p_value : p_max;
+            p_min = p_value < p_min ? p_value : p_min;
+            p_total += p_value;
+        }
+
         /**
          * CPU debug version of CUDA algorithm
          */

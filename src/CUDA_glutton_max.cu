@@ -55,19 +55,6 @@ namespace edge_matching_puzzle
 
     inline
     __device__
-    void update_stats(uint32_t p_value
-                     ,uint32_t & p_min
-                     ,uint32_t & p_max
-                     ,uint32_t & p_total
-                     )
-    {
-        p_max = p_value > p_max ? p_value : p_max;
-        p_min = p_value < p_min ? p_value : p_min;
-        p_total += p_value;
-    }
-
-    inline
-    __device__
     bool analyze_info(uint32_t p_capability
                      ,uint32_t p_constraint_capability
                      ,uint32_t & p_min
