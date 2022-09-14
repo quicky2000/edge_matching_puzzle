@@ -511,6 +511,75 @@ namespace edge_matching_puzzle
 
 
         /**
+         * Print information relating info index and position index
+         * @param p_indent_level indentation level
+         * @param p_stack
+         */
+        inline static
+        __device__
+        void
+        print_device_info_position_index(unsigned int p_indent_level
+                                        ,const CUDA_glutton_max_stack & p_stack
+                                        )
+        {
+            print_single(p_indent_level, "====== Position index <-> Info index ======\n");
+            for(unsigned int l_warp_index = 0u; l_warp_index <= (static_cast<uint32_t>(p_stack.get_nb_pieces()) / 32u); ++l_warp_index)
+            {
+#ifdef ENABLE_CUDA_CODE
+                position_index_t l_thread_index{l_warp_index * 32u + threadIdx.x};
+                print_mask(p_indent_level
+                          ,__ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_nb_pieces())
+                          ,"Position[%" PRIu32 "] -> Index %" PRIu32
+                          ,static_cast<uint32_t>(l_thread_index)
+                          ,l_thread_index < p_stack.get_nb_pieces() ? static_cast<uint32_t>(p_stack.get_info_index(position_index_t(l_thread_index))) : 0xDEADCAFEu
+                          );
+#else // ENABLE_CUDA_CODE
+                uint32_t l_print_mask = 0x0;
+                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+                {
+                    position_index_t l_thread_index{l_warp_index * 32u + l_threadIdx_x};
+                    l_print_mask |= (l_thread_index < p_stack.get_nb_pieces()) << l_threadIdx_x;
+                    print_mask(p_indent_level
+                              ,l_print_mask
+                              ,{l_threadIdx_x, 0, 0}
+                              ,"Position[%" PRIu32 "] -> Index %" PRIu32
+                              ,static_cast<uint32_t>(l_thread_index)
+                              ,l_thread_index < p_stack.get_nb_pieces() ? static_cast<uint32_t>(p_stack.get_info_index(position_index_t(l_thread_index))) : 0xDEADCAFEu
+                              );
+                }
+#endif // ENABLE_CUDA_CODE
+            }
+            for(unsigned int l_index = 0; l_index <= (p_stack.get_size() / 32); ++l_index)
+            {
+#ifdef ENABLE_CUDA_CODE
+                unsigned int l_thread_index = 32 * l_index + threadIdx.x;
+                print_mask(p_indent_level
+                          ,__ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_size())
+                          ,"%c Index[%" PRIu32 "] -> Position %" PRIu32
+                          ,l_thread_index < p_stack.get_size() - p_stack.get_level() ? '*' : ' '
+                          ,l_thread_index
+                          ,l_thread_index < p_stack.get_size() ? static_cast<uint32_t>(p_stack.get_position_index(info_index_t(l_thread_index))) : 0xDEADCAFEu
+                          );
+#else // ENABLE_CUDA_CODE
+                uint32_t l_print_mask = 0x0;
+                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+                {
+                    unsigned int l_thread_index = 32 * l_index + l_threadIdx_x;
+                    l_print_mask |= (l_thread_index < p_stack.get_size()) << l_threadIdx_x;
+                    print_mask(p_indent_level
+                              ,l_print_mask
+                              ,{l_threadIdx_x, 0, 0}
+                              ,"%c Index[%" PRIu32 "] -> Position %" PRIu32
+                              ,l_thread_index < p_stack.get_size() - p_stack.get_level() ? '*' : ' '
+                              ,l_thread_index
+                              ,l_thread_index < p_stack.get_size() ? static_cast<uint32_t>(p_stack.get_position_index(info_index_t(l_thread_index))) : 0xDEADCAFEu
+                              );
+                }
+#endif // ENABLE_CUDA_CODE
+            }
+        }
+
+        /**
          * CPU debug version of CUDA algorithm
          */
         inline

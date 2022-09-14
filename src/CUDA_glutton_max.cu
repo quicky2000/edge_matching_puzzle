@@ -62,41 +62,6 @@ namespace edge_matching_puzzle
         CUDA_glutton_max::print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_best_candidate_info);
     }
 
-    /**
-     * Print information relating info index and position index
-     * @param p_indent_level indentation level
-     * @param p_stack
-     */
-    __device__
-    void
-    print_device_info_position_index(unsigned int p_indent_level
-                                    ,const CUDA_glutton_max_stack & p_stack
-                                    )
-    {
-        print_single(p_indent_level, "====== Position index <-> Info index ======\n");
-        for(unsigned int l_warp_index = 0u; l_warp_index <= (static_cast<uint32_t>(p_stack.get_nb_pieces()) / 32u); ++l_warp_index)
-        {
-            position_index_t l_thread_index{l_warp_index * 32u + threadIdx.x};
-            print_mask(p_indent_level
-                      ,__ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_nb_pieces())
-                      ,"Position[%" PRIu32 "] -> Index %" PRIu32
-                      ,static_cast<uint32_t>(l_thread_index)
-                      ,l_thread_index < p_stack.get_nb_pieces() ? static_cast<uint32_t>(p_stack.get_info_index(position_index_t(l_thread_index))) : 0xDEADCAFEu
-                      );
-        }
-        for(unsigned int l_index = 0; l_index <= (p_stack.get_size() / 32); ++l_index)
-        {
-            unsigned int l_thread_index = 32 * l_index + threadIdx.x;
-            print_mask(p_indent_level
-                      ,__ballot_sync(0xFFFFFFFF, l_thread_index < p_stack.get_size())
-                      ,"%c Index[%" PRIu32 "] -> Position %" PRIu32
-                      ,l_thread_index < p_stack.get_size() - p_stack.get_level() ? '*' : ' '
-                      ,l_thread_index
-                      ,l_thread_index < p_stack.get_size() ? static_cast<uint32_t>(p_stack.get_position_index(info_index_t(l_thread_index))) : 0xDEADCAFEu
-                      );
-        }
-    }
-
     __global__
     void kernel(CUDA_glutton_max_stack * p_stacks
                ,unsigned int p_nb_stack
