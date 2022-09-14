@@ -54,34 +54,12 @@ namespace edge_matching_puzzle
                     );
 
     __device__
-    void print_position_info(unsigned int p_indent_level
-                            ,const CUDA_glutton_max_stack & p_stack
-                            ,const CUDA_piece_position_info2 & (CUDA_glutton_max_stack::*p_accessor)(info_index_t) const
-                            )
-    {
-        for(info_index_t l_display_index{0u}; l_display_index < p_stack.get_level_nb_info(); ++l_display_index)
-        {
-            print_single(p_indent_level + 1, "Index = %" PRIu32 " <=> Position = %" PRIu32 "\n" ,static_cast<uint32_t>(l_display_index), static_cast<uint32_t>(p_stack.get_position_index(l_display_index)));
-            uint32_t l_word = (p_stack.*p_accessor)(l_display_index).get_word(threadIdx.x);
-            print_mask(p_indent_level + 2, __ballot_sync(0xFFFFFFFF, l_word), "Info = 0x%" PRIx32, l_word);
-        }
-    }
-    __device__
-    void print_position_info(unsigned int p_indent_level
-                            ,const CUDA_glutton_max_stack & p_stack
-                            )
-    {
-        print_single(p_indent_level, "Position info:");
-        print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_position_info);
-    }
-
-    __device__
     void print_best_candidate_info(unsigned int p_indent_level
                                   ,const CUDA_glutton_max_stack & p_stack
                                   )
     {
         print_single(p_indent_level, "Best candidate info:");
-        print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_best_candidate_info);
+        CUDA_glutton_max::print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_best_candidate_info);
     }
 
     /**

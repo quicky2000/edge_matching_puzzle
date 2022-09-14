@@ -473,6 +473,43 @@ namespace edge_matching_puzzle
             return true;
         }
 
+        inline static
+        __device__
+        void print_position_info(unsigned int p_indent_level
+                                ,const CUDA_glutton_max_stack & p_stack
+                                ,const CUDA_piece_position_info2 & (CUDA_glutton_max_stack::*p_accessor)(info_index_t) const
+                                )
+        {
+            for(info_index_t l_display_index{0u}; l_display_index < p_stack.get_level_nb_info(); ++l_display_index)
+            {
+#ifdef ENABLE_CUDA_CODE
+                print_single(p_indent_level + 1, "Index = %" PRIu32 " <=> Position = %" PRIu32 "\n" ,static_cast<uint32_t>(l_display_index), static_cast<uint32_t>(p_stack.get_position_index(l_display_index)));
+                uint32_t l_word = (p_stack.*p_accessor)(l_display_index).get_word(threadIdx.x);
+                print_mask(p_indent_level + 2, __ballot_sync(0xFFFFFFFF, l_word), "Info = 0x%" PRIx32, l_word);
+#else // ENABLE_CUDA_CODE
+                uint32_t l_print_mask = 0x0;
+                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+                {
+                    print_single(p_indent_level + 1, {l_threadIdx_x, 1, 1}, "Index = %" PRIu32 " <=> Position = %" PRIu32 "\n" ,static_cast<uint32_t>(l_display_index), static_cast<uint32_t>(p_stack.get_position_index(l_display_index)));
+                    uint32_t l_word = (p_stack.*p_accessor)(l_display_index).get_word(l_threadIdx_x);
+                    l_print_mask |= (l_word != 0 ) << l_threadIdx_x;
+                    print_mask(p_indent_level + 2, l_print_mask, {l_threadIdx_x, 1, 1}, "Info = 0x%" PRIx32, l_word);
+                }
+#endif // ENABLE_CUDA_CODE
+            }
+        }
+
+        inline static
+        __device__
+        void print_position_info(unsigned int p_indent_level
+                                ,const CUDA_glutton_max_stack & p_stack
+                                )
+        {
+            print_single(p_indent_level, "Position info:");
+            print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_position_info);
+        }
+
+
         /**
          * CPU debug version of CUDA algorithm
          */
