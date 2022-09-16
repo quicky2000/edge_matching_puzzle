@@ -53,6 +53,7 @@ namespace edge_matching_puzzle
                     ,CUDA_memory_managed_array<uint32_t> & p_array
                     );
 
+    [[maybe_unused]]
     __device__
     void print_best_candidate_info(unsigned int p_indent_level
                                   ,const CUDA_glutton_max_stack & p_stack
@@ -138,8 +139,8 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     __global__
-    void test_kernel(CUDA_glutton_max_stack * p_stacks
-                    ,unsigned int p_nb_stack
+    void test_kernel(CUDA_glutton_max_stack * //p_stacks
+                    ,unsigned int //p_nb_stack
                     ,CUDA_memory_managed_array<uint32_t> & p_array
                     )
     {
@@ -153,7 +154,7 @@ namespace edge_matching_puzzle
         {
             print_single(1, "Piece[%i]={%i, %i, %i, %i}\n", l_piece_index + 1, g_pieces[l_piece_index][0], g_pieces[l_piece_index][1], g_pieces[l_piece_index][2], g_pieces[l_piece_index][3]);
         }
-        return;
+#if 0
         unsigned int l_stack_index = threadIdx.y + blockIdx.x * blockDim.y;
 
         if(l_stack_index >= p_nb_stack)
@@ -173,6 +174,7 @@ namespace edge_matching_puzzle
         {
             l_stack.pop();
         }
+#endif // 0
     }
 
 }
