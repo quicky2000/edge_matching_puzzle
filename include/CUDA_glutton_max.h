@@ -1179,9 +1179,7 @@ namespace edge_matching_puzzle
                 // TO DELETE l_stack.unmark_best_candidates();
             }
 
-
-            // At the beginning all threads participates to ballot
-            unsigned int l_ballot_result = 0xFFFFFFFF;
+            unsigned int l_ballot_result;
             info_index_t l_best_candidate_index = l_best_start_index;
 #ifdef ENABLE_CUDA_CODE
             uint32_t l_thread_best_candidates;
@@ -1194,6 +1192,8 @@ namespace edge_matching_puzzle
             // candidate of reach the end of candidate info
             do
             {
+                // At the beginning all threads participates to ballot
+                l_ballot_result = 0xFFFFFFFF;
                 print_single(1,"Best Info index = %i <=> Position = %i", static_cast<uint32_t>(l_best_candidate_index), static_cast<uint32_t>(l_stack.get_position_index(l_best_candidate_index)));
 
                 // Each thread get its word in position info
