@@ -1178,6 +1178,28 @@ namespace edge_matching_puzzle
                 }
                 // TO DELETE l_stack.unmark_best_candidates();
             }
+#ifdef ENABLE_CUDA_CODE
+            else if(!__any_sync(0xFFFFFFFFu, l_stack.get_position_info(l_best_start_index).get_word()))
+            {
+#else // ENABLE_CUDA_CODE
+            else if(![&]()
+                        {
+                            bool l_any = false;
+                            for(dim3 threadIdx{0, 1, 1}; (!l_any) && threadIdx.x < 32; ++threadIdx.x)
+                            {
+                                l_any |= l_stack.get_position_info(l_best_start_index).get_word(threadIdx.x) != 0;
+                            }
+                            return l_any;
+                        }())
+            {
+#endif // ENABLE_CUDA_CODE
+                print_single(0, "No more remaining bit in this index %i position %i, go up from one level", l_best_start_index, l_stack.get_position_index(l_best_start_index));
+                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                l_best_start_index = l_stack.pop();
+                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                l_new_level = false;
+                continue;
+            }
 
             unsigned int l_ballot_result;
             info_index_t l_best_candidate_index = l_best_start_index;
