@@ -629,6 +629,25 @@ namespace edge_matching_puzzle
                 uint32_t l_best_min_max_score = 0;
                 info_index_t l_best_last_index{0u};
 
+                // Clear best candidates for this level
+                for(info_index_t l_info_index{0u};
+                    l_info_index < l_stack.get_level_nb_info();
+                    ++l_info_index
+                   )
+                {
+#ifdef ENABLE_CUDA_CODE
+                    l_stack.get_best_candidate_info(l_info_index).set_word(threadIdx.x, 0);
+#else // ENABLE_CUDA_CODE
+                    for (unsigned int l_threadIdx_x = 0;
+                         l_threadIdx_x < 32;
+                         ++l_threadIdx_x
+                        )
+                    {
+                        l_stack.get_best_candidate_info(l_info_index).set_word(l_threadIdx_x, 0);
+                    }
+#endif // ENABLE_CUDA_CODE
+                }
+
                 // Iterate on all level position information to compute the score of each available transition
                 for(info_index_t l_info_index{0u};
                     l_info_index < l_stack.get_level_nb_info();
