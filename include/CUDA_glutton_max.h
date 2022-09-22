@@ -615,11 +615,11 @@ namespace edge_matching_puzzle
 
         bool l_new_level = true;
         info_index_t l_best_start_index{0u};
-
+        uint32_t l_step = 0xFFFFFFFFu;
         while(l_stack.get_level() < l_stack.get_size())
         {
-
-            print_single(0,"Stack level = %i", l_stack.get_level());
+            ++l_step;
+            print_single(0,"Stack level = %i [%i]", l_stack.get_level(), l_step);
 
 
             if(l_new_level)
