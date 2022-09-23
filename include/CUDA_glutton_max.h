@@ -1254,11 +1254,11 @@ namespace edge_matching_puzzle
             // No candidate found so we go up from one level
             if(l_best_candidate_index == l_stack.get_level_nb_info())
             {
-                print_single(0, "No more best score, go up from one level");
-                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-                l_best_start_index = l_stack.pop();
-                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-                l_new_level = false;
+                print_single(0, "No more best score so recompute best score");
+                //CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                //l_best_start_index = l_stack.pop();
+                //CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                l_new_level = true;
                 continue;
             }
 
