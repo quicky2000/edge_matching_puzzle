@@ -654,6 +654,14 @@ namespace edge_matching_puzzle
             m_played_info[m_level] = l_set_info;
             set_piece_unavailable(p_piece_index);
             ++m_level;
+        }
+        // Must be bone before overwritting with info_index (see below) in case p_info_index = l_last_info_index
+        info_index_t l_last_info_index{m_size - m_level};
+        position_index_t l_last_position_index = get_position_index(l_last_info_index);
+#ifdef ENABLE_CUDA_CODE
+        if(!threadIdx.x)
+#endif // ENABLE_CUDA_CODE
+        {
             // Save info index as a position index for restoration during pop
             // position index is stored in played info
             m_info_index_to_position_index[static_cast<uint32_t>(p_info_index)] = position_index_t(static_cast<uint32_t>(p_info_index));
@@ -661,8 +669,6 @@ namespace edge_matching_puzzle
 #ifdef ENABLE_CUDA_CODE
         __syncwarp(0xFFFFFFFF);
 #endif // ENABLE_CUDA_CODE
-        info_index_t l_last_info_index{m_size - m_level};
-        position_index_t l_last_position_index = get_position_index(l_last_info_index);
         swap_position_and_index(p_info_index, l_last_info_index, p_position_index, l_last_position_index);
     }
 
