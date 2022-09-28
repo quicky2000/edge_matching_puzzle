@@ -614,16 +614,41 @@ namespace edge_matching_puzzle
         CUDA_glutton_max_stack & l_stack = p_stacks[l_stack_index];
 
         bool l_new_level = true;
-        info_index_t l_best_start_index{0u};
+        info_index_t l_best_start_index{0xFFFFFFFFu};
         uint32_t l_step = 0xFFFFFFFFu;
         while(l_stack.get_level() < l_stack.get_size())
         {
             ++l_step;
             print_single(0,"Stack level = %i [%i]", l_stack.get_level(), l_step);
 
-
+            if(l_best_start_index < l_stack.get_level_nb_info())
+            {
+#ifdef ENABLE_CUDA_CODE
+                if(!__any_sync(0xFFFFFFFFu, l_stack.get_position_info(l_best_start_index).get_word()))
+                {
+#else // ENABLE_CUDA_CODE
+                if(![&]()
+                    {
+                        bool l_any = false;
+                        for(dim3 threadIdx{0, 1, 1}; (!l_any) && threadIdx.x < 32; ++threadIdx.x)
+                        {
+                            l_any |= l_stack.get_position_info(l_best_start_index).get_word(threadIdx.x) != 0;
+                        }
+                        return l_any;
+                    }())
+                {
+#endif // ENABLE_CUDA_CODE
+                    print_single(0, "No more remaining bit in this index %i position %i, go up from one level", l_best_start_index, l_stack.get_position_index(l_best_start_index));
+                    CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                    l_best_start_index = l_stack.pop();
+                    CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                    l_new_level = false;
+                    continue;
+                }
+            }
             if(l_new_level)
             {
+                l_best_start_index = (info_index_t)0;
                 print_single(0,"Search for best score");
                 uint32_t l_best_total_score = 0;
                 uint32_t l_best_min_max_score = 0;
@@ -1178,28 +1203,6 @@ namespace edge_matching_puzzle
                 }
                 // TO DELETE l_stack.unmark_best_candidates();
             }
-#ifdef ENABLE_CUDA_CODE
-            else if(!__any_sync(0xFFFFFFFFu, l_stack.get_position_info(l_best_start_index).get_word()))
-            {
-#else // ENABLE_CUDA_CODE
-            else if(![&]()
-                        {
-                            bool l_any = false;
-                            for(dim3 threadIdx{0, 1, 1}; (!l_any) && threadIdx.x < 32; ++threadIdx.x)
-                            {
-                                l_any |= l_stack.get_position_info(l_best_start_index).get_word(threadIdx.x) != 0;
-                            }
-                            return l_any;
-                        }())
-            {
-#endif // ENABLE_CUDA_CODE
-                print_single(0, "No more remaining bit in this index %i position %i, go up from one level", l_best_start_index, l_stack.get_position_index(l_best_start_index));
-                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-                l_best_start_index = l_stack.pop();
-                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-                l_new_level = false;
-                continue;
-            }
 
             unsigned int l_ballot_result;
             info_index_t l_best_candidate_index = l_best_start_index;
@@ -1458,6 +1461,8 @@ namespace edge_matching_puzzle
             if(l_stack.get_level() < (l_stack.get_size() - 1))
             {
                 l_new_level = true;
+                // We are going to a new level so no need to check that corresponding position info still has valid bits
+                l_best_start_index = (info_index_t)0xFFFFFFFFu;
                 print_single(0, "after applying change\n");
                 CUDA_glutton_max::print_position_info(6, l_stack);
             }
