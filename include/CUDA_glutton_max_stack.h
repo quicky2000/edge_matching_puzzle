@@ -53,15 +53,18 @@ namespace edge_matching_puzzle
                               ,uint32_t p_nb_pieces
                               );
 
+        [[nodiscard]]
         inline
         bool is_empty() const;
 
+        [[nodiscard]]
         inline
         bool is_full() const;
 
         inline
         ~CUDA_glutton_max_stack();
 
+        [[nodiscard]]
         inline
         __device__ __host__
         const CUDA_piece_position_info2 &
@@ -77,6 +80,7 @@ namespace edge_matching_puzzle
         CUDA_piece_position_info2 &
         get_next_level_position_info(info_index_t p_info_index);
 
+        [[nodiscard]]
         inline
         __device__ __host__
         const CUDA_piece_position_info2 &
@@ -116,14 +120,17 @@ namespace edge_matching_puzzle
         info_index_t
         pop();
 
+        [[nodiscard]]
         inline
         __device__ __host__
         uint32_t get_size() const;
 
+        [[nodiscard]]
         inline
         __device__ __host__
         uint32_t get_level() const;
 
+        [[nodiscard]]
         inline
         __device__ __host__
         position_index_t
@@ -133,6 +140,7 @@ namespace edge_matching_puzzle
          * Number of position info available at current level
          * @return number of position info
          */
+        [[nodiscard]]
         inline
         __device__ __host__
         info_index_t
@@ -154,6 +162,7 @@ namespace edge_matching_puzzle
          * @param p_position_index
          * @return index in info array here information is stored
          */
+        [[nodiscard]]
         inline
         __host__ __device__
         info_index_t
@@ -164,6 +173,7 @@ namespace edge_matching_puzzle
          * @param p_info_index index in info array
          * @return Position index whose info is stored
          */
+        [[nodiscard]]
         inline
         __host__ __device__
         position_index_t
@@ -175,6 +185,8 @@ namespace edge_matching_puzzle
          * @param p_index index in array
          * @return true if a position is associated
          */
+        [[nodiscard]]
+        [[maybe_unused]]
         inline
         __device__ __host__
         bool is_position_index_used(position_index_t p_index) const;
@@ -185,6 +197,7 @@ namespace edge_matching_puzzle
          * @param p_position_index position index
          * @return true if position is not set
          */
+        [[nodiscard]]
         inline
         __device__ __host__
         bool is_position_free(position_index_t p_position_index) const;
@@ -194,6 +207,7 @@ namespace edge_matching_puzzle
          * @param p_piece_index
          * @return true if piece not used, false if used
          */
+        [[nodiscard]]
         inline
         __host__ __device__
         bool is_piece_available(unsigned int p_piece_index)const;
@@ -249,6 +263,7 @@ namespace edge_matching_puzzle
          * Remove best candidates from position piece info to avoid to treat
          * them multiple times
          */
+         [[maybe_unused]]
         inline
         __device__
         void
@@ -291,6 +306,7 @@ namespace edge_matching_puzzle
          * @param p_level level
          * @return played info
          */
+        [[nodiscard]]
         played_info_t
         get_played_info(unsigned int p_level) const;
 
@@ -302,6 +318,7 @@ namespace edge_matching_puzzle
          * @param p_info_index
          * @return Position information: available transitions
          */
+        [[nodiscard]]
         inline
         __device__ __host__
         const CUDA_piece_position_info2 &
@@ -329,6 +346,7 @@ namespace edge_matching_puzzle
          * @param p_info_index
          * @return Position information: available transitions
          */
+        [[nodiscard]]
         inline
         __device__ __host__
         const CUDA_piece_position_info2 & get_best_candidate_info(uint32_t p_level
@@ -349,6 +367,7 @@ namespace edge_matching_puzzle
                                                            );
 
 
+        [[nodiscard]]
         inline
         __device__ __host__
         uint32_t compute_situation_index(uint32_t p_level) const;
@@ -752,6 +771,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
     __device__ __host__
     bool
     CUDA_glutton_max_stack::is_position_index_used(position_index_t p_index) const
@@ -867,6 +887,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    [[maybe_unused]]
     __device__
     void
     CUDA_glutton_max_stack::unmark_best_candidates()
