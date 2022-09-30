@@ -89,6 +89,27 @@ namespace edge_matching_puzzle
                                         ,unsigned int p_bit_index
                                         );
 
+        /**
+         * Compute index of word where info corresponding to piece is store
+         * @param p_piece_index : Piece index ( 0 to n-1 with n the piece number)
+         * @return index of word containing piece information
+         */
+        inline static
+        __host__ __device__
+        unsigned int
+        compute_piece_word_index(unsigned int p_piece_index);
+
+        /**
+         * Compute index of first bit in word representing information for the
+         * piece whose id is provided as parameter
+         * @param p_piece_index : Piece index ( 0 to n-1 with n the piece number)
+         * @return index of first bit in word containing piece information
+         */
+        inline static
+        __host__ __device__
+        unsigned int
+        compute_piece_bit_index(unsigned int p_piece_index);
+
         inline static
         emp_types::t_orientation compute_orientation(unsigned int p_word_index
                                                     ,unsigned int p_bit_index
@@ -169,6 +190,22 @@ namespace edge_matching_puzzle
                                                   )
     {
         return 8 * p_word_index + p_bit_index / 4;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    unsigned int
+    CUDA_piece_position_info2::compute_piece_word_index(unsigned int p_piece_index)
+    {
+        return p_piece_index / 8;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    unsigned int
+    CUDA_piece_position_info2::compute_piece_bit_index(unsigned int p_piece_index)
+    {
+        return 4 * (p_piece_index % 8);
     }
 
     //-------------------------------------------------------------------------
