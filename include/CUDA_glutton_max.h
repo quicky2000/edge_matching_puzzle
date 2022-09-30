@@ -621,30 +621,14 @@ namespace edge_matching_puzzle
             ++l_step;
             print_single(0,"Stack level = %i [%i]", l_stack.get_level(), l_step);
 
-            if(l_best_start_index < l_stack.get_level_nb_info())
+            if(l_best_start_index < l_stack.get_level_nb_info() && !l_stack.is_position_valid(l_best_start_index))
             {
-#ifdef ENABLE_CUDA_CODE
-                if(!__any_sync(0xFFFFFFFFu, l_stack.get_position_info(l_best_start_index).get_word()))
-                {
-#else // ENABLE_CUDA_CODE
-                if(![&]()
-                    {
-                        bool l_any = false;
-                        for(dim3 threadIdx{0, 1, 1}; (!l_any) && threadIdx.x < 32; ++threadIdx.x)
-                        {
-                            l_any |= l_stack.get_position_info(l_best_start_index).get_word(threadIdx.x) != 0;
-                        }
-                        return l_any;
-                    }())
-                {
-#endif // ENABLE_CUDA_CODE
-                    print_single(0, "No more remaining bit in this index %i position %i, go up from one level", l_best_start_index, l_stack.get_position_index(l_best_start_index));
-                    CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-                    l_best_start_index = l_stack.pop();
-                    CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-                    l_new_level = false;
-                    continue;
-                }
+                 print_single(0, "No more remaining bit in this index %i position %i, go up from one level", l_best_start_index, l_stack.get_position_index(l_best_start_index));
+                 CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                 l_best_start_index = l_stack.pop();
+                 CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                 l_new_level = false;
+                 continue;
             }
             if(l_new_level)
             {

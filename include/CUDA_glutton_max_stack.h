@@ -64,6 +64,15 @@ namespace edge_matching_puzzle
         inline
         ~CUDA_glutton_max_stack();
 
+        /**
+         * Indicate if a position can be played with some piece
+         * @param p_info_index information index corresponding to the position
+         * @return true if some pieces can be played on this positions
+         */
+        [[nodiscard]]
+        inline
+        bool is_position_valid(info_index_t p_info_index) const;
+
         [[nodiscard]]
         inline
         __device__ __host__
@@ -513,6 +522,21 @@ namespace edge_matching_puzzle
     {
         delete[] m_best_candidate_infos;
         delete[] m_position_infos;
+    }
+
+    //-------------------------------------------------------------------------
+    bool CUDA_glutton_max_stack::is_position_valid(info_index_t p_info_index) const
+    {
+#ifdef ENABLE_CUDA_CODE
+         return __any_sync(0xFFFFFFFFu, get_position_info(p_info_index).get_word()))
+#else // ENABLE_CUDA_CODE
+         bool l_any = false;
+         for(dim3 threadIdx{0, 1, 1}; (!l_any) && threadIdx.x < 32; ++threadIdx.x)
+         {
+             l_any |= get_position_info(p_info_index).get_word(threadIdx.x) != 0;
+         }
+         return l_any;
+#endif // ENABLE_CUDA_CODE
     }
 
     //-------------------------------------------------------------------------
