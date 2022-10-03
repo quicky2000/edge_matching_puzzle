@@ -401,11 +401,9 @@ namespace edge_matching_puzzle
         inline static
         __device__
 #ifdef ENABLE_CUDA_CODE
-        bool analyze_info(uint32_t p_capability
-                         ,uint32_t p_constraint_capability
+        bool analyze_info(uint32_t p_result_capabiliy
 #else // ENABLE_CUDA_CODE
-        bool analyze_info(std::array<uint32_t,32> p_capability
-                         ,std::array<uint32_t,32> p_constraint_capability
+        bool analyze_info(std::array<uint32_t,32> p_result_capability
 #endif // ENABLE_CUDA_CODE
                          ,uint32_t & p_min
                          ,uint32_t & p_max
@@ -417,16 +415,6 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                          )
         {
-#ifdef ENABLE_CUDA_CODE
-            uint32_t l_result_capability = p_capability & p_constraint_capability;
-#else // ENABLE_CUDA_CODE
-            std::array<uint32_t,32> l_result_capability;
-            for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
-            {
-                l_result_capability[l_threadIdx_x] = p_capability[l_threadIdx_x] & p_constraint_capability[l_threadIdx_x];
-            }
-#endif // ENABLE_CUDA_CODE
-
             // Check result of mask except for selected piece and current position
 #ifdef ENABLE_CUDA_CODE
             if(__any_sync(0xFFFFFFFFu, l_result_capability))
@@ -434,7 +422,7 @@ namespace edge_matching_puzzle
             bool l_any = false;
             for(unsigned int l_threadIdx_x = 0; (!l_any) && (l_threadIdx_x < 32); ++l_threadIdx_x)
             {
-                l_any = l_result_capability[l_threadIdx_x];
+                l_any = p_result_capability[l_threadIdx_x];
             }
             if(l_any)
 #endif // ENABLE_CUDA_CODE
@@ -445,15 +433,17 @@ namespace edge_matching_puzzle
                 uint32_t l_info_bits = 0;
                 for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
                 {
-                    l_info_bits += __builtin_popcount(l_result_capability[l_threadIdx_x]);
+                    l_info_bits += __builtin_popcount(p_result_capability[l_threadIdx_x]);
                 }
 #endif // ENABLE_CUDA_CODE
                 update_stats(l_info_bits, p_min, p_max, p_total);
+
 #ifdef ENABLE_CUDA_CODE
                 for(unsigned short & l_piece_index : p_piece_info)
 #else // ENABLE_CUDA_CODE
                 for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
                 {
+
                     for (unsigned short & l_piece_index : p_piece_info[l_threadIdx_x])
 #endif // ENABLE_CUDA_CODE
                     {
@@ -461,8 +451,8 @@ namespace edge_matching_puzzle
                         l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(l_result_capability & 0xFu)));
                         l_result_capability = l_result_capability >> 4;
 #else // ENABLE_CUDA_CODE
-                        l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__builtin_popcount(static_cast<int>(l_result_capability[l_threadIdx_x] & 0xFu)));
-                        l_result_capability[l_threadIdx_x] = l_result_capability[l_threadIdx_x] >> 4;
+                        l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__builtin_popcount(static_cast<int>(p_result_capability[l_threadIdx_x] & 0xFu)));
+                        p_result_capability[l_threadIdx_x] = p_result_capability[l_threadIdx_x] >> 4;
 #endif // ENABLE_CUDA_CODE
                     }
 #ifndef ENABLE_CUDA_CODE
@@ -819,20 +809,23 @@ namespace edge_matching_puzzle
                                     uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
                                     uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
                                     l_constraint_capability &= l_mask_to_apply;
+                                    uint32_t l_result_capability = l_capability & l_constraint_capability;
 #else // ENABLE_CUDA_CODE
                                     std::array<uint32_t,32> l_capability;
                                     std::array<uint32_t,32> l_constraint_capability;
+                                    std::array<uint32_t,32> l_result_capability;
                                     for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
                                     {
                                         l_related_thread_index[l_threadIdx_x] = l_threadIdx_x == l_orientation_index ? static_cast<uint32_t>(l_related_info_index): l_related_thread_index[l_threadIdx_x];
                                         l_capability[l_threadIdx_x] = l_stack.get_position_info(l_related_info_index).get_word(l_threadIdx_x);
                                         l_constraint_capability[l_threadIdx_x] = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(l_threadIdx_x);
                                         l_constraint_capability[l_threadIdx_x] &= l_mask_to_apply[l_threadIdx_x];
+                                        l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_constraint_capability[l_threadIdx_x];
                                     }
 #endif // ENABLE_CUDA_CODE
 
                                     //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
-                                    if((l_invalid = CUDA_glutton_max::analyze_info(l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                    if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                     {
                                         print_single(5, "INVALID:\n");
 #ifdef ENABLE_CUDA_CODE
@@ -890,14 +883,17 @@ namespace edge_matching_puzzle
                                         print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
 #ifdef ENABLE_CUDA_CODE
                                         uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                        uint32_t l_result_capability = l_capability & l_mask_to_apply;
 #else // ENABLE_CUDA_CODE
                                         std::array<uint32_t,32> l_capability;
+                                        std::array<uint32_t,32> l_result_capability;
                                         for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
                                         {
                                             l_capability[l_threadIdx_x] = l_stack.get_position_info(l_result_info_index).get_word(l_threadIdx_x);
+                                            l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                         }
 #endif // ENABLE_CUDA_CODE
-                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                         {
                                             print_single(5, "INVALID:\n");
 #ifdef ENABLE_CUDA_CODE
@@ -958,14 +954,17 @@ namespace edge_matching_puzzle
                                         print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
 #ifdef ENABLE_CUDA_CODE
                                         uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                        uint32_t l_result_capability = l_capability & l_mask_to_apply;
 #else // ENABLE_CUDA_CODE
                                         std::array<uint32_t,32> l_capability;
+                                        std::array<uint32_t,32> l_result_capability;
                                         for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
                                         {
                                             l_capability[l_threadIdx_x] = l_stack.get_position_info(l_result_info_index).get_word(l_threadIdx_x);
+                                            l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                         }
 #endif // ENABLE_CUDA_CODE
-                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
                                         {
                                             print_single(5, "INVALID:\n");
 #ifdef ENABLE_CUDA_CODE
