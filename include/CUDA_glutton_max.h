@@ -401,16 +401,35 @@ namespace edge_matching_puzzle
         inline static
         __device__
 #ifdef ENABLE_CUDA_CODE
-        bool analyze_info(uint32_t p_result_capabiliy
+       void count_result_nb_bits(uint32_t p_result_capability
 #else // ENABLE_CUDA_CODE
-        bool analyze_info(std::array<uint32_t,32> p_result_capability
+       void count_result_nb_bits(std::array<uint32_t,32> p_result_capability
 #endif // ENABLE_CUDA_CODE
-                         ,uint32_t & p_min
-                         ,uint32_t & p_max
-                         ,uint32_t & p_total
+                                ,uint32_t & p_min
+                                ,uint32_t & p_max
+                                ,uint32_t & p_total
+                                )
+
+       {
 #ifdef ENABLE_CUDA_CODE
+           uint32_t l_info_bits = reduce_add_sync(__popc(l_result_capability));
+#else // ENABLE_CUDA_CODE
+           uint32_t l_info_bits = 0;
+           for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+            {
+                l_info_bits += __builtin_popcount(p_result_capability[l_threadIdx_x]);
+            }
+#endif // ENABLE_CUDA_CODE
+           update_stats(l_info_bits, p_min, p_max, p_total);
+        }
+
+        inline static
+        __device__
+#ifdef ENABLE_CUDA_CODE
+        bool analyze_info(uint32_t p_result_capabiliy
                          ,CUDA_glutton_max_stack::t_piece_infos & p_piece_info
 #else // ENABLE_CUDA_CODE
+        bool analyze_info(std::array<uint32_t,32> p_result_capability
                          ,std::array<CUDA_glutton_max_stack::t_piece_infos,32> & p_piece_info
 #endif // ENABLE_CUDA_CODE
                          )
@@ -427,17 +446,6 @@ namespace edge_matching_puzzle
             if(l_any)
 #endif // ENABLE_CUDA_CODE
             {
-#ifdef ENABLE_CUDA_CODE
-                uint32_t l_info_bits = reduce_add_sync(__popc(l_result_capability));
-#else // ENABLE_CUDA_CODE
-                uint32_t l_info_bits = 0;
-                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
-                {
-                    l_info_bits += __builtin_popcount(p_result_capability[l_threadIdx_x]);
-                }
-#endif // ENABLE_CUDA_CODE
-                update_stats(l_info_bits, p_min, p_max, p_total);
-
 #ifdef ENABLE_CUDA_CODE
                 for(unsigned short & l_piece_index : p_piece_info)
 #else // ENABLE_CUDA_CODE
@@ -825,7 +833,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
 
                                     //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
-                                    if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                    if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
                                     {
                                         print_single(5, "INVALID:\n");
 #ifdef ENABLE_CUDA_CODE
@@ -845,6 +853,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                                         break;
                                     }
+                                    CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
 #ifdef ENABLE_CUDA_CODE
                                     //print_all(5, "Min %3i Max %3i Total %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                     print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
@@ -893,7 +902,7 @@ namespace edge_matching_puzzle
                                             l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                         }
 #endif // ENABLE_CUDA_CODE
-                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
                                         {
                                             print_single(5, "INVALID:\n");
 #ifdef ENABLE_CUDA_CODE
@@ -913,6 +922,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                                             break;
                                         }
+                                        CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
 #ifdef ENABLE_CUDA_CODE
                                         print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
 #else // ENABLE_CUDA_CODE
@@ -964,7 +974,7 @@ namespace edge_matching_puzzle
                                             l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                         }
 #endif // ENABLE_CUDA_CODE
-                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total, l_piece_infos)))
+                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
                                         {
                                             print_single(5, "INVALID:\n");
 #ifdef ENABLE_CUDA_CODE
@@ -982,6 +992,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                                             break;
                                         }
+                                        CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
 #ifdef ENABLE_CUDA_CODE
                                         print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
 #else // ENABLE_CUDA_CODE
