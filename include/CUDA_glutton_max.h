@@ -1209,6 +1209,8 @@ namespace edge_matching_puzzle
             print_single(0, "Iterate on best candidate from index %i", static_cast<uint32_t>(l_best_candidate_index));
             // Iterate on best candidates to prepare next level until we find a
             // candidate of reach the end of candidate info
+
+            info_index_t l_nb_level_info = l_stack.get_level_nb_info();
             do
             {
                 // At the beginning all threads participates to ballot
@@ -1242,14 +1244,203 @@ namespace edge_matching_puzzle
                 // Ballot result cannot be NULL because we are by construction in a valid situation
                 if(l_ballot_result)
                 {
-                    break;
+                    // Determine first lane/thread having a candidate. Result is greater than 0 due to test
+                    unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
+
+                    print_single(0, "Elected thread : %i", l_elected_thread);
+
+                    // Share current best candidate with all other threads so they can select the same candidate
+#ifdef ENABLE_CUDA_CODE
+                    l_thread_best_candidates = __shfl_sync(0xFFFFFFFF, l_thread_best_candidates, (int)l_elected_thread);
+#else // ENABLE_CUDA_CODE
+                    for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
+                    {
+                        l_thread_best_candidates[l_threadIdx_x] = l_thread_best_candidates[l_elected_thread];
+                    }
+#endif // ENABLE_CUDA_CODE
+
+                    // Determine first available candidate. Result  cannot be 0 due to ballot result
+#ifdef ENABLE_CUDA_CODE
+                    unsigned l_bit_index = __ffs((int)l_thread_best_candidates) - 1;
+#else // ENABLE_CUDA_CODE
+                    unsigned l_bit_index = __ffs((int)l_thread_best_candidates[0]) - 1;
+#endif // ENABLE_CUDA_CODE
+
+                    print_single(0, "Bit index : %i", l_bit_index);
+
+                    CUDA_glutton_max::print_position_info(6, l_stack);
+
+                    // Set variable bit to zero in best candidate and current info
+#ifdef ENABLE_CUDA_CODE
+                    if(threadIdx.x < 2)
+#else // ENABLE_CUDA_CODE
+                    for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 2; ++ l_threadIdx_x)
+#endif // ENABLE_CUDA_CODE
+                    {
+#ifdef ENABLE_CUDA_CODE
+                        CUDA_piece_position_info2 & l_position_info = threadIdx.x ? l_stack.get_best_candidate_info(l_best_candidate_index) : l_stack.get_position_info(l_best_candidate_index);
+#else // ENABLE_CUDA_CODE
+                        CUDA_piece_position_info2 & l_position_info = l_threadIdx_x ? l_stack.get_best_candidate_info(l_best_candidate_index) : l_stack.get_position_info(l_best_candidate_index);
+#endif // ENABLE_CUDA_CODE
+                        l_position_info.clear_bit(l_elected_thread, l_bit_index);
+                    }
+#ifdef ENABLE_CUDA_CODE
+                    __syncwarp(0xFFFFFFFF);
+#endif // ENABLE_CUDA_CODE
+                    print_single(0, "after clear\n");
+                    CUDA_glutton_max::print_position_info(6, l_stack);
+
+                    // Compute piece index
+                    uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
+
+                    print_single(0, "Piece index : %i", l_piece_index);
+
+                    // Piece orientation
+                    uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
+
+                    print_single(0, "Piece orientation : %i", l_piece_orientation);
+
+                    // Get position index corresponding to this info index
+                    position_index_t l_position_index = l_stack.get_position_index(l_best_candidate_index);
+
+                    {
+                        // Compute mask to apply which set piece bit to 0
+#ifdef ENABLE_CUDA_CODE
+                        uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
+#else // ENABLE_CUDA_CODE
+                        std::array<uint32_t,32> l_mask_to_apply;
+                        for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
+                        {
+                            l_mask_to_apply[l_threadIdx_x] = l_elected_thread == l_threadIdx_x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
+                        }
+#endif // ENABLE_CUDA_CODE
+                        for (info_index_t l_result_info_index{0u}; l_result_info_index < l_best_candidate_index; ++l_result_info_index)
+                        {
+                            print_single(1, "Info %i -> %i:\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_result_info_index));
+#ifdef ENABLE_CUDA_CODE
+                            uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                            uint32_t l_constraint = l_mask_to_apply;
+                            uint32_t l_result = l_capability & l_constraint;
+                            print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
+                            l_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
+#else // ENABLE_CUDA_CODE
+                            uint32_t l_print_mask = 0;
+                            for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
+                            {
+                                uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(l_threadIdx_x);
+                                uint32_t l_constraint = l_mask_to_apply[l_threadIdx_x];
+                                uint32_t l_result = l_capability & l_constraint;
+                                l_print_mask |= (l_capability != 0) << l_threadIdx_x;
+                                print_mask(1, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
+                                l_stack.get_next_level_position_info(l_result_info_index).set_word(l_threadIdx_x, l_result);
+                            }
+#endif // ENABLE_CUDA_CODE
+                        }
+
+                        // Last position is not treated here because next level has 1 position less
+                        for (info_index_t l_result_info_index = l_best_candidate_index + 1; l_result_info_index < l_stack.get_level_nb_info() - 1; ++l_result_info_index)
+                        {
+                            print_single(1, "Info %i -> %i:\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_result_info_index));
+#ifdef ENABLE_CUDA_CODE
+                            uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                            uint32_t l_constraint = l_mask_to_apply;
+                            uint32_t l_result = l_capability & l_constraint;
+                            print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
+                            l_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
+#else // ENABLE_CUDA_CODE
+                            uint32_t l_print_mask = 0;
+                            dim3 threadIdx{0,1,1};
+                            for(threadIdx.x = 0; threadIdx.x < 32; ++ threadIdx.x)
+                            {
+                                uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                uint32_t l_constraint = l_mask_to_apply[threadIdx.x];
+                                uint32_t l_result = l_capability & l_constraint;
+                                l_print_mask |= (l_capability != 0) << threadIdx.x;
+                                print_mask(1, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
+                                l_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
+                            }
+#endif // ENABLE_CUDA_CODE
+                        }
+
+                        // No next level when we set latest piece
+                        if(l_best_candidate_index < (l_stack.get_level_nb_info() - 1) && l_stack.get_level() < (l_stack.get_size() - 1))
+                        {
+                            // Last position in next level it will be located at l_best_candidate_index
+                            print_single(0, "Info %i -> %i:\n", static_cast<uint32_t>(l_stack.get_level_nb_info()) - 1, static_cast<uint32_t>(l_best_candidate_index));
+#ifdef ENABLE_CUDA_CODE
+                            uint32_t l_capability = l_stack.get_position_info(info_index_t(l_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);
+                            uint32_t l_constraint = l_mask_to_apply;
+                            uint32_t l_result = l_capability & l_constraint;
+                            print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
+                            l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
+#else // ENABLE_CUDA_CODE
+                            uint32_t l_print_mask = 0;
+                            dim3 threadIdx{0,1,1};
+                            for(threadIdx.x = 0; threadIdx.x < 32; ++ threadIdx.x)
+                            {
+                                uint32_t l_capability = l_stack.get_position_info(info_index_t(l_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);
+                                uint32_t l_constraint = l_mask_to_apply[threadIdx.x];
+                                uint32_t l_result = l_capability & l_constraint;
+                                l_print_mask |= (l_capability != 0) << threadIdx.x;
+                                print_mask(1, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
+                                l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
+                            }
+#endif // ENABLE_CUDA_CODE
+                        }
+
+                        CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                        l_stack.push(l_best_candidate_index, l_position_index, l_piece_index, l_piece_orientation);
+                        CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+
+                        // Apply color constraint
+                        for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
+                        {
+                            uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
+                            print_single(1, "Color Id %i", l_color_id);
+                            if(l_color_id)
+                            {
+                                // Compute position index related to piece side
+                                position_index_t l_related_position_index = l_position_index + g_position_offset[l_orientation_index];
+                                print_single(1, "Related position index %i", static_cast<uint32_t>(l_related_position_index));
+
+                                // Check if position is free, if this not the case there is no corresponding index
+                                if(!l_stack.is_position_free(l_related_position_index))
+                                {
+                                    print_single(1,"Position %i is not free", static_cast<uint32_t>(l_related_position_index));
+                                    continue;
+                                }
+
+                                // Compute corresponding info index
+                                info_index_t l_related_info_index = l_stack.get_info_index(l_related_position_index);
+                                print_single(1, "Related info index %i", static_cast<uint32_t>(l_related_info_index));
+
+                                // If related index correspond to last position of previous level ( we already did the push ) than result is stored in position where we store the piece
+                                info_index_t l_related_target_info_index = l_related_info_index < l_stack.get_level_nb_info() ? l_related_info_index : l_best_candidate_index;
+
+                                print_single(1, "Color Info %i -> %i:\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_target_info_index));
+#ifdef ENABLE_CUDA_CODE
+                                print_mask(1, __ballot_sync(0xFFFFFFFFu, l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) | p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x)), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x), p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x),l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) & p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x));
+#else // ENABLE_CUDA_CODE
+                                uint32_t l_print_mask = 0;
+                                dim3 threadIdx{0,1,1};
+                                for(threadIdx.x = 0; threadIdx.x < 32; ++ threadIdx.x)
+                                {
+                                    l_print_mask |= ((l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) | p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x)) != 0 ) << threadIdx.x;
+                                    print_mask(1, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x), p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x),l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) & p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x));
+                                }
+#endif // ENABLE_CUDA_CODE
+                                l_stack.get_position_info(l_related_target_info_index).CUDA_and(l_stack.get_position_info(l_related_info_index), p_color_constraints.get_info(l_color_id - 1, l_orientation_index));
+                            }
+                        }
+                    }
+                    break; // Break loop searching best candidate
                 }
                 ++l_best_candidate_index;
 
-            } while(l_best_candidate_index < l_stack.get_level_nb_info());
+            } while(l_best_candidate_index < l_nb_level_info);
 
             // No candidate found so we go up from one level
-            if(l_best_candidate_index == l_stack.get_level_nb_info())
+            if(l_best_candidate_index == l_nb_level_info)
             {
                 print_single(0, "No more best score so recompute best score");
                 //CUDA_glutton_max::print_device_info_position_index(0, l_stack);
@@ -1260,196 +1451,6 @@ namespace edge_matching_puzzle
             }
 
             assert(l_ballot_result);
-
-            // Determine first lane/thread having a candidate. Result is greater than 0 due to assert
-            unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
-
-            print_single(0, "Elected thread : %i", l_elected_thread);
-
-            // Share current best candidate with all other threads so they can select the same candidate
-#ifdef ENABLE_CUDA_CODE
-            l_thread_best_candidates = __shfl_sync(0xFFFFFFFF, l_thread_best_candidates, (int)l_elected_thread);
-#else // ENABLE_CUDA_CODE
-            for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
-            {
-                l_thread_best_candidates[l_threadIdx_x] = l_thread_best_candidates[l_elected_thread];
-            }
-#endif // ENABLE_CUDA_CODE
-
-            // Determine first available candidate. Result  cannot be 0 due to ballot result
-#ifdef ENABLE_CUDA_CODE
-            unsigned l_bit_index = __ffs((int)l_thread_best_candidates) - 1;
-#else // ENABLE_CUDA_CODE
-            unsigned l_bit_index = __ffs((int)l_thread_best_candidates[0]) - 1;
-#endif // ENABLE_CUDA_CODE
-
-            print_single(0, "Bit index : %i", l_bit_index);
-
-            CUDA_glutton_max::print_position_info(6, l_stack);
-
-            // Set variable bit to zero in best candidate and current info
-#ifdef ENABLE_CUDA_CODE
-            if(threadIdx.x < 2)
-#else // ENABLE_CUDA_CODE
-            for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 2; ++ l_threadIdx_x)
-#endif // ENABLE_CUDA_CODE
-            {
-#ifdef ENABLE_CUDA_CODE
-                CUDA_piece_position_info2 & l_position_info = threadIdx.x ? l_stack.get_best_candidate_info(l_best_candidate_index) : l_stack.get_position_info(l_best_candidate_index);
-#else // ENABLE_CUDA_CODE
-                CUDA_piece_position_info2 & l_position_info = l_threadIdx_x ? l_stack.get_best_candidate_info(l_best_candidate_index) : l_stack.get_position_info(l_best_candidate_index);
-#endif // ENABLE_CUDA_CODE
-                l_position_info.clear_bit(l_elected_thread, l_bit_index);
-            }
-#ifdef ENABLE_CUDA_CODE
-            __syncwarp(0xFFFFFFFF);
-#endif // ENABLE_CUDA_CODE
-            print_single(0, "after clear\n");
-            CUDA_glutton_max::print_position_info(6, l_stack);
-
-            // Compute piece index
-            uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
-
-            print_single(0, "Piece index : %i", l_piece_index);
-
-            // Piece orientation
-            uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
-
-            print_single(0, "Piece orientation : %i", l_piece_orientation);
-
-            // Get position index corresponding to this info index
-            position_index_t l_position_index = l_stack.get_position_index(l_best_candidate_index);
-
-            {
-                // Compute mask to apply which set piece bit to 0
-#ifdef ENABLE_CUDA_CODE
-                uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
-#else // ENABLE_CUDA_CODE
-                std::array<uint32_t,32> l_mask_to_apply;
-                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
-                {
-                    l_mask_to_apply[l_threadIdx_x] = l_elected_thread == l_threadIdx_x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
-                }
-#endif // ENABLE_CUDA_CODE
-                for (info_index_t l_result_info_index{0u}; l_result_info_index < l_best_candidate_index; ++l_result_info_index)
-                {
-                    print_single(1, "Info %i -> %i:\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_result_info_index));
-#ifdef ENABLE_CUDA_CODE
-                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                    uint32_t l_constraint = l_mask_to_apply;
-                    uint32_t l_result = l_capability & l_constraint;
-                    print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
-                    l_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
-#else // ENABLE_CUDA_CODE
-                    uint32_t l_print_mask = 0;
-                    for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
-                    {
-                        uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(l_threadIdx_x);
-                        uint32_t l_constraint = l_mask_to_apply[l_threadIdx_x];
-                        uint32_t l_result = l_capability & l_constraint;
-                        l_print_mask |= (l_capability != 0) << l_threadIdx_x;
-                        print_mask(1, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
-                        l_stack.get_next_level_position_info(l_result_info_index).set_word(l_threadIdx_x, l_result);
-                    }
-#endif // ENABLE_CUDA_CODE
-                }
-
-                // Last position is not treated here because next level has 1 position less
-                for (info_index_t l_result_info_index = l_best_candidate_index + 1; l_result_info_index < l_stack.get_level_nb_info() - 1; ++l_result_info_index)
-                {
-                    print_single(1, "Info %i -> %i:\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_result_info_index));
-#ifdef ENABLE_CUDA_CODE
-                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                    uint32_t l_constraint = l_mask_to_apply;
-                    uint32_t l_result = l_capability & l_constraint;
-                    print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
-                    l_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
-#else // ENABLE_CUDA_CODE
-                    uint32_t l_print_mask = 0;
-                    dim3 threadIdx{0,1,1};
-                    for(threadIdx.x = 0; threadIdx.x < 32; ++ threadIdx.x)
-                    {
-                        uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                        uint32_t l_constraint = l_mask_to_apply[threadIdx.x];
-                        uint32_t l_result = l_capability & l_constraint;
-                        l_print_mask |= (l_capability != 0) << threadIdx.x;
-                        print_mask(1, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
-                        l_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
-                    }
-#endif // ENABLE_CUDA_CODE
-                }
-
-                // No next level when we set latest piece
-                if(l_best_candidate_index < (l_stack.get_level_nb_info() - 1) && l_stack.get_level() < (l_stack.get_size() - 1))
-                {
-                    // Last position in next level it will be located at l_best_candidate_index
-                    print_single(0, "Info %i -> %i:\n", static_cast<uint32_t>(l_stack.get_level_nb_info()) - 1, static_cast<uint32_t>(l_best_candidate_index));
-#ifdef ENABLE_CUDA_CODE
-                    uint32_t l_capability = l_stack.get_position_info(info_index_t(l_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);
-                    uint32_t l_constraint = l_mask_to_apply;
-                    uint32_t l_result = l_capability & l_constraint;
-                    print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
-                    l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
-#else // ENABLE_CUDA_CODE
-                    uint32_t l_print_mask = 0;
-                    dim3 threadIdx{0,1,1};
-                    for(threadIdx.x = 0; threadIdx.x < 32; ++ threadIdx.x)
-                    {
-                        uint32_t l_capability = l_stack.get_position_info(info_index_t(l_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);
-                        uint32_t l_constraint = l_mask_to_apply[threadIdx.x];
-                        uint32_t l_result = l_capability & l_constraint;
-                        l_print_mask |= (l_capability != 0) << threadIdx.x;
-                        print_mask(1, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
-                        l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
-                    }
-#endif // ENABLE_CUDA_CODE
-                }
-
-                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-                l_stack.push(l_best_candidate_index, l_position_index, l_piece_index, l_piece_orientation);
-                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-
-                // Apply color constraint
-                for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
-                {
-                    uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
-                    print_single(1, "Color Id %i", l_color_id);
-                    if(l_color_id)
-                    {
-                        // Compute position index related to piece side
-                        position_index_t l_related_position_index = l_position_index + g_position_offset[l_orientation_index];
-                        print_single(1, "Related position index %i", static_cast<uint32_t>(l_related_position_index));
-
-                        // Check if position is free, if this not the case there is no corresponding index
-                        if(!l_stack.is_position_free(l_related_position_index))
-                        {
-                            print_single(1,"Position %i is not free", static_cast<uint32_t>(l_related_position_index));
-                            continue;
-                        }
-
-                        // Compute corresponding info index
-                        info_index_t l_related_info_index = l_stack.get_info_index(l_related_position_index);
-                        print_single(1, "Related info index %i", static_cast<uint32_t>(l_related_info_index));
-
-                        // If related index correspond to last position of previous level ( we already did the push ) than result is stored in position where we store the piece
-                        info_index_t l_related_target_info_index = l_related_info_index < l_stack.get_level_nb_info() ? l_related_info_index : l_best_candidate_index;
-
-                        print_single(1, "Color Info %i -> %i:\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_target_info_index));
-#ifdef ENABLE_CUDA_CODE
-                        print_mask(1, __ballot_sync(0xFFFFFFFFu, l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) | p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x)), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x), p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x),l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) & p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x));
-#else // ENABLE_CUDA_CODE
-                        uint32_t l_print_mask = 0;
-                        dim3 threadIdx{0,1,1};
-                        for(threadIdx.x = 0; threadIdx.x < 32; ++ threadIdx.x)
-                        {
-                            l_print_mask |= ((l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) | p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x)) != 0 ) << threadIdx.x;
-                            print_mask(1, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x), p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x),l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) & p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x));
-                        }
-#endif // ENABLE_CUDA_CODE
-                        l_stack.get_position_info(l_related_target_info_index).CUDA_and(l_stack.get_position_info(l_related_info_index), p_color_constraints.get_info(l_color_id - 1, l_orientation_index));
-                    }
-                }
-            }
 
             // For latest level we do not search for best score at is zero in any case
             if(l_stack.get_level() < (l_stack.get_size() - 1))
