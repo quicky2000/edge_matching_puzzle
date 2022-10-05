@@ -1375,10 +1375,16 @@ namespace edge_matching_puzzle
                             }
 #endif // ENABLE_CUDA_CODE
 
-                            CUDA_glutton_max::compute_next_level_position_info(info_index_t(0u), l_best_candidate_index, l_stack, l_mask_to_apply);
+                            if (CUDA_glutton_max::compute_next_level_position_info(info_index_t(0u), l_best_candidate_index, l_stack, l_mask_to_apply))
+                            {
+                                continue; // Continue loop on bit best candidates
+                            }
 
                             // Last position is not treated here because next level has 1 position less
-                            CUDA_glutton_max::compute_next_level_position_info(l_best_candidate_index + 1, l_stack.get_level_nb_info() - 1, l_stack, l_mask_to_apply);
+                            if (CUDA_glutton_max::compute_next_level_position_info(l_best_candidate_index + 1, l_stack.get_level_nb_info() - 1, l_stack, l_mask_to_apply))
+                            {
+                                continue; // Continue loop on bit best candidates
+                            }
 
                             // No next level when we set latest piece
                             if (l_best_candidate_index < (l_stack.get_level_nb_info() - 1) && l_stack.get_level() < (l_stack.get_size() - 1))
@@ -1391,17 +1397,29 @@ namespace edge_matching_puzzle
                                 uint32_t l_result = l_capability & l_constraint;
                                 print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
                                 l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
+                                if__any_sync(0xFFFFFFFFu, l_result)
+                                {
+                                    print_single(2, "INVALID Best");
+                                    continue; // Continue loop on bit best candidates
+                                }
 #else // ENABLE_CUDA_CODE
                                 uint32_t l_print_mask = 0;
                                 dim3 threadIdx{0, 1, 1};
+                                bool l_invalid = true;
                                 for (threadIdx.x = 0; threadIdx.x < 32; ++threadIdx.x)
                                 {
                                     uint32_t l_capability = l_stack.get_position_info(info_index_t(l_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);
                                     uint32_t l_constraint = l_mask_to_apply[threadIdx.x];
                                     uint32_t l_result = l_capability & l_constraint;
                                     l_print_mask |= (l_capability != 0) << threadIdx.x;
+                                    l_invalid &= !l_result;
                                     print_mask(1, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
                                     l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x, l_result);
+                                }
+                                if (l_invalid)
+                                {
+                                    print_single(2, "INVALID Best");
+                                    continue; // Continue loop on bit best candidates
                                 }
 #endif // ENABLE_CUDA_CODE
                             }
@@ -1410,6 +1428,7 @@ namespace edge_matching_puzzle
                             l_stack.push(l_best_candidate_index, l_position_index, l_piece_index, l_piece_orientation);
                             CUDA_glutton_max::print_device_info_position_index(0, l_stack);
 
+                            bool l_invalid = false;
 
                             // Apply color constraint
                             for (unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
@@ -1449,8 +1468,23 @@ namespace edge_matching_puzzle
                                     }
 #endif // ENABLE_CUDA_CODE
                                     l_stack.get_position_info(l_related_target_info_index).CUDA_and(l_stack.get_position_info(l_related_info_index), p_color_constraints.get_info(l_color_id - 1, l_orientation_index));
+                                    if (!l_stack.is_position_valid(l_related_target_info_index))
+                                    {
+                                        print_single(2, "INVALID Best color");
+                                        l_invalid = true;
+                                        break; // break color loop
+                                    }
                                 }
                             } // End of color loop
+                            // Check if we exit from loop because everything was fine or due to invalid position
+                            if (l_invalid)
+                            {
+                                // Restore stack to continue to iterate on best candidates
+                                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                                l_stack.pop();
+                                CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                                continue; // Continue loop on bit best candidates
+                            }
                         }
                         break; // Break loop searching best candidate
                     }// End of loop on bit variable
