@@ -583,10 +583,11 @@ namespace edge_matching_puzzle
          * @param p_limit_index end index of interval, this position info at this index is not modified
          * @param p_stack stack function is working on
          * @param p_mask_to_apply mask to apply to each position
+         * @return true if some position is invalid
          */
         inline static
         __device__
-        void compute_next_level_position_info(info_index_t p_start_index
+        bool compute_next_level_position_info(info_index_t p_start_index
                                              ,info_index_t p_limit_index
                                              ,CUDA_glutton_max_stack & p_stack
 #ifdef ENABLE_CUDA_CODE
@@ -604,20 +605,33 @@ namespace edge_matching_puzzle
                 uint32_t l_constraint = p_mask_to_apply;
                 uint32_t l_result = l_capability & l_constraint;
                 print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
+                if(__any_sync(0xFFFFFFFF, l_result))
+                {
+                    print_single(2, "INVALID Best:\n");
+                    return true;
+                }
                 p_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
 #else // ENABLE_CUDA_CODE
                 uint32_t l_print_mask = 0;
+                bool l_invalid = true;
                 for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
                 {
                     uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(l_threadIdx_x);
                     uint32_t l_constraint = p_mask_to_apply[l_threadIdx_x];
                     uint32_t l_result = l_capability & l_constraint;
+                    l_invalid &= !l_result;
                     l_print_mask |= (l_capability != 0) << l_threadIdx_x;
                     print_mask(1, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
                     p_stack.get_next_level_position_info(l_result_info_index).set_word(l_threadIdx_x, l_result);
                 }
+                if(l_invalid)
+                {
+                    print_single(2, "INVALID Next:\n");
+                    return true;
+                }
 #endif // ENABLE_CUDA_CODE
             }
+            return false;
 
         }
 
