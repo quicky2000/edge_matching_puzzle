@@ -1241,7 +1241,6 @@ namespace edge_matching_puzzle
                 // TO DELETE l_stack.unmark_best_candidates();
             }
 
-            unsigned int l_ballot_result;
             info_index_t l_best_candidate_index = l_best_start_index;
 #ifdef ENABLE_CUDA_CODE
             uint32_t l_thread_best_candidates;
@@ -1257,7 +1256,7 @@ namespace edge_matching_puzzle
             do
             {
                 // At the beginning all threads participates to ballot
-                l_ballot_result = 0xFFFFFFFF;
+                unsigned int l_ballot_result = 0xFFFFFFFF;
                 print_single(1,"Best Info index = %i <=> Position = %i", static_cast<uint32_t>(l_best_candidate_index), static_cast<uint32_t>(l_stack.get_position_index(l_best_candidate_index)));
 
                 // Each thread get its word in position info
@@ -1284,11 +1283,11 @@ namespace edge_matching_puzzle
                 }
 #endif // ENABLE_CUDA_CODE
 
-                // Ballot result cannot be NULL because we are by construction in a valid situation
-                if(l_ballot_result)
+                while(l_ballot_result)
                 {
                     // Determine first lane/thread having a candidate. Result is greater than 0 due to test
                     unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
+                    l_ballot_result &= ~(1u << l_elected_thread);
 
                     print_single(0, "Elected thread : %i", l_elected_thread);
 
@@ -1434,7 +1433,13 @@ namespace edge_matching_puzzle
                             }
                         }
                     }
-                    break; // Break loop searching best candidate
+                    break; // Break ballot loop
+
+                } // End of ballot loop
+                // If level has been changed it means we found a valid candidate
+                if(l_nb_level_info != l_stack.get_level_nb_info())
+                {
+                    break; // Break loop searching for best candidate
                 }
                 ++l_best_candidate_index;
 
@@ -1450,8 +1455,6 @@ namespace edge_matching_puzzle
                 l_new_level = true;
                 continue;
             }
-
-            assert(l_ballot_result);
 
             // For latest level we do not search for best score at is zero in any case
             if(l_stack.get_level() < (l_stack.get_size() - 1))
