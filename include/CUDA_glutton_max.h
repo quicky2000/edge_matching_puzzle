@@ -1265,7 +1265,7 @@ namespace edge_matching_puzzle
             print_single(0, "Iterate on best candidate from index %i", static_cast<uint32_t>(l_best_candidate_index));
             // Iterate on best candidates to prepare next level until we find a
             // candidate of reach the end of candidate info
-
+            bool l_invalidate_position = false;
             info_index_t l_nb_level_info = l_stack.get_level_nb_info();
             do
             {
@@ -1344,6 +1344,9 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                             l_position_info.clear_bit(l_elected_thread, l_bit_index);
                         }
+                        // Check if by clearing position we make the position invalid
+                        // In case no valid best score is found we will directly pop
+                        l_invalidate_position |= !l_stack.is_position_valid(l_best_candidate_index);
 #ifdef ENABLE_CUDA_CODE
                         __syncwarp(0xFFFFFFFF);
 #endif // ENABLE_CUDA_CODE
@@ -1511,11 +1514,21 @@ namespace edge_matching_puzzle
             // No candidate found so we go up from one level
             if(l_best_candidate_index == l_nb_level_info)
             {
-                print_single(0, "No more best score so recompute best score");
-                //CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-                //l_best_start_index = l_stack.pop();
-                //CUDA_glutton_max::print_device_info_position_index(0, l_stack);
-                l_new_level = true;
+                if(l_invalidate_position)
+                {
+                    print_single(0, "No more best score and invalidate some position go up");
+                    CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                    l_best_start_index = l_stack.pop();
+                    CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                }
+                else
+                {
+                    print_single(0, "No more best score so recompute best score");
+                    //CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                    //l_best_start_index = l_stack.pop();
+                    //CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+                }
+                l_new_level = !l_invalidate_position;
                 continue;
             }
 
