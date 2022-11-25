@@ -412,7 +412,7 @@ namespace edge_matching_puzzle
 
        {
 #ifdef ENABLE_CUDA_CODE
-           uint32_t l_info_bits = reduce_add_sync(__popc(l_result_capability));
+           uint32_t l_info_bits = reduce_add_sync(__popc(p_result_capability));
 #else // ENABLE_CUDA_CODE
            uint32_t l_info_bits = 0;
            for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
@@ -426,7 +426,7 @@ namespace edge_matching_puzzle
         inline static
         __device__
 #ifdef ENABLE_CUDA_CODE
-        bool analyze_info(uint32_t p_result_capabiliy
+        bool analyze_info(uint32_t p_result_capability
                          ,CUDA_glutton_max_stack::t_piece_infos & p_piece_info
 #else // ENABLE_CUDA_CODE
         bool analyze_info(std::array<uint32_t,32> p_result_capability
@@ -436,7 +436,7 @@ namespace edge_matching_puzzle
         {
             // Check result of mask except for selected piece and current position
 #ifdef ENABLE_CUDA_CODE
-            if(__any_sync(0xFFFFFFFFu, l_result_capability))
+            if(__any_sync(0xFFFFFFFFu, p_result_capability))
 #else // ENABLE_CUDA_CODE
             bool l_any = false;
             for(unsigned int l_threadIdx_x = 0; (!l_any) && (l_threadIdx_x < 32); ++l_threadIdx_x)
@@ -456,8 +456,8 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                     {
 #ifdef ENABLE_CUDA_CODE
-                        l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(l_result_capability & 0xFu)));
-                        l_result_capability = l_result_capability >> 4;
+                        l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(p_result_capability & 0xFu)));
+                        p_result_capability = p_result_capability >> 4;
 #else // ENABLE_CUDA_CODE
                         l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__builtin_popcount(static_cast<int>(p_result_capability[l_threadIdx_x] & 0xFu)));
                         p_result_capability[l_threadIdx_x] = p_result_capability[l_threadIdx_x] >> 4;
@@ -678,7 +678,7 @@ namespace edge_matching_puzzle
 
             if(l_best_start_index < l_stack.get_level_nb_info() && !l_stack.is_position_valid(l_best_start_index))
             {
-                 print_single(0, "No more remaining bit in this index %i position %i, go up from one level", l_best_start_index, l_stack.get_position_index(l_best_start_index));
+                 print_single(0, "No more remaining bit in this index %i position %i, go up from one level", static_cast<uint32_t>(l_best_start_index), static_cast<uint32_t>(l_stack.get_position_index(l_best_start_index)));
                  CUDA_glutton_max::print_device_info_position_index(0, l_stack);
                  l_best_start_index = l_stack.pop();
                  CUDA_glutton_max::print_device_info_position_index(0, l_stack);
@@ -1400,7 +1400,7 @@ namespace edge_matching_puzzle
                                 uint32_t l_result = l_capability & l_constraint;
                                 print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
                                 l_stack.get_next_level_position_info(l_best_candidate_index).set_word(threadIdx.x , l_result);
-                                if__any_sync(0xFFFFFFFFu, l_result)
+                                if(__any_sync(0xFFFFFFFFu, l_result))
                                 {
                                     print_single(2, "INVALID Best");
                                     continue; // Continue loop on bit best candidates
