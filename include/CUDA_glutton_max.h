@@ -27,7 +27,10 @@
 #include "emp_situation.h"
 #include "situation_string_formatter.h"
 #include "quicky_exception.h"
-#ifndef ENABLE_CUDA_CODE
+#include <functional>
+#ifdef ENABLE_CUDA_CODE
+#include <nvfunctional>
+#else // ENABLE_CUDA_CODE
 #include <numeric>
 #include <algorithm>
 #endif // ENABLE_CUDA_CODE
@@ -633,6 +636,93 @@ namespace edge_matching_puzzle
             }
             return false;
 
+        }
+
+        /**
+         * Function allowing to iterate on all bit set in p_thread variable of
+         * warp. Each thread in the warp provide an uin32_t variable, their
+         * bit that are set will be listed in order and thread index, bit index
+         * will be provided to p_func with a refernce on thread variable.
+         * p_func can perfom a treatment and if needed modify thread variable to set bit to zero for example
+         * @param p_thread_variable
+         * @param p_func
+         */
+        inline static
+        __device__
+        void warp_iterate(
+#ifdef ENABLE_CUDA_CODE
+                           uint32_t & p_thread_variable
+                          ,nvstd::function<void(uint32_t, uint32_t, uint32_t &)> p_func
+#else // ENABLE_CUDA_CODE
+                           std::array<uint32_t,32> & p_thread_variable
+                          ,std::function<void(uint32_t, uint32_t, std::array<uint32_t,32> &)> p_func
+#endif // ENABLE_CUDA_CODE
+                          )
+        {
+#ifdef ENABLE_CUDA_CODE
+            print_all(2,"Thread available variables = 0x%" PRIx32, p_thread_variable);
+#else // ENABLE_CUDA_CODE
+            for(dim3 threadIdx{0, 0, 0} ; threadIdx.x < 32 ; ++threadIdx.x)
+            {
+                print_all(2, threadIdx, "Thread available variables = 0x%" PRIx32, p_thread_variable[threadIdx.x]);
+            }
+#endif // ENABLE_CUDA_CODE
+
+            // At the beginning all threads participates to ballot
+            unsigned int l_ballot_result = 0xFFFFFFFF;
+
+            // Iterate on non null position info words determined by ballot between threads
+            do
+            {
+                // Sync between threads to determine who as some available variables
+#ifdef ENABLE_CUDA_CODE
+                l_ballot_result = __ballot_sync(l_ballot_result, (int) p_thread_variable);
+                print_mask(3, l_ballot_result, "Thread available variables = 0x%" PRIx32, p_thread_variable);
+#else // ENABLE_CUDA_CODE
+                l_ballot_result = __ballot_sync(l_ballot_result, (int *) p_thread_variable.data());
+                for(dim3 l_threadIdx{0, 1 , 1}; l_threadIdx.x < 32; ++l_threadIdx.x)
+                {
+                    print_mask(3, l_ballot_result, l_threadIdx, "Thread available variables = 0x%" PRIx32, p_thread_variable[l_threadIdx.x]);
+                }
+#endif // ENABLE_CUDA_CODE
+
+
+                // Ballot result cannot be NULL because we are by construction in a valid situation
+                assert(l_ballot_result);
+
+                // Determine first lane/thread having an available variable. Result is greater than 0 due to assert
+                unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
+
+                print_single(3, "Elected thread : %i", l_elected_thread);
+
+                // Eliminate thread from next ballot
+                l_ballot_result &= ~(1u << l_elected_thread);
+
+                // Copy available variables because we will iterate on it
+#ifdef ENABLE_CUDA_CODE
+                // Share current available variables with all other threads so they can select the same variable
+                uint32_t l_thread_variable = __shfl_sync(0xFFFFFFFF, p_thread_variable, (int)l_elected_thread);
+#else // ENABLE_CUDA_CODE
+                uint32_t l_thread_variable = p_thread_variable[l_elected_thread];
+#endif // ENABLE_CUDA_CODE
+
+                // Iterate on available variables of elected thread
+                do
+                {
+                    print_single(4, "Current available variables : 0x%" PRIx32, l_thread_variable);
+
+                    // Determine first available variable. Result  cannot be 0 due to ballot
+                    unsigned l_bit_index = __ffs((int)l_thread_variable) - 1;
+
+                    print_single(4, "Bit index : %i", l_bit_index);
+
+                    // Set variable bit to zero
+                    uint32_t l_mask = ~(1u << l_bit_index);
+                    l_thread_variable &= l_mask;
+
+                    p_func(l_elected_thread, l_bit_index, p_thread_variable);
+                } while(l_thread_variable);
+            } while(l_ballot_result);
         }
 
         /**
