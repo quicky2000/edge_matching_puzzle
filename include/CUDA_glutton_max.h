@@ -806,12 +806,9 @@ namespace edge_matching_puzzle
                 for(info_index_t l_info_index{0u};
                     l_info_index < l_stack.get_level_nb_info();
                     ++l_info_index
-                        )
+                    )
                 {
                     print_single(1,"Info index = %i <=> Position = %i", static_cast<uint32_t>(l_info_index), static_cast<uint32_t>(l_stack.get_position_index(static_cast<info_index_t>(l_info_index))));
-
-                    // At the beginning all threads participates to ballot
-                    unsigned int l_ballot_result = 0xFFFFFFFF;
 
                     // Each thread get its word in position info
 #ifdef ENABLE_CUDA_CODE
@@ -824,186 +821,117 @@ namespace edge_matching_puzzle
                     }
 #endif // ENABLE_CUDA_CODE
 
+                    auto l_lambda = [&](uint32_t p_elected_thread
+                                       ,uint32_t p_bit_index
 #ifdef ENABLE_CUDA_CODE
-                    print_all(2,"Thread available variables = 0x%" PRIx32, l_thread_available_variables);
-#else // ENABLE_CUDA_CODE
-                    for(dim3 threadIdx{0, 0, 0} ; threadIdx.x < 32 ; ++threadIdx.x)
-                    {
-                        print_all(2, threadIdx, "Thread available variables = 0x%" PRIx32, l_thread_available_variables[threadIdx.x]);
-                    }
+                                       ,uint32_t & p_thread_variable
+#else
+                                       ,std::array<uint32_t, 32> & p_thread_variable
 #endif // ENABLE_CUDA_CODE
-
-                    // Iterate on non null position info words determined by ballot between threads
-                    do
+                                       )
                     {
-                        // Sync between threads to determine who as some available variables
+                        // Compute piece index
+                        uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(p_elected_thread, p_bit_index);
+
+                        print_single(4, "Piece index : %i", l_piece_index);
+
+                        // Piece orientation
+                        uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(p_elected_thread, p_bit_index);
+
+                        print_single(4, "Piece orientation : %i", l_piece_orientation);
+
+                        // Get position index corresponding to this info index
+                        position_index_t l_position_index = l_stack.get_position_index(static_cast<info_index_t >(l_info_index));
+
+                        bool l_invalid = false;
+
+                        uint32_t l_info_bits_min = 0xFFFFFFFFu;
+                        uint32_t l_info_bits_max = 0;
+                        uint32_t l_info_bits_total = 0;
+
 #ifdef ENABLE_CUDA_CODE
-                        l_ballot_result = __ballot_sync(l_ballot_result, (int) l_thread_available_variables);
-                        print_mask(3, l_ballot_result, "Thread available variables = 0x%" PRIx32, l_thread_available_variables);
-#else // ENABLE_CUDA_CODE
-                        l_ballot_result = __ballot_sync(l_ballot_result, (int *) l_thread_available_variables.data());
-                        for(dim3 l_threadIdx{0, 1 , 1}; l_threadIdx.x < 32; ++l_threadIdx.x)
+                        if(!threadIdx.x)
                         {
-                            print_mask(3, l_ballot_result, l_threadIdx, "Thread available variables = 0x%" PRIx32, l_thread_available_variables[l_threadIdx.x]);
+#endif // ENABLE_CUDA_CODE
+                            l_stack.set_piece_unavailable(l_piece_index);
+#ifdef ENABLE_CUDA_CODE
+                        }
+                        __syncwarp(0xFFFFFFFF);
+#endif // ENABLE_CUDA_CODE
+                        l_stack.clear_piece_info();
+
+#ifdef ENABLE_CUDA_CODE
+                        CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info();
+                        uint32_t l_mask_to_apply = p_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(p_bit_index)): 0xFFFFFFFFu;
+#else // ENABLE_CUDA_CODE
+                        std::array<CUDA_glutton_max_stack::t_piece_infos,32> l_piece_infos;
+                        std::array<uint32_t,32> l_mask_to_apply;
+                        for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+                        {
+                            l_piece_infos[l_threadIdx_x] = l_stack.get_thread_piece_info(l_threadIdx_x);
+                            l_mask_to_apply[l_threadIdx_x] = p_elected_thread == l_threadIdx_x ? (~CUDA_piece_position_info2::compute_piece_mask(p_bit_index)): 0xFFFFFFFFu;
                         }
 #endif // ENABLE_CUDA_CODE
 
-
-                        // Ballot result cannot be NULL because we are by construction in a valid situation
-                        assert(l_ballot_result);
-
-                        // Determine first lane/thread having an available variable. Result is greater than 0 due to assert
-                        unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
-
-                        print_single(3, "Elected thread : %i", l_elected_thread);
-
-                        // Eliminate thread from next ballot
-                        l_ballot_result &= ~(1u << l_elected_thread);
-
-                        // Copy available variables because we will iterate on it
+                        // Each thread store the related info index corresponding to the orientation index
 #ifdef ENABLE_CUDA_CODE
-                        uint32_t l_current_available_variables = l_thread_available_variables;
-                        // Share current available variables with all other threads so they can select the same variable
-                        l_current_available_variables = __shfl_sync(0xFFFFFFFF, l_current_available_variables, (int)l_elected_thread);
+                        unsigned int l_related_thread_index = 0xFFFFFFFFu;
 #else // ENABLE_CUDA_CODE
-                        uint32_t l_current_available_variables = l_thread_available_variables[l_elected_thread];
-#endif // ENABLE_CUDA_CODE
-
-                        // Iterate on available variables of elected thread
-                        do
+                        std::array<unsigned int,32> l_related_thread_index;
+                        for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
                         {
-                            print_single(4, "Current available variables : 0x%" PRIx32, l_current_available_variables);
-
-                            // Determine first available variable. Result  cannot be 0 due to ballot
-                            unsigned l_bit_index = __ffs((int)l_current_available_variables) - 1;
-
-                            print_single(4, "Bit index : %i", l_bit_index);
-
-                            // Set variable bit to zero
-                            uint32_t l_mask = ~(1u << l_bit_index);
-                            l_current_available_variables &= l_mask;
-
-                            // Compute piece index
-                            uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
-
-                            print_single(4, "Piece index : %i", l_piece_index);
-
-                            // Piece orientation
-                            uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
-
-                            print_single(4, "Piece orientation : %i", l_piece_orientation);
-
-                            // Get position index corresponding to this info index
-                            position_index_t l_position_index = l_stack.get_position_index(static_cast<info_index_t >(l_info_index));
-
-                            bool l_invalid = false;
-
-                            uint32_t l_info_bits_min = 0xFFFFFFFFu;
-                            uint32_t l_info_bits_max = 0;
-                            uint32_t l_info_bits_total = 0;
-
-#ifdef ENABLE_CUDA_CODE
-                            if(!threadIdx.x)
-                            {
-#endif // ENABLE_CUDA_CODE
-                                l_stack.set_piece_unavailable(l_piece_index);
-#ifdef ENABLE_CUDA_CODE
-                            }
-                            __syncwarp(0xFFFFFFFF);
-#endif // ENABLE_CUDA_CODE
-                            l_stack.clear_piece_info();
-
-#ifdef ENABLE_CUDA_CODE
-                            CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info();
-                            uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
-#else // ENABLE_CUDA_CODE
-                            std::array<CUDA_glutton_max_stack::t_piece_infos,32> l_piece_infos;
-                            std::array<uint32_t,32> l_mask_to_apply;
-                            for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
-                            {
-                                l_piece_infos[l_threadIdx_x] = l_stack.get_thread_piece_info(l_threadIdx_x);
-                                l_mask_to_apply[l_threadIdx_x] = l_elected_thread == l_threadIdx_x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
-                            }
+                            l_related_thread_index[l_threadIdx_x] = 0xFFFFFFFFu;
+                        }
 #endif // ENABLE_CUDA_CODE
 
-                            // Each thread store the related info index corresponding to the orientation index
-#ifdef ENABLE_CUDA_CODE
-                            unsigned int l_related_thread_index = 0xFFFFFFFFu;
-#else // ENABLE_CUDA_CODE
-                            std::array<unsigned int,32> l_related_thread_index;
-                            for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+                        // Apply color constraint
+                        print_single(4, "Apply color constraints");
+                        for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
+                        {
+                            uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
+                            if(l_color_id)
                             {
-                                l_related_thread_index[l_threadIdx_x] = 0xFFFFFFFFu;
-                            }
-#endif // ENABLE_CUDA_CODE
+                                // Compute position index related to piece side
+                                position_index_t l_related_position_index{static_cast<uint32_t>(l_position_index) + g_position_offset[l_orientation_index]};
 
-                            // Apply color constraint
-                            print_single(4, "Apply color constraints");
-                            for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
-                            {
-                                uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
-                                if(l_color_id)
+                                // Check if position is free, if this not the case there is no corresponding index
+                                if(!l_stack.is_position_free(l_related_position_index))
                                 {
-                                    // Compute position index related to piece side
-                                    position_index_t l_related_position_index{static_cast<uint32_t>(l_position_index) + g_position_offset[l_orientation_index]};
+                                    print_single(5, "Position %i is not free:\n", static_cast<uint32_t>(l_related_position_index));
+                                    continue;
+                                }
 
-                                    // Check if position is free, if this not the case there is no corresponding index
-                                    if(!l_stack.is_position_free(l_related_position_index))
-                                    {
-                                        print_single(5, "Position %i is not free:\n", static_cast<uint32_t>(l_related_position_index));
-                                        continue;
-                                    }
+                                // Compute corresponding info index
+                                info_index_t l_related_info_index = l_stack.get_info_index(l_related_position_index);
+                                print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_position_index));
 
-                                    // Compute corresponding info index
-                                    info_index_t l_related_info_index = l_stack.get_info_index(l_related_position_index);
-                                    print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_position_index));
-
-                                    // Each thread store the related info index corresponding to the orientation index
+                                // Each thread store the related info index corresponding to the orientation index
 #ifdef ENABLE_CUDA_CODE
-                                    l_related_thread_index = threadIdx.x == l_orientation_index ? static_cast<uint32_t>(l_related_info_index) : l_related_thread_index;
-                                    uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
-                                    uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
-                                    l_constraint_capability &= l_mask_to_apply;
-                                    uint32_t l_result_capability = l_capability & l_constraint_capability;
+                                l_related_thread_index = threadIdx.x == l_orientation_index ? static_cast<uint32_t>(l_related_info_index) : l_related_thread_index;
+                                uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
+                                uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
+                                l_constraint_capability &= l_mask_to_apply;
+                                uint32_t l_result_capability = l_capability & l_constraint_capability;
 #else // ENABLE_CUDA_CODE
-                                    std::array<uint32_t,32> l_capability;
-                                    std::array<uint32_t,32> l_constraint_capability;
-                                    std::array<uint32_t,32> l_result_capability;
-                                    for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
-                                    {
-                                        l_related_thread_index[l_threadIdx_x] = l_threadIdx_x == l_orientation_index ? static_cast<uint32_t>(l_related_info_index): l_related_thread_index[l_threadIdx_x];
-                                        l_capability[l_threadIdx_x] = l_stack.get_position_info(l_related_info_index).get_word(l_threadIdx_x);
-                                        l_constraint_capability[l_threadIdx_x] = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(l_threadIdx_x);
-                                        l_constraint_capability[l_threadIdx_x] &= l_mask_to_apply[l_threadIdx_x];
-                                        l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_constraint_capability[l_threadIdx_x];
-                                    }
+                                std::array<uint32_t,32> l_capability;
+                                std::array<uint32_t,32> l_constraint_capability;
+                                std::array<uint32_t,32> l_result_capability;
+                                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+                                {
+                                    l_related_thread_index[l_threadIdx_x] = l_threadIdx_x == l_orientation_index ? static_cast<uint32_t>(l_related_info_index): l_related_thread_index[l_threadIdx_x];
+                                    l_capability[l_threadIdx_x] = l_stack.get_position_info(l_related_info_index).get_word(l_threadIdx_x);
+                                    l_constraint_capability[l_threadIdx_x] = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(l_threadIdx_x);
+                                    l_constraint_capability[l_threadIdx_x] &= l_mask_to_apply[l_threadIdx_x];
+                                    l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_constraint_capability[l_threadIdx_x];
+                                }
 #endif // ENABLE_CUDA_CODE
 
-                                    //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
-                                    if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
-                                    {
-                                        print_single(5, "INVALID:\n");
+                                //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
+                                if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
+                                {
+                                    print_single(5, "INVALID:\n");
 #ifdef ENABLE_CUDA_CODE
-                                        print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
-#else // ENABLE_CUDA_CODE
-                                        {
-                                            uint32_t l_print_mask = 0x0;
-                                            for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
-                                            {
-                                                l_print_mask |= (l_capability[l_threadIdx_x] || l_constraint_capability[l_threadIdx_x]) << l_threadIdx_x;
-                                            }
-                                            for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
-                                            {
-                                                print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability[l_threadIdx_x], l_constraint_capability[l_threadIdx_x]);
-                                            }
-                                        }
-#endif // ENABLE_CUDA_CODE
-                                        break;
-                                    }
-                                    CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-#ifdef ENABLE_CUDA_CODE
-                                    //print_all(5, "Min %3i Max %3i Total %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
 #else // ENABLE_CUDA_CODE
                                     {
                                         uint32_t l_print_mask = 0x0;
@@ -1013,207 +941,226 @@ namespace edge_matching_puzzle
                                         }
                                         for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
                                         {
-                                            print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability[l_threadIdx_x], l_constraint_capability[l_threadIdx_x], l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                            print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability[l_threadIdx_x], l_constraint_capability[l_threadIdx_x]);
                                         }
                                     }
 #endif // ENABLE_CUDA_CODE
+                                    break;
                                 }
-                            }
-                            if(!l_invalid)
-                            {
-                                print_single(4, "Apply piece constraints before selected index");
-                                for(info_index_t l_result_info_index{0u}; l_result_info_index < l_info_index; ++l_result_info_index)
-                                {
+                                CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
 #ifdef ENABLE_CUDA_CODE
-                                    if(__all_sync(0xFFFFFFFFu, l_result_info_index != info_index_t(l_related_thread_index)))
+                                //print_all(5, "Min %3i Max %3i Total %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+#else // ENABLE_CUDA_CODE
+                                {
+                                    uint32_t l_print_mask = 0x0;
+                                    for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
+                                    {
+                                        l_print_mask |= (l_capability[l_threadIdx_x] || l_constraint_capability[l_threadIdx_x]) << l_threadIdx_x;
+                                    }
+                                    for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+                                    {
+                                        print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability[l_threadIdx_x], l_constraint_capability[l_threadIdx_x], l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    }
+                                }
+#endif // ENABLE_CUDA_CODE
+                            } // if color_id
+                        } // End of side for loop
+                        if(!l_invalid)
+                        {
+                            print_single(4, "Apply piece constraints before selected index");
+                            for(info_index_t l_result_info_index{0u}; l_result_info_index < l_info_index; ++l_result_info_index)
+                            {
+#ifdef ENABLE_CUDA_CODE
+                                if(__all_sync(0xFFFFFFFFu, l_result_info_index != info_index_t(l_related_thread_index)))
 #else // ENABLE_CUDA_CODE
 
-                                    bool l_all = true;
-                                    for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
-                                    {
-                                        l_all = l_all && (l_result_info_index != info_index_t(l_related_thread_index[l_threadIdx_x]));
-                                    }
-                                    if(l_all)
-#endif // ENABLE_CUDA_CODE
-                                    {
-                                        print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
-#ifdef ENABLE_CUDA_CODE
-                                        uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                        uint32_t l_result_capability = l_capability & l_mask_to_apply;
-#else // ENABLE_CUDA_CODE
-                                        std::array<uint32_t,32> l_capability;
-                                        std::array<uint32_t,32> l_result_capability;
-                                        for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
-                                        {
-                                            l_capability[l_threadIdx_x] = l_stack.get_position_info(l_result_info_index).get_word(l_threadIdx_x);
-                                            l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
-                                        }
-#endif // ENABLE_CUDA_CODE
-                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
-                                        {
-                                            print_single(5, "INVALID:\n");
-#ifdef ENABLE_CUDA_CODE
-                                            print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_mask_to_apply), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_mask_to_apply);
-#else // ENABLE_CUDA_CODE
-                                            {
-                                                uint32_t l_print_mask = 0x0;
-                                                for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
-                                                {
-                                                    l_print_mask |= (l_capability[l_threadIdx_x] || l_mask_to_apply[l_threadIdx_x]) << l_threadIdx_x;
-                                                }
-                                                for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
-                                                {
-                                                    print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability[l_threadIdx_x], l_mask_to_apply[l_threadIdx_x]);
-                                                }
-                                            }
-#endif // ENABLE_CUDA_CODE
-                                            break;
-                                        }
-                                        CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-#ifdef ENABLE_CUDA_CODE
-                                        print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-#else // ENABLE_CUDA_CODE
-                                        {
-                                            uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, (int32_t*)l_capability.data());
-                                            //uint32_t l_print_mask = 0x0;
-                                            //for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
-                                            //{
-                                            //    l_print_mask |= l_capability[l_threadIdx_x] << l_threadIdx_x;
-                                            //}
-                                            for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
-                                            {
-                                                print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability[l_threadIdx_x], l_mask_to_apply[l_threadIdx_x], l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                            }
-                                        }
-#endif // ENABLE_CUDA_CODE
-                                    }
-                                }
-                            }
-                            if(!l_invalid)
-                            {
-                                print_single(4, "Apply piece constraints after selected index");
-                                for(info_index_t l_result_info_index = l_info_index + static_cast<uint32_t>(1u);
-                                    l_result_info_index < l_stack.get_level_nb_info();
-                                    ++l_result_info_index
-                                   )
+                                bool l_all = true;
+                                for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
                                 {
+                                    l_all = l_all && (l_result_info_index != info_index_t(l_related_thread_index[l_threadIdx_x]));
+                                }
+                                if(l_all)
+#endif // ENABLE_CUDA_CODE
+                                {
+                                    print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
 #ifdef ENABLE_CUDA_CODE
-                                    if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
+                                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                    uint32_t l_result_capability = l_capability & l_mask_to_apply;
 #else // ENABLE_CUDA_CODE
-                                    bool l_all = true;
-                                    for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
+                                    std::array<uint32_t,32> l_capability;
+                                    std::array<uint32_t,32> l_result_capability;
+                                    for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
                                     {
-                                        l_all = l_all && (l_result_info_index != l_related_thread_index[l_threadIdx_x]);
+                                        l_capability[l_threadIdx_x] = l_stack.get_position_info(l_result_info_index).get_word(l_threadIdx_x);
+                                        l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                     }
-                                    if(l_all)
 #endif // ENABLE_CUDA_CODE
+                                    if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
                                     {
-                                        print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
+                                        print_single(5, "INVALID:\n");
 #ifdef ENABLE_CUDA_CODE
-                                        uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                        uint32_t l_result_capability = l_capability & l_mask_to_apply;
+                                        print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_mask_to_apply), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_mask_to_apply);
 #else // ENABLE_CUDA_CODE
-                                        std::array<uint32_t,32> l_capability;
-                                        std::array<uint32_t,32> l_result_capability;
-                                        for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
                                         {
-                                            l_capability[l_threadIdx_x] = l_stack.get_position_info(l_result_info_index).get_word(l_threadIdx_x);
-                                            l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
-                                        }
-#endif // ENABLE_CUDA_CODE
-                                        if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
-                                        {
-                                            print_single(5, "INVALID:\n");
-#ifdef ENABLE_CUDA_CODE
-                                            print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_mask_to_apply), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_mask_to_apply);
-#else // ENABLE_CUDA_CODE
                                             uint32_t l_print_mask = 0x0;
                                             for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
                                             {
-                                                l_print_mask |= ((l_capability[l_threadIdx_x] | l_mask_to_apply[l_threadIdx_x]) != 0 ) << l_threadIdx_x;
+                                                l_print_mask |= (l_capability[l_threadIdx_x] || l_mask_to_apply[l_threadIdx_x]) << l_threadIdx_x;
                                             }
                                             for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
                                             {
                                                 print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability[l_threadIdx_x], l_mask_to_apply[l_threadIdx_x]);
                                             }
-#endif // ENABLE_CUDA_CODE
-                                            break;
-                                        }
-                                        CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-#ifdef ENABLE_CUDA_CODE
-                                        print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-#else // ENABLE_CUDA_CODE
-                                        {
-                                            uint32_t l_print_mask = 0x0;
-                                            for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
-                                            {
-                                                l_print_mask |= (l_capability[l_threadIdx_x] != 0) << l_threadIdx_x;
-                                            }
-                                            for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
-                                            {
-                                                print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability[l_threadIdx_x], l_mask_to_apply[l_threadIdx_x], l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                            }
                                         }
 #endif // ENABLE_CUDA_CODE
+                                        break;
                                     }
+                                    CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+#ifdef ENABLE_CUDA_CODE
+                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+#else // ENABLE_CUDA_CODE
+                                    {
+                                        uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, (int32_t*)l_capability.data());
+                                        //uint32_t l_print_mask = 0x0;
+                                        //for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
+                                        //{
+                                        //    l_print_mask |= l_capability[l_threadIdx_x] << l_threadIdx_x;
+                                        //}
+                                        for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
+                                        {
+                                            print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability[l_threadIdx_x], l_mask_to_apply[l_threadIdx_x], l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                        }
+                                    }
+#endif // ENABLE_CUDA_CODE
                                 }
                             }
-                            // Manage pieces info
-                            if(!l_invalid)
+                        }
+                        if(!l_invalid)
+                        {
+                            print_single(4, "Apply piece constraints after selected index");
+                            for(info_index_t l_result_info_index = l_info_index + static_cast<uint32_t>(1u);
+                                l_result_info_index < l_stack.get_level_nb_info();
+                                ++l_result_info_index
+                               )
                             {
-                                print_single(4, "Compute pieces info");
 #ifdef ENABLE_CUDA_CODE
-                                uint32_t l_piece_info_total_bit = 0;
-                                uint32_t l_piece_info_min_bits = 0xFFFFFFFFu;
-                                uint32_t l_piece_info_max_bits = 0;
+                                if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
 #else // ENABLE_CUDA_CODE
-                                std::array<uint32_t, 32> l_piece_info_total_bit;
-                                std::array<uint32_t, 32> l_piece_info_min_bits;
-                                std::array<uint32_t, 32> l_piece_info_max_bits;
-                                for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
+                                bool l_all = true;
+                                for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
                                 {
-                                    l_piece_info_total_bit[l_threadIdx_x] = 0;
-                                    l_piece_info_min_bits[l_threadIdx_x] = 0xFFFFFFFFu;
-                                    l_piece_info_max_bits[l_threadIdx_x] = 0;
+                                    l_all = l_all && (l_result_info_index != l_related_thread_index[l_threadIdx_x]);
                                 }
+                                if(l_all)
 #endif // ENABLE_CUDA_CODE
-                                for(unsigned int l_piece_info_index = 0; l_piece_info_index < 8; ++l_piece_info_index)
                                 {
+                                    print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
 #ifdef ENABLE_CUDA_CODE
-                                    CUDA_glutton_max_stack::t_piece_info l_piece_info = l_piece_infos[l_piece_info_index];
+                                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                        uint32_t l_result_capability = l_capability & l_mask_to_apply;
 #else // ENABLE_CUDA_CODE
-                                    std::array<CUDA_glutton_max_stack::t_piece_info, 32> l_piece_info;
-                                    for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
+                                    std::array<uint32_t,32> l_capability;
+                                    std::array<uint32_t,32> l_result_capability;
+                                    for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
                                     {
-                                        l_piece_info[l_threadIdx_x] = l_piece_infos[l_threadIdx_x][l_piece_info_index];
+                                        l_capability[l_threadIdx_x] = l_stack.get_position_info(l_result_info_index).get_word(l_threadIdx_x);
+                                        l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                     }
 #endif // ENABLE_CUDA_CODE
-#ifdef ENABLE_CUDA_CODE
-                                    if(__all_sync(0xFFFFFFFFu, l_piece_info))
-#else // ENABLE_CUDA_CODE
-                                    bool l_all = true;
-                                    for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
+                                    if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
                                     {
-                                        l_all = l_all && l_piece_info[l_threadIdx_x];
-                                    }
-                                    if(l_all)
-#endif // ENABLE_CUDA_CODE
-                                    {
+                                        print_single(5, "INVALID:\n");
 #ifdef ENABLE_CUDA_CODE
-                                        unsigned int l_info_piece_index = 8 * threadIdx.x + l_piece_info_index;
+                                        print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_mask_to_apply), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_mask_to_apply);
 #else // ENABLE_CUDA_CODE
-                                        std::array<unsigned int,32> l_info_piece_index;
-                                        for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
+                                        uint32_t l_print_mask = 0x0;
+                                        for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
                                         {
-                                            l_info_piece_index[l_threadIdx_x] = 8 * l_threadIdx_x + l_piece_info_index;
+                                            l_print_mask |= ((l_capability[l_threadIdx_x] | l_mask_to_apply[l_threadIdx_x]) != 0 ) << l_threadIdx_x;
+                                        }
+                                        for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
+                                        {
+                                            print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability[l_threadIdx_x], l_mask_to_apply[l_threadIdx_x]);
                                         }
 #endif // ENABLE_CUDA_CODE
+                                        break;
+                                    }
+                                    CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
 #ifdef ENABLE_CUDA_CODE
-                                        if(l_stack.is_piece_available(l_info_piece_index))
+                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
 #else // ENABLE_CUDA_CODE
-                                        for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
+                                    {
+                                        uint32_t l_print_mask = 0x0;
+                                        for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
                                         {
-                                            if (l_stack.is_piece_available(l_info_piece_index[l_threadIdx_x]))
+                                            l_print_mask |= (l_capability[l_threadIdx_x] != 0) << l_threadIdx_x;
+                                        }
+                                        for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
+                                        {
+                                            print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", l_capability[l_threadIdx_x], l_mask_to_apply[l_threadIdx_x], l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                        }
+                                    }
+#endif // ENABLE_CUDA_CODE
+                                }
+                            } // For loop after selected index
+                        }
+                        // Manage pieces info
+                        if(!l_invalid)
+                        {
+                            print_single(4, "Compute pieces info");
+#ifdef ENABLE_CUDA_CODE
+                            uint32_t l_piece_info_total_bit = 0;
+                            uint32_t l_piece_info_min_bits = 0xFFFFFFFFu;
+                            uint32_t l_piece_info_max_bits = 0;
+#else // ENABLE_CUDA_CODE
+                            std::array<uint32_t, 32> l_piece_info_total_bit;
+                            std::array<uint32_t, 32> l_piece_info_min_bits;
+                            std::array<uint32_t, 32> l_piece_info_max_bits;
+                            for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
+                            {
+                                l_piece_info_total_bit[l_threadIdx_x] = 0;
+                                l_piece_info_min_bits[l_threadIdx_x] = 0xFFFFFFFFu;
+                                l_piece_info_max_bits[l_threadIdx_x] = 0;
+                            }
+#endif // ENABLE_CUDA_CODE
+                            for(unsigned int l_piece_info_index = 0; l_piece_info_index < 8; ++l_piece_info_index)
+                            {
+#ifdef ENABLE_CUDA_CODE
+                                CUDA_glutton_max_stack::t_piece_info l_piece_info = l_piece_infos[l_piece_info_index];
+#else // ENABLE_CUDA_CODE
+                                std::array<CUDA_glutton_max_stack::t_piece_info, 32> l_piece_info;
+                                for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
+                                {
+                                    l_piece_info[l_threadIdx_x] = l_piece_infos[l_threadIdx_x][l_piece_info_index];
+                                }
+#endif // ENABLE_CUDA_CODE
+#ifdef ENABLE_CUDA_CODE
+                                if(__all_sync(0xFFFFFFFFu, l_piece_info))
+#else // ENABLE_CUDA_CODE
+                                bool l_all = true;
+                                for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
+                                {
+                                    l_all = l_all && l_piece_info[l_threadIdx_x];
+                                }
+                                if(l_all)
+#endif // ENABLE_CUDA_CODE
+                                {
+#ifdef ENABLE_CUDA_CODE
+                                    unsigned int l_info_piece_index = 8 * threadIdx.x + l_piece_info_index;
+#else // ENABLE_CUDA_CODE
+                                    std::array<unsigned int,32> l_info_piece_index;
+                                    for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
+                                    {
+                                        l_info_piece_index[l_threadIdx_x] = 8 * l_threadIdx_x + l_piece_info_index;
+                                    }
+#endif // ENABLE_CUDA_CODE
+#ifdef ENABLE_CUDA_CODE
+                                    if(l_stack.is_piece_available(l_info_piece_index))
+#else // ENABLE_CUDA_CODE
+                                    for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
+                                    {
+                                        if (l_stack.is_piece_available(l_info_piece_index[l_threadIdx_x]))
 #endif // ENABLE_CUDA_CODE
                                         {
 #ifdef ENABLE_CUDA_CODE
@@ -1228,108 +1175,108 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                                         }
 #ifndef ENABLE_CUDA_CODE
-                                        }
-#endif // ENABLE_CUDA_CODE
                                     }
-                                    else
-                                    {
-                                        print_single(5, "INVALID PIECES:\n");
-#ifdef ENABLE_CUDA_CODE
-                                        print_mask(5, __ballot_sync(0xFFFFFFFFu, !l_piece_info), "Piece info[%" PRIu32 "] : %" PRIu32 "\n", 8 * threadIdx.x + l_piece_info_index, l_piece_info);
-#else // ENABLE_CUDA_CODE
-                                        uint32_t l_mask_print = 0;
-                                        for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
-                                        {
-                                            l_mask_print |= (l_piece_info[l_threadIdx_x] == 0) << l_threadIdx_x;
-                                        }
-                                        for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
-                                        {
-                                            print_mask(5, l_mask_print, {l_threadIdx_x, 1, 1}, "Piece info[%" PRIu32 "] : %" PRIu32 "\n", 8 * l_threadIdx_x + l_piece_info_index, l_piece_info[l_threadIdx_x]);
-                                        }
 #endif // ENABLE_CUDA_CODE
-                                        l_invalid = true;
-                                        break;
-                                    }
                                 }
-                                if(!l_invalid)
+                                else
                                 {
-                                    l_info_bits_total += CUDA_glutton_max::reduce_add_sync(l_piece_info_total_bit);
+                                    print_single(5, "INVALID PIECES:\n");
 #ifdef ENABLE_CUDA_CODE
-                                    l_piece_info_min_bits = CUDA_glutton_max::reduce_min_sync(l_piece_info_min_bits);
-                                    l_info_bits_min = l_piece_info_min_bits < l_info_bits_min ? l_piece_info_min_bits : l_info_bits_min;
+                                    print_mask(5, __ballot_sync(0xFFFFFFFFu, !l_piece_info), "Piece info[%" PRIu32 "] : %" PRIu32 "\n", 8 * threadIdx.x + l_piece_info_index, l_piece_info);
 #else // ENABLE_CUDA_CODE
-                                    CUDA_glutton_max::reduce_min_sync(l_piece_info_min_bits);
-                                    l_info_bits_min = l_piece_info_min_bits[0] < l_info_bits_min ? l_piece_info_min_bits[0] : l_info_bits_min;
+                                    uint32_t l_mask_print = 0;
+                                    for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
+                                    {
+                                        l_mask_print |= (l_piece_info[l_threadIdx_x] == 0) << l_threadIdx_x;
+                                    }
+                                    for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
+                                    {
+                                        print_mask(5, l_mask_print, {l_threadIdx_x, 1, 1}, "Piece info[%" PRIu32 "] : %" PRIu32 "\n", 8 * l_threadIdx_x + l_piece_info_index, l_piece_info[l_threadIdx_x]);
+                                    }
 #endif // ENABLE_CUDA_CODE
-#ifdef ENABLE_CUDA_CODE
-                                    l_piece_info_max_bits = CUDA_glutton_max::reduce_max_sync(l_piece_info_max_bits);
-                                    l_info_bits_max = l_piece_info_max_bits > l_info_bits_max ? l_piece_info_max_bits : l_info_bits_max;
-#else // ENABLE_CUDA_CODE
-                                    CUDA_glutton_max::reduce_max_sync(l_piece_info_max_bits);
-                                    l_info_bits_max = l_piece_info_max_bits[0] > l_info_bits_max ? l_piece_info_max_bits[0] : l_info_bits_max;
-#endif // ENABLE_CUDA_CODE
-                                    print_single(4, "After reduction");
-                                    print_single(4, "Min %3i\tMax %3i\tTotal %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    l_invalid = true;
+                                    break;
                                 }
                             }
                             if(!l_invalid)
                             {
-                                // compare with global stats
-                                uint32_t l_min_max_score = (l_info_bits_max << 16u) + l_info_bits_min;
-                                print_single(4, "Total %i\tMinMax %i\n", l_info_bits_total, l_min_max_score);
-                                bool l_record_candidate = false;
-                                if(l_info_bits_total > l_best_total_score || (l_info_bits_total == l_best_total_score && l_min_max_score > l_best_min_max_score))
+                                l_info_bits_total += CUDA_glutton_max::reduce_add_sync(l_piece_info_total_bit);
+#ifdef ENABLE_CUDA_CODE
+                                l_piece_info_min_bits = CUDA_glutton_max::reduce_min_sync(l_piece_info_min_bits);
+                                l_info_bits_min = l_piece_info_min_bits < l_info_bits_min ? l_piece_info_min_bits : l_info_bits_min;
+#else // ENABLE_CUDA_CODE
+                                CUDA_glutton_max::reduce_min_sync(l_piece_info_min_bits);
+                                l_info_bits_min = l_piece_info_min_bits[0] < l_info_bits_min ? l_piece_info_min_bits[0] : l_info_bits_min;
+#endif // ENABLE_CUDA_CODE
+#ifdef ENABLE_CUDA_CODE
+                                l_piece_info_max_bits = CUDA_glutton_max::reduce_max_sync(l_piece_info_max_bits);
+                                l_info_bits_max = l_piece_info_max_bits > l_info_bits_max ? l_piece_info_max_bits : l_info_bits_max;
+#else // ENABLE_CUDA_CODE
+                                CUDA_glutton_max::reduce_max_sync(l_piece_info_max_bits);
+                                l_info_bits_max = l_piece_info_max_bits[0] > l_info_bits_max ? l_piece_info_max_bits[0] : l_info_bits_max;
+#endif // ENABLE_CUDA_CODE
+                                print_single(4, "After reduction");
+                                print_single(4, "Min %3i\tMax %3i\tTotal %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                            }
+                        }
+                        if(!l_invalid)
+                        {
+                            // compare with global stats
+                            uint32_t l_min_max_score = (l_info_bits_max << 16u) + l_info_bits_min;
+                            print_single(4, "Total %i\tMinMax %i\n", l_info_bits_total, l_min_max_score);
+                            bool l_record_candidate = false;
+                            if(l_info_bits_total > l_best_total_score || (l_info_bits_total == l_best_total_score && l_min_max_score > l_best_min_max_score))
+                            {
+                                print_single(4, "New best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
+                                l_best_total_score = l_info_bits_total;
+                                l_best_min_max_score = l_min_max_score;
+                                // Clear previous candidate for best score
+                                for(info_index_t l_clear_info_index = l_best_start_index; l_clear_info_index <= l_best_last_index; ++l_clear_info_index)
                                 {
-                                    print_single(4, "New best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
-                                    l_best_total_score = l_info_bits_total;
-                                    l_best_min_max_score = l_min_max_score;
-                                    // Clear previous candidate for best score
-                                    for(info_index_t l_clear_info_index = l_best_start_index; l_clear_info_index <= l_best_last_index; ++l_clear_info_index)
+                                    // Clear previous candidate capability
+#ifdef ENABLE_CUDA_CODE
+                                    l_stack.get_best_candidate_info(l_clear_info_index).set_word(threadIdx.x, 0);
+#else // ENABLE_CUDA_CODE
+                                    for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
                                     {
-                                        // Clear previous candidate capability
-#ifdef ENABLE_CUDA_CODE
-                                        l_stack.get_best_candidate_info(l_clear_info_index).set_word(threadIdx.x, 0);
-#else // ENABLE_CUDA_CODE
-                                        for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32;++l_threadIdx_x)
-                                        {
-                                            l_stack.get_best_candidate_info(l_clear_info_index).set_word(l_threadIdx_x, 0);
-                                        }
-#endif // ENABLE_CUDA_CODE
+                                        l_stack.get_best_candidate_info(l_clear_info_index).set_word(l_threadIdx_x, 0);
                                     }
-                                    l_best_start_index = l_info_index;
-                                    l_best_last_index = l_info_index;
-                                    l_record_candidate = true;
-                                }
-                                else if(l_info_bits_total == l_best_total_score && l_min_max_score == l_best_min_max_score)
-                                {
-                                    print_single(4, "Same best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
-                                    l_best_last_index = l_info_index;
-                                    l_record_candidate = true;
-                                }
-#ifdef ENABLE_CUDA_CODE
-                                if(l_record_candidate && !threadIdx.x)
-#else // ENABLE_CUDA_CODE
-                                if(l_record_candidate)
 #endif // ENABLE_CUDA_CODE
-                                {
-                                    l_stack.get_best_candidate_info(l_info_index).set_bit(l_piece_index, static_cast<emp_types::t_orientation>(l_piece_orientation));
                                 }
-#ifdef ENABLE_CUDA_CODE
-                                __syncwarp(0xFFFFFFFF);
-#endif // ENABLE_CUDA_CODE
+                                l_best_start_index = l_info_index;
+                                l_best_last_index = l_info_index;
+                                l_record_candidate = true;
+                            }
+                            else if(l_info_bits_total == l_best_total_score && l_min_max_score == l_best_min_max_score)
+                            {
+                                print_single(4, "Same best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
+                                l_best_last_index = l_info_index;
+                                l_record_candidate = true;
                             }
 #ifdef ENABLE_CUDA_CODE
-                            if(!threadIdx.x)
+                            if(l_record_candidate && !threadIdx.x)
+#else // ENABLE_CUDA_CODE
+                            if(l_record_candidate)
 #endif // ENABLE_CUDA_CODE
                             {
-                                l_stack.set_piece_available(l_piece_index);
+                                l_stack.get_best_candidate_info(l_info_index).set_bit(l_piece_index, static_cast<emp_types::t_orientation>(l_piece_orientation));
                             }
 #ifdef ENABLE_CUDA_CODE
                             __syncwarp(0xFFFFFFFF);
 #endif // ENABLE_CUDA_CODE
-                        }  while(l_current_available_variables);
+                        }
+#ifdef ENABLE_CUDA_CODE
+                        if(!threadIdx.x)
+#endif // ENABLE_CUDA_CODE
+                        {
+                            l_stack.set_piece_available(l_piece_index);
+                        }
+#ifdef ENABLE_CUDA_CODE
+                        __syncwarp(0xFFFFFFFF);
+#endif // ENABLE_CUDA_CODE
+                    };
 
-                    } while(l_ballot_result);
+                    CUDA_glutton_max::warp_iterate(l_thread_available_variables, l_lambda);
                 }
 
                 // If no best score found there is no interesting transition so go back
