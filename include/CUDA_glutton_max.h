@@ -426,43 +426,41 @@ namespace edge_matching_puzzle
            update_stats(l_info_bits, p_min, p_max, p_total);
         }
 
+        /**
+         * Method to count the number of orientation possible for each piece at current position
+         * @param p_result_capability capability for current position
+         * @param p_piece_info variable storinng number of bits per piece
+         */
         inline static
         __device__
 #ifdef ENABLE_CUDA_CODE
-        bool analyze_info(uint32_t p_result_capability
+        void analyze_info(uint32_t p_result_capability
                          ,CUDA_glutton_max_stack::t_piece_infos & p_piece_info
 #else // ENABLE_CUDA_CODE
-        bool analyze_info(std::array<uint32_t,32> p_result_capability
+        void analyze_info(std::array<uint32_t,32> p_result_capability
                          ,std::array<CUDA_glutton_max_stack::t_piece_infos,32> & p_piece_info
 #endif // ENABLE_CUDA_CODE
                          )
         {
-            // Check result of mask except for selected piece and current position
-            if(__any_sync(0xFFFFFFFFu, p_result_capability))
+#ifdef ENABLE_CUDA_CODE
+            for(unsigned short & l_piece_index : p_piece_info)
+#else // ENABLE_CUDA_CODE
+            for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
             {
-#ifdef ENABLE_CUDA_CODE
-                for(unsigned short & l_piece_index : p_piece_info)
-#else // ENABLE_CUDA_CODE
-                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
+                for (unsigned short & l_piece_index : p_piece_info[l_threadIdx_x])
+#endif // ENABLE_CUDA_CODE
                 {
-
-                    for (unsigned short & l_piece_index : p_piece_info[l_threadIdx_x])
-#endif // ENABLE_CUDA_CODE
-                    {
 #ifdef ENABLE_CUDA_CODE
-                        l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(p_result_capability & 0xFu)));
-                        p_result_capability = p_result_capability >> 4;
+                    l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__popc(static_cast<int>(p_result_capability & 0xFu)));
+                    p_result_capability = p_result_capability >> 4;
 #else // ENABLE_CUDA_CODE
-                        l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__builtin_popcount(static_cast<int>(p_result_capability[l_threadIdx_x] & 0xFu)));
-                        p_result_capability[l_threadIdx_x] = p_result_capability[l_threadIdx_x] >> 4;
+                    l_piece_index += static_cast<CUDA_glutton_max_stack::t_piece_info>(__builtin_popcount(static_cast<int>(p_result_capability[l_threadIdx_x] & 0xFu)));
+                    p_result_capability[l_threadIdx_x] = p_result_capability[l_threadIdx_x] >> 4;
 #endif // ENABLE_CUDA_CODE
-                    }
-#ifndef ENABLE_CUDA_CODE
                 }
-#endif // ENABLE_CUDA_CODE
-                return false;
+#ifndef ENABLE_CUDA_CODE
             }
-            return true;
+#endif // ENABLE_CUDA_CODE
         }
 
         inline static
@@ -1035,12 +1033,13 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
 
                                 //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
-                                if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
+                                if((l_invalid = (!__any_sync(0xFFFFFFFFu, l_result_capability))))
                                 {
                                     print_single(5, "INVALID:\n");
                                     CUDA_glutton_max::debug_message_invalid(5, l_capability, l_constraint_capability);
                                     break;
                                 }
+                                CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos);
                                 CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                 CUDA_glutton_max::debug_message_info_bits2(5, l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             } // if color_id
@@ -1075,12 +1074,13 @@ namespace edge_matching_puzzle
                                         l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                     }
 #endif // ENABLE_CUDA_CODE
-                                    if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
+                                    if((l_invalid = (!__any_sync(0xFFFFFFFFu, l_result_capability))))
                                     {
                                         print_single(5, "INVALID:\n");
                                         CUDA_glutton_max::debug_message_invalid(5, l_capability, l_mask_to_apply);
                                         break;
                                     }
+                                    CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos);
                                     CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                     CUDA_glutton_max::debug_message_info_bits(5, l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                 }
@@ -1118,12 +1118,13 @@ namespace edge_matching_puzzle
                                         l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                     }
 #endif // ENABLE_CUDA_CODE
-                                    if((l_invalid = CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos)))
+                                    if((l_invalid = (!__any_sync(0xFFFFFFFFu, l_result_capability))))
                                     {
                                         print_single(5, "INVALID:\n");
                                         CUDA_glutton_max::debug_message_invalid(5, l_capability, l_mask_to_apply);
                                         break;
                                     }
+                                    CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos);
                                     CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                     CUDA_glutton_max::debug_message_info_bits(5, l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                 }
