@@ -438,16 +438,7 @@ namespace edge_matching_puzzle
                          )
         {
             // Check result of mask except for selected piece and current position
-#ifdef ENABLE_CUDA_CODE
             if(__any_sync(0xFFFFFFFFu, p_result_capability))
-#else // ENABLE_CUDA_CODE
-            bool l_any = false;
-            for(unsigned int l_threadIdx_x = 0; (!l_any) && (l_threadIdx_x < 32); ++l_threadIdx_x)
-            {
-                l_any = p_result_capability[l_threadIdx_x];
-            }
-            if(l_any)
-#endif // ENABLE_CUDA_CODE
             {
 #ifdef ENABLE_CUDA_CODE
                 for(unsigned short & l_piece_index : p_piece_info)
