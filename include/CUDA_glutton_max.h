@@ -641,10 +641,13 @@ namespace edge_matching_puzzle
         void warp_iterate(
 #ifdef ENABLE_CUDA_CODE
                            uint32_t & p_thread_variable
-                          ,nvstd::function<void(uint32_t, uint32_t, uint32_t &)> p_func
+                          ,nvstd::function<void(uint32_t, uint32_t, nvstd::function<void()> & p_init, uint32_t &)> p_func
+                          ,nvstd::function<void()> p_init
+
 #else // ENABLE_CUDA_CODE
                            std::array<uint32_t,32> & p_thread_variable
-                          ,std::function<void(uint32_t, uint32_t, std::array<uint32_t,32> &)> p_func
+                          ,std::function<void(uint32_t, uint32_t, std::function<void()> & p_init, std::array<uint32_t,32> &)> p_func
+                          ,std::function<void()> p_init
 #endif // ENABLE_CUDA_CODE
                           )
         {
@@ -709,7 +712,7 @@ namespace edge_matching_puzzle
                     uint32_t l_mask = ~(1u << l_bit_index);
                     l_thread_variable &= l_mask;
 
-                    p_func(l_elected_thread, l_bit_index, p_thread_variable);
+                    p_func(l_elected_thread, l_bit_index, p_init, p_thread_variable);
                 } while(l_thread_variable);
             } while(l_ballot_result);
         }
@@ -927,11 +930,27 @@ namespace edge_matching_puzzle
                     }
 #endif // ENABLE_CUDA_CODE
 
+
+                    uint32_t l_info_bits_min = 0xFFFFFFFFu;
+                    uint32_t l_info_bits_max = 0;
+                    uint32_t l_info_bits_total = 0;
+
+                    auto l_init_lambda = [&]()
+                    {
+                        l_info_bits_min = 0xFFFFFFFFu;
+                        l_info_bits_max = 0;
+                        l_info_bits_total = 0;
+
+                        l_stack.clear_piece_info();
+                    };
+
                     auto l_lambda = [&](uint32_t p_elected_thread
                                        ,uint32_t p_bit_index
 #ifdef ENABLE_CUDA_CODE
+                                       ,nvstd::function<void()> p_init
                                        ,uint32_t & p_thread_variable
 #else
+                                       ,std::function<void()> p_init
                                        ,std::array<uint32_t, 32> & p_thread_variable
 #endif // ENABLE_CUDA_CODE
                                        )
@@ -951,10 +970,6 @@ namespace edge_matching_puzzle
 
                         bool l_invalid = false;
 
-                        uint32_t l_info_bits_min = 0xFFFFFFFFu;
-                        uint32_t l_info_bits_max = 0;
-                        uint32_t l_info_bits_total = 0;
-
 #ifdef ENABLE_CUDA_CODE
                         if(!threadIdx.x)
                         {
@@ -964,7 +979,8 @@ namespace edge_matching_puzzle
                         }
                         __syncwarp(0xFFFFFFFF);
 #endif // ENABLE_CUDA_CODE
-                        l_stack.clear_piece_info();
+
+                        l_init_lambda();
 
 #ifdef ENABLE_CUDA_CODE
                         CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = l_stack.get_thread_piece_info();
@@ -1032,7 +1048,7 @@ namespace edge_matching_puzzle
                                 }
 #endif // ENABLE_CUDA_CODE
 
-                                //print_all(5, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", l_capability, l_constraint_capability);
+                                // Check validity after applying masks
                                 if((l_invalid = (!__any_sync(0xFFFFFFFFu, l_result_capability))))
                                 {
                                     print_single(5, "INVALID:\n");
@@ -1280,7 +1296,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                     };
 
-                    CUDA_glutton_max::warp_iterate(l_thread_available_variables, l_lambda);
+                    CUDA_glutton_max::warp_iterate(l_thread_available_variables, l_lambda, l_init_lambda);
                 }
 
                 // If no best score found there is no interesting transition so go back
