@@ -641,13 +641,14 @@ namespace edge_matching_puzzle
         void warp_iterate(
 #ifdef ENABLE_CUDA_CODE
                            uint32_t & p_thread_variable
-                          ,nvstd::function<void(uint32_t, uint32_t, nvstd::function<void()> & p_init, uint32_t &)> p_func
+                          ,nvstd::function<void(uint32_t, uint32_t, nvstd::function<void()> &, nvstd::function<bool(uint32_t)> &, uint32_t &)> p_func
                           ,nvstd::function<void()> p_init
-
+                          ,nvstd::function<bool(uint32_t)> p_is_position_invalid
 #else // ENABLE_CUDA_CODE
                            std::array<uint32_t,32> & p_thread_variable
-                          ,std::function<void(uint32_t, uint32_t, std::function<void()> & p_init, std::array<uint32_t,32> &)> p_func
+                          ,std::function<void(uint32_t, uint32_t, std::function<void()> &, std::function<bool(const std::array<uint32_t,32> &)> &, std::array<uint32_t,32> &)> p_func
                           ,std::function<void()> p_init
+                          ,std::function<bool(const std::array<uint32_t,32> &)> p_is_position_invalid
 #endif // ENABLE_CUDA_CODE
                           )
         {
@@ -712,7 +713,7 @@ namespace edge_matching_puzzle
                     uint32_t l_mask = ~(1u << l_bit_index);
                     l_thread_variable &= l_mask;
 
-                    p_func(l_elected_thread, l_bit_index, p_init, p_thread_variable);
+                    p_func(l_elected_thread, l_bit_index, p_init, p_is_position_invalid, p_thread_variable);
                 } while(l_thread_variable);
             } while(l_ballot_result);
         }
@@ -944,13 +945,26 @@ namespace edge_matching_puzzle
                         l_stack.clear_piece_info();
                     };
 
+                    auto l_is_position_invalid = [](
+#ifdef ENABLE_CUDA_CODE
+                        uint32_t p_result
+#else // ENABLE_CUDA_CODE
+                        const std::array<uint32_t,32> & p_result
+#endif // ENABLE_CUDA_CODE
+                                                   ) -> bool
+                    {
+                        return (!__any_sync(0xFFFFFFFFu, p_result));
+                    };
+
                     auto l_lambda = [&](uint32_t p_elected_thread
                                        ,uint32_t p_bit_index
 #ifdef ENABLE_CUDA_CODE
                                        ,nvstd::function<void()> p_init
+                                       ,nvstd::function<bool(uint32_t)> p_is_position_invalid
                                        ,uint32_t & p_thread_variable
 #else
                                        ,std::function<void()> p_init
+                                       ,std::function<bool(const std::array<uint32_t,32> &)> p_is_position_invalid
                                        ,std::array<uint32_t, 32> & p_thread_variable
 #endif // ENABLE_CUDA_CODE
                                        )
@@ -1049,7 +1063,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
 
                                 // Check validity after applying masks
-                                if((l_invalid = (!__any_sync(0xFFFFFFFFu, l_result_capability))))
+                                if((l_invalid = p_is_position_invalid(l_result_capability)))
                                 {
                                     print_single(5, "INVALID:\n");
                                     CUDA_glutton_max::debug_message_invalid(5, l_capability, l_constraint_capability);
@@ -1090,7 +1104,7 @@ namespace edge_matching_puzzle
                                         l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                     }
 #endif // ENABLE_CUDA_CODE
-                                    if((l_invalid = (!__any_sync(0xFFFFFFFFu, l_result_capability))))
+                                    if((l_invalid = p_is_position_invalid(l_result_capability)))
                                     {
                                         print_single(5, "INVALID:\n");
                                         CUDA_glutton_max::debug_message_invalid(5, l_capability, l_mask_to_apply);
@@ -1134,7 +1148,7 @@ namespace edge_matching_puzzle
                                         l_result_capability[l_threadIdx_x] = l_capability[l_threadIdx_x] & l_mask_to_apply[l_threadIdx_x];
                                     }
 #endif // ENABLE_CUDA_CODE
-                                    if((l_invalid = (!__any_sync(0xFFFFFFFFu, l_result_capability))))
+                                    if((l_invalid = p_is_position_invalid(l_result_capability)))
                                     {
                                         print_single(5, "INVALID:\n");
                                         CUDA_glutton_max::debug_message_invalid(5, l_capability, l_mask_to_apply);
@@ -1296,7 +1310,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                     };
 
-                    CUDA_glutton_max::warp_iterate(l_thread_available_variables, l_lambda, l_init_lambda);
+                    CUDA_glutton_max::warp_iterate(l_thread_available_variables, l_lambda, l_init_lambda, l_is_position_invalid);
                 }
 
                 // If no best score found there is no interesting transition so go back
