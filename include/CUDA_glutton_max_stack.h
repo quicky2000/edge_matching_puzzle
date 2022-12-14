@@ -53,6 +53,8 @@ namespace edge_matching_puzzle
                               ,uint32_t p_nb_pieces
                               );
 
+        CUDA_glutton_max_stack(const CUDA_glutton_max_stack & ) = delete;
+
         [[nodiscard]]
         inline
         bool is_empty() const;
