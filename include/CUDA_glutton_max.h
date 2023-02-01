@@ -964,6 +964,7 @@ namespace edge_matching_puzzle
                         {
                           public:
                             inline
+                            __device__
                             unvailability_lock_gard(CUDA_glutton_max_stack & p_stack
                                                    ,uint32_t p_piece_index
                                                    ):
@@ -982,6 +983,7 @@ namespace edge_matching_puzzle
                             }
 
                             inline
+                            __device__
                             ~unvailability_lock_gard()
                             {
 #ifdef ENABLE_CUDA_CODE
