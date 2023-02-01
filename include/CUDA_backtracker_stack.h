@@ -28,7 +28,7 @@ namespace edge_matching_puzzle
 {
     template <unsigned int NB_PIECES>
     class CUDA_backtracker_stack
-    : public CUDA_memory_managed_item
+    : public my_cuda::CUDA_memory_managed_item
     {
       public:
 

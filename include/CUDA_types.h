@@ -22,8 +22,8 @@
 
 namespace edge_matching_puzzle
 {
-    using info_index_t = CUDA_strong_primitive<uint32_t, struct info_index>;
-    using position_index_t = CUDA_strong_primitive<uint32_t, struct position_index>;
+    using info_index_t = my_cuda::CUDA_strong_primitive<uint32_t, struct info_index>;
+    using position_index_t = my_cuda::CUDA_strong_primitive<uint32_t, struct position_index>;
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_TYPES_H
 // EOF

@@ -22,7 +22,7 @@
 #include "CUDA_glutton_max_stack.h"
 #include "CUDA_memory_managed_array.h"
 #include "my_cuda.h"
-#include "CUDA_common.h"
+#include "CUDA_info.h"
 #include "emp_situation.h"
 
 namespace edge_matching_puzzle
@@ -50,7 +50,7 @@ namespace edge_matching_puzzle
     __global__
     void test_kernel(CUDA_glutton_max_stack * p_stacks
                     ,unsigned int p_nb_stack
-                    ,CUDA_memory_managed_array<uint32_t> & p_array
+                    ,my_cuda::CUDA_memory_managed_array<uint32_t> & p_array
                     );
 
     [[maybe_unused]]
@@ -59,7 +59,7 @@ namespace edge_matching_puzzle
                                   ,const CUDA_glutton_max_stack & p_stack
                                   )
     {
-        print_single(p_indent_level, "Best candidate info:");
+        my_cuda::print_single(p_indent_level, "Best candidate info:");
         CUDA_glutton_max::print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_best_candidate_info);
     }
 
@@ -141,18 +141,18 @@ namespace edge_matching_puzzle
     __global__
     void test_kernel(CUDA_glutton_max_stack * //p_stacks
                     ,unsigned int //p_nb_stack
-                    ,CUDA_memory_managed_array<uint32_t> & p_array
+                    ,my_cuda::CUDA_memory_managed_array<uint32_t> & p_array
                     )
     {
         assert(warpSize == blockDim.x);
 
         p_array[threadIdx.x] = 31 -  threadIdx.x;
 
-        print_all(0, "managed_array[%i] = %i", threadIdx.x, p_array[threadIdx.x]);
+        my_cuda::print_all(0, "managed_array[%i] = %i", threadIdx.x, p_array[threadIdx.x]);
 
         for(unsigned int l_piece_index = 0; l_piece_index < g_nb_pieces; ++l_piece_index)
         {
-            print_single(1, "Piece[%i]={%i, %i, %i, %i}\n", l_piece_index + 1, g_pieces[l_piece_index][0], g_pieces[l_piece_index][1], g_pieces[l_piece_index][2], g_pieces[l_piece_index][3]);
+            my_cuda::print_single(1, "Piece[%i]={%i, %i, %i, %i}\n", l_piece_index + 1, g_pieces[l_piece_index][0], g_pieces[l_piece_index][1], g_pieces[l_piece_index][2], g_pieces[l_piece_index][3]);
         }
 #if 0
         unsigned int l_stack_index = threadIdx.y + blockIdx.x * blockDim.y;

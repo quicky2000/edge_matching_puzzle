@@ -41,7 +41,7 @@ namespace edge_matching_puzzle
      */
     template <unsigned int SIZE>
     class CUDA_situation_capability
-    : public CUDA_memory_managed_item
+    : public my_cuda::CUDA_memory_managed_item
     {
 
         friend

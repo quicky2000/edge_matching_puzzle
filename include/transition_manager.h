@@ -52,7 +52,7 @@ namespace edge_matching_puzzle
         situation_capability<2 * NB_PIECES> & get_transition(unsigned int p_index);
 
       private:
-        using transition_ptr = CUDA_memory_managed_ptr<situation_capability<2 * NB_PIECES>>;
+        using transition_ptr = my_cuda::CUDA_memory_managed_ptr<situation_capability<2 * NB_PIECES>>;
         transition_ptr * m_transitions;
         unsigned int m_size;
     };

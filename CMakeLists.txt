@@ -17,17 +17,12 @@ set(MY_SOURCE_FILES
     include/border_exploration.h
     include/CUDA_backtracker_stack.h
     include/CUDA_color_constraints.h
-    include/CUDA_common.h
     include/CUDA_glutton_max.h
     include/CUDA_glutton_max_stack.h
-    include/CUDA_memory_managed_array.h
-    include/CUDA_memory_managed_pointer.h
     include/CUDA_piece_position_info.h
     include/CUDA_piece_position_info2.h
     include/CUDA_piece_position_info_base.h
-    include/CUDA_print.h
     include/CUDA_situation_capability.h
-    include/CUDA_strong_primitive.h
     include/CUDA_transition_manager.h
     include/CUDA_types.h
     include/emp_advanced_feature_base.h

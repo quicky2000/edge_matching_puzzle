@@ -20,7 +20,7 @@
 #include "CUDA_transition_manager.h"
 #include "system_equation_for_CUDA.h"
 #include "my_cuda.h"
-#include "CUDA_common.h"
+#include "CUDA_info.h"
 #include <chrono>
 
 namespace edge_matching_puzzle
@@ -179,7 +179,7 @@ namespace edge_matching_puzzle
                         , const emp_strategy_generator & p_strategy_generator
                         )
     {
-        CUDA_info();
+        my_cuda::CUDA_info();
 
         unsigned int l_nb_stack = 1;
         auto * l_stacks = new CUDA_backtracker_stack<NB_PIECES>[l_nb_stack];

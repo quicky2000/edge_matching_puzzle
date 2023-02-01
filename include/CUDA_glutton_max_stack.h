@@ -42,7 +42,7 @@ namespace edge_matching_puzzle
      */
     class CUDA_glutton_max_stack
 #ifdef ENABLE_CUDA_CODE
-    : public CUDA_memory_managed_item
+    : public my_cuda::CUDA_memory_managed_item
 #endif // ENABLE_CUDA_CODE
     {
 
@@ -445,17 +445,17 @@ namespace edge_matching_puzzle
         /**
          * Store correspondence between position index and info index
          */
-        CUDA_memory_managed_array<position_index_t> m_info_index_to_position_index;
+        my_cuda::CUDA_memory_managed_array<position_index_t> m_info_index_to_position_index;
 
         /**
          * Store correspondence between info index and position index
          */
-        CUDA_memory_managed_array<info_index_t> m_position_index_to_info_index;
+        my_cuda::CUDA_memory_managed_array<info_index_t> m_position_index_to_info_index;
 
         /**
          * Store position/piece/orientation selected at level
          */
-        CUDA_memory_managed_array<played_info_t> m_played_info;
+        my_cuda::CUDA_memory_managed_array<played_info_t> m_played_info;
 
         /**
          * Store available pieces

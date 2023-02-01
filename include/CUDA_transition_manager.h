@@ -30,7 +30,7 @@ namespace edge_matching_puzzle
 {
     template<unsigned int NB_PIECES>
     class CUDA_transition_manager
-    : public CUDA_memory_managed_item
+    : public my_cuda::CUDA_memory_managed_item
     {
       public:
 
@@ -52,7 +52,7 @@ namespace edge_matching_puzzle
         CUDA_situation_capability<2 * NB_PIECES> & get_transition(unsigned int p_index);
 
       private:
-        using transition_ptr = CUDA_memory_managed_ptr<CUDA_situation_capability<2 * NB_PIECES>>;
+        using transition_ptr = my_cuda::CUDA_memory_managed_ptr<CUDA_situation_capability<2 * NB_PIECES>>;
         transition_ptr * m_transitions;
         unsigned int m_size;
     };

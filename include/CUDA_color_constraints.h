@@ -31,7 +31,7 @@ namespace edge_matching_puzzle
 {
     class CUDA_color_constraints
 #ifdef ENABLE_CUDA_CODE
-    : public CUDA_memory_managed_item
+    : public my_cuda::CUDA_memory_managed_item
 #endif // ENABLE_CUDA_CODE
     {
       public:
