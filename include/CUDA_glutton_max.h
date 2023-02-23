@@ -993,78 +993,62 @@ namespace edge_matching_puzzle
                             } // if color_id
                         } // End of side for loop
 
+                        /**
+                         * Return true if an invalid position is obtained
+                         */
+                        auto lambda_apply_simple_mask = [&](info_index_t p_start_index
+                                                           ,info_index_t p_limit_index
+                                                           ) -> bool
+                        {
+                            for(info_index_t l_result_info_index{p_start_index}; l_result_info_index < p_limit_index; ++l_result_info_index)
+                            {
+#ifdef ENABLE_CUDA_CODE
+                                if(__all_sync(0xFFFFFFFFu, l_result_info_index != info_index_t(l_related_thread_index)))
+#else // ENABLE_CUDA_CODE
+                                bool l_all = true;
+                                for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
+                                {
+                                    l_all = l_all && (l_result_info_index != info_index_t(l_related_thread_index[l_threadIdx_x]));
+                                }
+                                if(l_all)
+#endif // ENABLE_CUDA_CODE
+                                {
+                                    my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
+#ifdef ENABLE_CUDA_CODE
+                                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                    uint32_t l_result_capability = l_capability & l_mask_to_apply;
+#else // ENABLE_CUDA_CODE
+                                    pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
+                                    pseudo_CUDA_thread_variable<uint32_t> l_result_capability =  l_capability & l_mask_to_apply;
+#endif // ENABLE_CUDA_CODE
+                                    if(p_is_position_invalid(l_result_capability))
+                                    {
+                                        my_cuda::print_single(5, "INVALID:\n");
+                                        CUDA_glutton_max::debug_message_invalid(5, l_capability, l_mask_to_apply);
+                                        return true;
+                                    }
+                                    CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos);
+                                    CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    CUDA_glutton_max::debug_message_info_bits(5, l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                }
+                            }
+                            return false;
+                        };
+
+
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints before selected index");
-                        for(info_index_t l_result_info_index{0u}; l_result_info_index < l_info_index; ++l_result_info_index)
+                        if(lambda_apply_simple_mask(static_cast<info_index_t>(0u), l_info_index))
                         {
-#ifdef ENABLE_CUDA_CODE
-                            if(__all_sync(0xFFFFFFFFu, l_result_info_index != info_index_t(l_related_thread_index)))
-#else // ENABLE_CUDA_CODE
-                            bool l_all = true;
-                            for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
-                            {
-                                l_all = l_all && (l_result_info_index != info_index_t(l_related_thread_index[l_threadIdx_x]));
-                            }
-                            if(l_all)
-#endif // ENABLE_CUDA_CODE
-                            {
-                                my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
-#ifdef ENABLE_CUDA_CODE
-                                uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                uint32_t l_result_capability = l_capability & l_mask_to_apply;
-#else // ENABLE_CUDA_CODE
-                                pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
-                                pseudo_CUDA_thread_variable<uint32_t> l_result_capability =  l_capability & l_mask_to_apply;
-#endif // ENABLE_CUDA_CODE
-                                if(p_is_position_invalid(l_result_capability))
-                                {
-                                    my_cuda::print_single(5, "INVALID:\n");
-                                    CUDA_glutton_max::debug_message_invalid(5, l_capability, l_mask_to_apply);
-                                    return;
-                                }
-                                CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos);
-                                CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                CUDA_glutton_max::debug_message_info_bits(5, l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                            }
+                            return ;
                         }
 
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints after selected index");
-                        for(info_index_t l_result_info_index = l_info_index + static_cast<uint32_t>(1u);
-                           l_result_info_index < l_stack.get_level_nb_info();
-                           ++l_result_info_index
-                           )
+                        if(lambda_apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), l_stack.get_level_nb_info()))
                         {
-#ifdef ENABLE_CUDA_CODE
-                            if(__all_sync(0xFFFFFFFFu, l_result_info_index != l_related_thread_index))
-#else // ENABLE_CUDA_CODE
-                            bool l_all = true;
-                            for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
-                            {
-                                l_all = l_all && (l_result_info_index != l_related_thread_index[l_threadIdx_x]);
-                            }
-                            if(l_all)
-#endif // ENABLE_CUDA_CODE
-                            {
-                                my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
-#ifdef ENABLE_CUDA_CODE
-                                uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                uint32_t l_result_capability = l_capability & l_mask_to_apply;
-#else // ENABLE_CUDA_CODE
-                                pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx){return l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
-                                pseudo_CUDA_thread_variable<uint32_t> l_result_capability = l_capability & l_mask_to_apply;
-#endif // ENABLE_CUDA_CODE
-                                if(p_is_position_invalid(l_result_capability))
-                                {
-                                    my_cuda::print_single(5, "INVALID:\n");
-                                    CUDA_glutton_max::debug_message_invalid(5, l_capability, l_mask_to_apply);
-                                    return;
-                                }
-                                CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos);
-                                CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                CUDA_glutton_max::debug_message_info_bits(5, l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                            }
-                        } // For loop after selected index
+                            return ;
+                        }
 
                         // This is reached only if no invalid position was detected in the previous loop
                         // Manage pieces info
