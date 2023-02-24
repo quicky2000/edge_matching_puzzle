@@ -998,20 +998,17 @@ namespace edge_matching_puzzle
                          */
                         auto lambda_apply_simple_mask = [&](info_index_t p_start_index
                                                            ,info_index_t p_limit_index
+#ifdef ENABLE_CUDA_CODE
+                                                           ,nvstd::function<bool(info_index_t)> p_do_apply
+#else
+                                                           ,std::function<bool(info_index_t)> p_do_apply
+#endif // ENABLE_CUDA_CODE
+
                                                            ) -> bool
                         {
                             for(info_index_t l_result_info_index{p_start_index}; l_result_info_index < p_limit_index; ++l_result_info_index)
                             {
-#ifdef ENABLE_CUDA_CODE
-                                if(__all_sync(0xFFFFFFFFu, l_result_info_index != info_index_t(l_related_thread_index)))
-#else // ENABLE_CUDA_CODE
-                                bool l_all = true;
-                                for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
-                                {
-                                    l_all = l_all && (l_result_info_index != info_index_t(l_related_thread_index[l_threadIdx_x]));
-                                }
-                                if(l_all)
-#endif // ENABLE_CUDA_CODE
+                                if(p_do_apply(l_result_info_index))
                                 {
                                     my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
 #ifdef ENABLE_CUDA_CODE
@@ -1035,17 +1032,31 @@ namespace edge_matching_puzzle
                             return false;
                         };
 
+                        auto l_lamda_do_apply = [&](info_index_t p_result_info_index) -> bool
+                        {
+#ifdef ENABLE_CUDA_CODE
+                            return __all_sync(0xFFFFFFFFu, p_result_info_index != info_index_t(l_related_thread_index));
+#else // ENABLE_CUDA_CODE
+                            bool l_all = true;
+                            for (unsigned int l_threadIdx_x = 0; l_all && l_threadIdx_x < 32;++l_threadIdx_x)
+                            {
+                                l_all = l_all && (p_result_info_index != info_index_t(l_related_thread_index[l_threadIdx_x]));
+                            }
+                            return l_all;
+#endif // ENABLE_CUDA_CODE
+
+                        };
 
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints before selected index");
-                        if(lambda_apply_simple_mask(static_cast<info_index_t>(0u), l_info_index))
+                        if(lambda_apply_simple_mask(static_cast<info_index_t>(0u), l_info_index, l_lamda_do_apply))
                         {
                             return ;
                         }
 
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints after selected index");
-                        if(lambda_apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), l_stack.get_level_nb_info()))
+                        if(lambda_apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), l_stack.get_level_nb_info(), l_lamda_do_apply))
                         {
                             return ;
                         }
