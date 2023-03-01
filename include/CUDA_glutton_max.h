@@ -1000,8 +1000,13 @@ namespace edge_matching_puzzle
                                                            ,info_index_t p_limit_index
 #ifdef ENABLE_CUDA_CODE
                                                            ,nvstd::function<bool(info_index_t)> p_do_apply
+                                                           ,nvstd::function<void(info_index_t, uint32_t, uint32_t)> p_treat_simple_mask
 #else
                                                            ,std::function<bool(info_index_t)> p_do_apply
+                                                           ,std::function<void(info_index_t
+                                                                              ,const pseudo_CUDA_thread_variable<uint32_t> &
+                                                                              ,const pseudo_CUDA_thread_variable<uint32_t> &
+                                                                              )> p_treat_simple_mask
 #endif // ENABLE_CUDA_CODE
 
                                                            ) -> bool
@@ -1024,9 +1029,7 @@ namespace edge_matching_puzzle
                                         CUDA_glutton_max::debug_message_invalid(5, l_capability, l_mask_to_apply);
                                         return true;
                                     }
-                                    CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos);
-                                    CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                    CUDA_glutton_max::debug_message_info_bits(5, l_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                    p_treat_simple_mask(l_result_info_index, l_capability, l_result_capability);
                                 }
                             }
                             return false;
@@ -1047,16 +1050,31 @@ namespace edge_matching_puzzle
 
                         };
 
+                        auto l_lambda_treat_simple_mask = [&](info_index_t p_result_info_index
+#ifdef ENABLE_CUDA_CODE
+                                                             ,uint32_t p_capability
+                                                             ,uint32_t p_result_capability
+#else // ENABLE_CUDA_CODE
+                                                             ,const pseudo_CUDA_thread_variable<uint32_t> & p_capability
+                                                             ,const pseudo_CUDA_thread_variable<uint32_t> & p_result_capability
+#endif // ENABLE_CUDA_CODE
+                                                             )
+                        {
+                            CUDA_glutton_max::analyze_info(p_result_capability, l_piece_infos);
+                            CUDA_glutton_max::count_result_nb_bits(p_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                            CUDA_glutton_max::debug_message_info_bits(5, p_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                        };
+
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints before selected index");
-                        if(lambda_apply_simple_mask(static_cast<info_index_t>(0u), l_info_index, l_lamda_do_apply))
+                        if(lambda_apply_simple_mask(static_cast<info_index_t>(0u), l_info_index, l_lamda_do_apply, l_lambda_treat_simple_mask))
                         {
                             return ;
                         }
 
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints after selected index");
-                        if(lambda_apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), l_stack.get_level_nb_info(), l_lamda_do_apply))
+                        if(lambda_apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), l_stack.get_level_nb_info(), l_lamda_do_apply, l_lambda_treat_simple_mask))
                         {
                             return ;
                         }
