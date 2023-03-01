@@ -998,6 +998,7 @@ namespace edge_matching_puzzle
                          */
                         auto lambda_apply_simple_mask = [&](info_index_t p_start_index
                                                            ,info_index_t p_limit_index
+                                                           ,CUDA_glutton_max_stack & p_stack
 #ifdef ENABLE_CUDA_CODE
                                                            ,nvstd::function<bool(info_index_t)> p_do_apply
                                                            ,nvstd::function<void(info_index_t, uint32_t, uint32_t)> p_treat_simple_mask
@@ -1015,12 +1016,12 @@ namespace edge_matching_puzzle
                             {
                                 if(p_do_apply(l_result_info_index))
                                 {
-                                    my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_stack.get_position_index(l_result_info_index)));
+                                    my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(p_stack.get_position_index(l_result_info_index)));
 #ifdef ENABLE_CUDA_CODE
-                                    uint32_t l_capability = l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                                    uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
                                     uint32_t l_result_capability = l_capability & l_mask_to_apply;
 #else // ENABLE_CUDA_CODE
-                                    pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return l_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
+                                    pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
                                     pseudo_CUDA_thread_variable<uint32_t> l_result_capability =  l_capability & l_mask_to_apply;
 #endif // ENABLE_CUDA_CODE
                                     if(p_is_position_invalid(l_result_capability))
@@ -1067,14 +1068,14 @@ namespace edge_matching_puzzle
 
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints before selected index");
-                        if(lambda_apply_simple_mask(static_cast<info_index_t>(0u), l_info_index, l_lamda_do_apply, l_lambda_treat_simple_mask))
+                        if(lambda_apply_simple_mask(static_cast<info_index_t>(0u), l_info_index, l_stack, l_lamda_do_apply, l_lambda_treat_simple_mask))
                         {
                             return ;
                         }
 
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints after selected index");
-                        if(lambda_apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), l_stack.get_level_nb_info(), l_lamda_do_apply, l_lambda_treat_simple_mask))
+                        if(lambda_apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), l_stack.get_level_nb_info(), l_stack, l_lamda_do_apply, l_lambda_treat_simple_mask))
                         {
                             return ;
                         }
