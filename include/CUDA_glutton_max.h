@@ -545,6 +545,66 @@ namespace edge_matching_puzzle
         }
 
         /**
+         * Function applying simple mask on an index range
+         * some index can be skipped thanks to p_do_appply
+         * in case of invalid index return by p_is_position_invalid the loop
+         * is interrupted and function return true
+         * @param p_start_index
+         * @param p_limit_index
+         * @param p_stack
+         * @param p_mask_to_apply
+         * @param p_do_apply indicate if treatment should be apply to current index
+         * @param p_is_position_invalid indicate if a position is valid or not
+         * @param p_treat_simple_mask treat result of applied mask
+         * @return true if an invalid position is obtained
+         */
+        inline static
+        __device__
+        bool apply_simple_mask(info_index_t p_start_index
+                              ,info_index_t p_limit_index
+                              ,CUDA_glutton_max_stack & p_stack
+#ifdef ENABLE_CUDA_CODE
+                              ,uint32_t p_mask_to_apply
+                              ,nvstd::function<bool(info_index_t)> p_do_apply
+                              ,nvstd::function<bool(uint32_t)> p_is_position_invalid
+                              ,nvstd::function<void(info_index_t, uint32_t, uint32_t)> p_treat_simple_mask
+#else
+                              ,const pseudo_CUDA_thread_variable<uint32_t> & p_mask_to_apply
+                              ,std::function<bool(info_index_t)> p_do_apply
+                              ,std::function<bool(const pseudo_CUDA_thread_variable<uint32_t> &)> p_is_position_invalid
+                              ,std::function<void(info_index_t
+                              ,const pseudo_CUDA_thread_variable<uint32_t> &
+                              ,const pseudo_CUDA_thread_variable<uint32_t> &
+                                                 )
+                                            > p_treat_simple_mask
+#endif // ENABLE_CUDA_CODE
+                              )
+        {
+            for(info_index_t l_result_info_index{p_start_index}; l_result_info_index < p_limit_index; ++l_result_info_index)
+            {
+                if(p_do_apply(l_result_info_index))
+                {
+                    my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(p_stack.get_position_index(l_result_info_index)));
+#ifdef ENABLE_CUDA_CODE
+                    uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                    uint32_t l_result_capability = l_capability & p_mask_to_apply;
+#else // ENABLE_CUDA_CODE
+                    pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
+                    pseudo_CUDA_thread_variable<uint32_t> l_result_capability =  l_capability & p_mask_to_apply;
+#endif // ENABLE_CUDA_CODE
+                    if(p_is_position_invalid(l_result_capability))
+                    {
+                        my_cuda::print_single(5, "INVALID:\n");
+                        CUDA_glutton_max::debug_message_invalid(5, l_capability, p_mask_to_apply);
+                        return true;
+                    }
+                    p_treat_simple_mask(l_result_info_index, l_capability, l_result_capability);
+                }
+            }
+            return false;
+        }
+
+        /**
          * Function allowing to iterate on all bit set in p_thread variable of
          * warp. Each thread in the warp provide an uin32_t variable, their
          * bit that are set will be listed in order and thread index, bit index
@@ -993,49 +1053,6 @@ namespace edge_matching_puzzle
                             } // if color_id
                         } // End of side for loop
 
-                        /**
-                         * Return true if an invalid position is obtained
-                         */
-                        auto lambda_apply_simple_mask = [&](info_index_t p_start_index
-                                                           ,info_index_t p_limit_index
-                                                           ,CUDA_glutton_max_stack & p_stack
-#ifdef ENABLE_CUDA_CODE
-                                                           ,nvstd::function<bool(info_index_t)> p_do_apply
-                                                           ,nvstd::function<void(info_index_t, uint32_t, uint32_t)> p_treat_simple_mask
-#else
-                                                           ,std::function<bool(info_index_t)> p_do_apply
-                                                           ,std::function<void(info_index_t
-                                                                              ,const pseudo_CUDA_thread_variable<uint32_t> &
-                                                                              ,const pseudo_CUDA_thread_variable<uint32_t> &
-                                                                              )> p_treat_simple_mask
-#endif // ENABLE_CUDA_CODE
-
-                                                           ) -> bool
-                        {
-                            for(info_index_t l_result_info_index{p_start_index}; l_result_info_index < p_limit_index; ++l_result_info_index)
-                            {
-                                if(p_do_apply(l_result_info_index))
-                                {
-                                    my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(p_stack.get_position_index(l_result_info_index)));
-#ifdef ENABLE_CUDA_CODE
-                                    uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                                    uint32_t l_result_capability = l_capability & l_mask_to_apply;
-#else // ENABLE_CUDA_CODE
-                                    pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
-                                    pseudo_CUDA_thread_variable<uint32_t> l_result_capability =  l_capability & l_mask_to_apply;
-#endif // ENABLE_CUDA_CODE
-                                    if(p_is_position_invalid(l_result_capability))
-                                    {
-                                        my_cuda::print_single(5, "INVALID:\n");
-                                        CUDA_glutton_max::debug_message_invalid(5, l_capability, l_mask_to_apply);
-                                        return true;
-                                    }
-                                    p_treat_simple_mask(l_result_info_index, l_capability, l_result_capability);
-                                }
-                            }
-                            return false;
-                        };
-
                         auto l_lamda_do_apply = [&](info_index_t p_result_info_index) -> bool
                         {
 #ifdef ENABLE_CUDA_CODE
@@ -1068,14 +1085,14 @@ namespace edge_matching_puzzle
 
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints before selected index");
-                        if(lambda_apply_simple_mask(static_cast<info_index_t>(0u), l_info_index, l_stack, l_lamda_do_apply, l_lambda_treat_simple_mask))
+                        if(CUDA_glutton_max::apply_simple_mask(static_cast<info_index_t>(0u), l_info_index, l_stack, l_mask_to_apply, l_lamda_do_apply, p_is_position_invalid, l_lambda_treat_simple_mask))
                         {
                             return ;
                         }
 
                         // This is reached only if no invalid position was detected in the previous loop
                         my_cuda::print_single(4, "Apply piece constraints after selected index");
-                        if(lambda_apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), l_stack.get_level_nb_info(), l_stack, l_lamda_do_apply, l_lambda_treat_simple_mask))
+                        if(CUDA_glutton_max::apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), l_stack.get_level_nb_info(), l_stack, l_mask_to_apply, l_lamda_do_apply, p_is_position_invalid, l_lambda_treat_simple_mask))
                         {
                             return ;
                         }
