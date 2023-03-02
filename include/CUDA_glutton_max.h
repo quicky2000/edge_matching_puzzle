@@ -490,6 +490,19 @@ namespace edge_matching_puzzle
             }
         }
 
+        inline static
+        __device__
+        bool is_position_invalid(
+#ifdef ENABLE_CUDA_CODE
+                                 uint32_t p_result
+#else // ENABLE_CUDA_CODE
+                                 const pseudo_CUDA_thread_variable<uint32_t> & p_result
+#endif // ENABLE_CUDA_CODE
+                                )
+        {
+            return (!__any_sync(0xFFFFFFFFu, p_result));
+        };
+
         /**
          * Apply mask to position info in interval [p_start_index, p_limit_index[ and store the result in next level
          * @param p_start_index start index of interval to work on
@@ -518,12 +531,6 @@ namespace edge_matching_puzzle
                 uint32_t l_constraint = p_mask_to_apply;
                 uint32_t l_result = l_capability & l_constraint;
                 my_cuda::print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
-                if(__any_sync(0xFFFFFFFF, l_result))
-                {
-                    my_cuda::print_single(2, "INVALID Best:\n");
-                    return true;
-                }
-                p_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
 #else // ENABLE_CUDA_CODE
                 pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
                 pseudo_CUDA_thread_variable<uint32_t> l_result = l_capability & p_mask_to_apply;
@@ -531,12 +538,19 @@ namespace edge_matching_puzzle
                 for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
                 {
                     my_cuda::print_mask(1, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability[l_threadIdx_x], p_mask_to_apply[l_threadIdx_x], l_result[l_threadIdx_x]);
-                    p_stack.get_next_level_position_info(l_result_info_index).set_word(l_threadIdx_x, l_result[l_threadIdx_x]);
                 }
-                if(!__any_sync(0xFFFFFFFF, l_result))
+#endif // ENABLE_CUDA_CODE
+                if(is_position_invalid(l_result))
                 {
                     my_cuda::print_single(2, "INVALID Best:\n");
                     return true;
+                }
+#ifdef ENABLE_CUDA_CODE
+                p_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
+#else // ENABLE_CUDA_CODE
+                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
+                {
+                    p_stack.get_next_level_position_info(l_result_info_index).set_word(l_threadIdx_x, l_result[l_threadIdx_x]);
                 }
 #endif // ENABLE_CUDA_CODE
             }
@@ -907,17 +921,6 @@ namespace edge_matching_puzzle
                         l_stack.clear_piece_info();
                     };
 
-                    auto l_is_position_invalid = [](
-#ifdef ENABLE_CUDA_CODE
-                        uint32_t p_result
-#else // ENABLE_CUDA_CODE
-                        const pseudo_CUDA_thread_variable<uint32_t> & p_result
-#endif // ENABLE_CUDA_CODE
-                                                   ) -> bool
-                    {
-                        return (!__any_sync(0xFFFFFFFFu, p_result));
-                    };
-
                     auto l_lambda = [&](uint32_t p_elected_thread
                                        ,uint32_t p_bit_index
 #ifdef ENABLE_CUDA_CODE
@@ -1217,7 +1220,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                     };
 
-                    CUDA_glutton_max::warp_iterate(l_thread_available_variables, l_lambda, l_init_lambda, l_is_position_invalid);
+                    CUDA_glutton_max::warp_iterate(l_thread_available_variables, l_lambda, l_init_lambda, CUDA_glutton_max::is_position_invalid);
                 }
 
                 // If no best score found there is no interesting transition so go back
