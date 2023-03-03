@@ -523,39 +523,32 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
         )
         {
-            for (info_index_t l_result_info_index{p_start_index}; l_result_info_index < p_limit_index; ++l_result_info_index)
+            auto l_do_apply = [&](info_index_t p_index) -> bool
             {
-                my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(p_stack.get_position_index(l_result_info_index)));
-#ifdef ENABLE_CUDA_CODE
-                uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
-                uint32_t l_constraint = p_mask_to_apply;
-                uint32_t l_result = l_capability & l_constraint;
-                my_cuda::print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
-#else // ENABLE_CUDA_CODE
-                pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
-                pseudo_CUDA_thread_variable<uint32_t> l_result = l_capability & p_mask_to_apply;
-                uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, l_capability);
-                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
-                {
-                    my_cuda::print_mask(1, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability[l_threadIdx_x], p_mask_to_apply[l_threadIdx_x], l_result[l_threadIdx_x]);
-                }
-#endif // ENABLE_CUDA_CODE
-                if(is_position_invalid(l_result))
-                {
-                    my_cuda::print_single(2, "INVALID:\n");
-                    return true;
-                }
-#ifdef ENABLE_CUDA_CODE
-                p_stack.get_next_level_position_info(l_result_info_index).set_word(threadIdx.x, l_result);
-#else // ENABLE_CUDA_CODE
-                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
-                {
-                    p_stack.get_next_level_position_info(l_result_info_index).set_word(l_threadIdx_x, l_result[l_threadIdx_x]);
-                }
-#endif // ENABLE_CUDA_CODE
-            }
-            return false;
+                return true;
+            };
 
+            auto l_treat = [&](info_index_t p_result_info_index
+#ifdef ENABLE_CUDA_CODE
+                                       ,uint32_t p_capability
+                                       ,uint32_t p_result
+#else // ENABLE_CUDA_CODE
+                                       ,const pseudo_CUDA_thread_variable<uint32_t> & p_capability
+                                       ,const pseudo_CUDA_thread_variable<uint32_t> & p_result
+#endif // ENABLE_CUDA_CODE
+                                       )
+            {
+#ifdef ENABLE_CUDA_CODE
+                p_stack.get_next_level_position_info(p_result_info_index).set_word(threadIdx.x, p_result);
+#else // ENABLE_CUDA_CODE
+                for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
+                {
+                    p_stack.get_next_level_position_info(p_result_info_index).set_word(l_threadIdx_x, p_result[l_threadIdx_x]);
+                }
+#endif // ENABLE_CUDA_CODE
+            };
+
+            return apply_simple_mask(p_start_index, p_limit_index, p_stack, p_mask_to_apply, l_do_apply, is_position_invalid, l_treat);
         }
 
         /**
