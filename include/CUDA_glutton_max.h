@@ -525,7 +525,7 @@ namespace edge_matching_puzzle
         {
             for (info_index_t l_result_info_index{p_start_index}; l_result_info_index < p_limit_index; ++l_result_info_index)
             {
-                my_cuda::print_single(1, "Info %i -> %i:\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(l_result_info_index));
+                my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(p_stack.get_position_index(l_result_info_index)));
 #ifdef ENABLE_CUDA_CODE
                 uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
                 uint32_t l_constraint = p_mask_to_apply;
@@ -542,7 +542,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                 if(is_position_invalid(l_result))
                 {
-                    my_cuda::print_single(2, "INVALID Best:\n");
+                    my_cuda::print_single(2, "INVALID:\n");
                     return true;
                 }
 #ifdef ENABLE_CUDA_CODE
@@ -602,14 +602,19 @@ namespace edge_matching_puzzle
 #ifdef ENABLE_CUDA_CODE
                     uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
                     uint32_t l_result_capability = l_capability & p_mask_to_apply;
+                    my_cuda::print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, p_mask_to_apply, l_result_capability);
 #else // ENABLE_CUDA_CODE
                     pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
                     pseudo_CUDA_thread_variable<uint32_t> l_result_capability =  l_capability & p_mask_to_apply;
+                    uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, l_capability);
+                    for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
+                    {
+                        my_cuda::print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability[l_threadIdx_x], p_mask_to_apply[l_threadIdx_x], l_result_capability[l_threadIdx_x]);
+                    }
 #endif // ENABLE_CUDA_CODE
                     if(p_is_position_invalid(l_result_capability))
                     {
                         my_cuda::print_single(5, "INVALID:\n");
-                        CUDA_glutton_max::debug_message_invalid(5, l_capability, p_mask_to_apply);
                         return true;
                     }
                     p_treat_simple_mask(l_result_info_index, l_capability, l_result_capability);
@@ -749,13 +754,13 @@ namespace edge_matching_puzzle
                                )
         {
 #ifdef ENABLE_CUDA_CODE
-            my_cuda::print_mask(p_level, __ballot_sync(0xFFFFFFFFu, p_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", p_capability, p_mask_to_apply, p_info_bits_min, p_info_bits_max, p_info_bits_total);
+            my_cuda::print_mask(p_level, __ballot_sync(0xFFFFFFFFu, p_capability), "Min %3i\tMax %3i\tTotal %i\n", p_info_bits_min, p_info_bits_max, p_info_bits_total);
 #else // ENABLE_CUDA_CODE
             {
                 uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, p_capability);
                 for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
                 {
-                    my_cuda::print_mask(p_level, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", p_capability[l_threadIdx_x], p_mask_to_apply[l_threadIdx_x], p_info_bits_min, p_info_bits_max, p_info_bits_total);
+                    my_cuda::print_mask(p_level, l_print_mask, {l_threadIdx_x, 1, 1}, "Min %3i\tMax %3i\tTotal %i\n", p_info_bits_min, p_info_bits_max, p_info_bits_total);
                 }
             }
 #endif // ENABLE_CUDA_CODE
