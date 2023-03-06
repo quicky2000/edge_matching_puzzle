@@ -1026,15 +1026,12 @@ namespace edge_matching_puzzle
                                 info_index_t l_related_info_index = l_stack.get_info_index(l_related_position_index);
                                 my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_position_index));
 
-                                // Each thread store the related info index corresponding to the orientation index
 #ifdef ENABLE_CUDA_CODE
-                                l_related_thread_index = threadIdx.x == l_orientation_index ? static_cast<uint32_t>(l_related_info_index) : l_related_thread_index;
                                 uint32_t l_capability = l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
                                 uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
                                 l_constraint_capability &= l_mask_to_apply;
                                 uint32_t l_result_capability = l_capability & l_constraint_capability;
 #else // ENABLE_CUDA_CODE
-                                l_related_thread_index = [&](dim3 threadIdx) { return threadIdx.x == l_orientation_index ? static_cast<uint32_t>(l_related_info_index): l_related_thread_index[threadIdx.x];};
                                 pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx) { return l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);}};
                                 pseudo_CUDA_thread_variable<uint32_t> l_constraint_capability{[&](dim3 threadIdx) { return p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);}};
                                 l_constraint_capability &= l_mask_to_apply;
@@ -1048,6 +1045,13 @@ namespace edge_matching_puzzle
                                     CUDA_glutton_max::debug_message_invalid(5, l_capability, l_constraint_capability);
                                     return;
                                 }
+
+                                // Each thread store the related info index corresponding to the orientation index
+#ifdef ENABLE_CUDA_CODE
+                                l_related_thread_index = threadIdx.x == l_orientation_index ? static_cast<uint32_t>(l_related_info_index) : l_related_thread_index;
+#else // ENABLE_CUDA_CODE
+                                l_related_thread_index = [&](dim3 threadIdx) { return threadIdx.x == l_orientation_index ? static_cast<uint32_t>(l_related_info_index): l_related_thread_index[threadIdx.x];};
+#endif // ENABLE_CUDA_CODE
                                 CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos);
                                 CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                                 CUDA_glutton_max::debug_message_info_bits2(5, l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
