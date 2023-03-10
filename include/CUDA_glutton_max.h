@@ -607,7 +607,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                     if(p_is_position_invalid(l_result_capability))
                     {
-                        my_cuda::print_single(5, "INVALID:\n");
+                        my_cuda::print_single(5, "INVALID\n");
                         return true;
                     }
                     p_treat_simple_mask(l_result_info_index, l_capability, l_result_capability);
@@ -734,83 +734,12 @@ namespace edge_matching_puzzle
         __device__
         void
         debug_message_info_bits(unsigned int p_level
-#ifdef ENABLE_CUDA_CODE
-                               ,uint32_t p_capability
-                               ,uint32_t p_mask_to_apply
-#else // ENABLE_CUDA_CODE
-                               ,const pseudo_CUDA_thread_variable<uint32_t> & p_capability
-                               ,const pseudo_CUDA_thread_variable<uint32_t> & p_mask_to_apply
-#endif // ENABLE_CUDA_CODE
                                ,uint32_t p_info_bits_min
                                ,uint32_t p_info_bits_max
                                ,uint32_t p_info_bits_total
                                )
         {
-#ifdef ENABLE_CUDA_CODE
-            my_cuda::print_mask(p_level, __ballot_sync(0xFFFFFFFFu, p_capability), "Min %3i\tMax %3i\tTotal %i\n", p_info_bits_min, p_info_bits_max, p_info_bits_total);
-#else // ENABLE_CUDA_CODE
-            {
-                uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, p_capability);
-                for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
-                {
-                    my_cuda::print_mask(p_level, l_print_mask, {l_threadIdx_x, 1, 1}, "Min %3i\tMax %3i\tTotal %i\n", p_info_bits_min, p_info_bits_max, p_info_bits_total);
-                }
-            }
-#endif // ENABLE_CUDA_CODE
-        }
-
-        inline static
-        __device__
-        void
-        debug_message_info_bits2(unsigned int p_level
-#ifdef ENABLE_CUDA_CODE
-                                ,uint32_t p_capability
-                                ,uint32_t p_constraint_capability
-#else // ENABLE_CUDA_CODE
-                                ,const pseudo_CUDA_thread_variable<uint32_t> & p_capability
-                                ,const pseudo_CUDA_thread_variable<uint32_t> & p_constraint_capability
-#endif // ENABLE_CUDA_CODE
-                                ,uint32_t p_info_bits_min
-                                ,uint32_t p_info_bits_max
-                                ,uint32_t p_info_bits_total
-                                )
-        {
-#ifdef ENABLE_CUDA_CODE
-            my_cuda::print_mask(5, __ballot_sync(0xFFFFFFFFu, p_capability | p_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", p_capability, p_constraint_capability, p_info_bits_min, p_info_bits_max, p_info_bits_total);
-#else // ENABLE_CUDA_CODE
-            {
-                uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, [=](dim3 threadIdx){ return p_capability[threadIdx.x] || p_constraint_capability[threadIdx.x];});
-                for (unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
-                {
-                    my_cuda::print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nMin %3i\tMax %3i\tTotal %i\n", p_capability[l_threadIdx_x], p_constraint_capability[l_threadIdx_x], p_info_bits_min, p_info_bits_max, p_info_bits_total);
-                }
-            }
-#endif // ENABLE_CUDA_CODE
-        }
-
-        inline static
-        __device__
-        void
-        debug_message_invalid(unsigned int p_level
-#ifdef ENABLE_CUDA_CODE
-                             ,uint32_t p_capability
-                             ,uint32_t p_mask_to_apply
-#else // ENABLE_CUDA_CODE
-                             ,const pseudo_CUDA_thread_variable<uint32_t> & p_capability
-                             ,const pseudo_CUDA_thread_variable<uint32_t> & p_mask_to_apply
-#endif // ENABLE_CUDA_CODE
-                             )
-        {
-#ifdef ENABLE_CUDA_CODE
-            my_cuda::print_mask(5, __ballot_sync(0xFFFFFFFFu, p_capability | p_mask_to_apply), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", p_capability, p_mask_to_apply);
-#else // ENABLE_CUDA_CODE
-
-            uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, [=](dim3 threadIdx){ return (p_capability[threadIdx.x] | p_mask_to_apply[threadIdx.x]) != 0;});
-            for (unsigned int l_threadIdx_x = 0;l_threadIdx_x < 32;++l_threadIdx_x)
-            {
-                my_cuda::print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\n", p_capability[l_threadIdx_x], p_mask_to_apply[l_threadIdx_x]);
-            }
-#endif // ENABLE_CUDA_CODE
+            my_cuda::print_single(p_level, "Min %3i\tMax %3i\tTotal %i\n", p_info_bits_min, p_info_bits_max, p_info_bits_total);
         }
 
         /**
@@ -1010,6 +939,8 @@ namespace edge_matching_puzzle
                         for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
                         {
                             uint32_t l_color_id = g_pieces[l_piece_index][(l_orientation_index + l_piece_orientation) % 4];
+                            my_cuda::print_single(5, "Color Id %i", l_color_id);
+
                             if(l_color_id)
                             {
                                 // Compute position index related to piece side
@@ -1038,11 +969,21 @@ namespace edge_matching_puzzle
                                 pseudo_CUDA_thread_variable<uint32_t> l_result_capability{l_capability & l_constraint_capability};
 #endif // ENABLE_CUDA_CODE
 
+#ifdef ENABLE_CUDA_CODE
+                                my_cuda::print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_capability, l_constraint_capability, l_result_capability);
+#else // ENABLE_CUDA_CODE
+                                uint32_t l_print_mask = 0;
+                                dim3 threadIdx{0, 1, 1};
+                                for (threadIdx.x = 0; threadIdx.x < 32; ++threadIdx.x)
+                                {
+                                    l_print_mask |= ((l_capability[threadIdx.x] | l_constraint_capability[threadIdx.x]) != 0) << threadIdx.x;
+                                    my_cuda::print_mask(5, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_capability[threadIdx.x], l_constraint_capability[threadIdx.x], l_result_capability[threadIdx.x]);
+                                }
+#endif // ENABLE_CUDA_CODE
                                 // Check validity after applying masks
                                 if(p_is_position_invalid(l_result_capability))
                                 {
-                                    my_cuda::print_single(5, "INVALID:\n");
-                                    CUDA_glutton_max::debug_message_invalid(5, l_capability, l_constraint_capability);
+                                    my_cuda::print_single(5, "INVALID\n");
                                     return;
                                 }
 
@@ -1054,7 +995,7 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                                 CUDA_glutton_max::analyze_info(l_result_capability, l_piece_infos);
                                 CUDA_glutton_max::count_result_nb_bits(l_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                                CUDA_glutton_max::debug_message_info_bits2(5, l_capability, l_constraint_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                                CUDA_glutton_max::debug_message_info_bits(5, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                             } // if color_id
                         } // End of side for loop
 
@@ -1085,7 +1026,7 @@ namespace edge_matching_puzzle
                         {
                             CUDA_glutton_max::analyze_info(p_result_capability, l_piece_infos);
                             CUDA_glutton_max::count_result_nb_bits(p_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
-                            CUDA_glutton_max::debug_message_info_bits(5, p_capability, l_mask_to_apply, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+                            CUDA_glutton_max::debug_message_info_bits(5, l_info_bits_min, l_info_bits_max, l_info_bits_total);
                         };
 
                         // This is reached only if no invalid position was detected in the previous loop
@@ -1416,7 +1357,6 @@ namespace edge_matching_puzzle
                                 {
                                     // Compute position index related to piece side
                                     position_index_t l_related_position_index = l_position_index + g_position_offset[l_orientation_index];
-                                    my_cuda::print_single(1, "Related position index %i", static_cast<uint32_t>(l_related_position_index));
 
                                     // Check if position is free, if this not the case there is no corresponding index
                                     if (!l_stack.is_position_free(l_related_position_index))
@@ -1427,12 +1367,8 @@ namespace edge_matching_puzzle
 
                                     // Compute corresponding info index
                                     info_index_t l_related_info_index = l_stack.get_info_index(l_related_position_index);
-                                    my_cuda::print_single(1, "Related info index %i", static_cast<uint32_t>(l_related_info_index));
+                                    my_cuda::print_single(1, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_position_index));
 
-                                    // If related index correspond to last position of previous level ( we already did the push ) than result is stored in position where we store the piece
-                                    info_index_t l_related_target_info_index =l_related_info_index < l_stack.get_level_nb_info() ? l_related_info_index : l_best_candidate_index;
-
-                                    my_cuda::print_single(1, "Color Info %i -> %i:\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_target_info_index));
 #ifdef ENABLE_CUDA_CODE
                                     my_cuda::print_mask(1, __ballot_sync(0xFFFFFFFFu, l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) | p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x)), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x), p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x),l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) & p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x));
 #else // ENABLE_CUDA_CODE
@@ -1444,6 +1380,11 @@ namespace edge_matching_puzzle
                                         my_cuda::print_mask(1, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x), p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x), l_stack.get_position_info(l_related_info_index).get_word(threadIdx.x) & p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x));
                                     }
 #endif // ENABLE_CUDA_CODE
+                                    // If related index correspond to last position of previous level ( we already did the push ) than result is stored in position where we store the piece
+                                    info_index_t l_related_target_info_index =l_related_info_index < l_stack.get_level_nb_info() ? l_related_info_index : l_best_candidate_index;
+
+                                    my_cuda::print_single(1, "Color Info %i -> %i:\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_target_info_index));
+
                                     l_stack.get_position_info(l_related_target_info_index).CUDA_and(l_stack.get_position_info(l_related_info_index), p_color_constraints.get_info(l_color_id - 1, l_orientation_index));
                                     if (!l_stack.is_position_valid(l_related_target_info_index))
                                     {
