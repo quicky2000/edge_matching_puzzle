@@ -67,6 +67,61 @@ namespace edge_matching_puzzle
      */
     extern __constant__ unsigned int g_nb_pieces;
 
+    /**
+     * Class implementing RAII idiom to manage piece availability
+     * It is used when there are many way to exit from code andd that we need
+     * to release piece when leaving
+     */
+    class unvailability_lock_gard
+    {
+      public:
+        inline
+        __device__
+        unvailability_lock_gard(CUDA_glutton_max_stack & p_stack
+                               ,uint32_t p_piece_index
+                               )
+                               :m_stack(p_stack)
+                               ,m_piece_index(p_piece_index)
+        {
+#ifdef ENABLE_CUDA_CODE
+            if(!threadIdx.x)
+#endif // ENABLE_CUDA_CODE
+            {
+                m_stack.set_piece_unavailable(m_piece_index);
+            }
+#ifdef ENABLE_CUDA_CODE
+            __syncwarp(0xFFFFFFFF);
+#endif // ENABLE_CUDA_CODE
+        }
+
+        inline
+        __device__
+        ~unvailability_lock_gard()
+        {
+#ifdef ENABLE_CUDA_CODE
+            if(!threadIdx.x)
+#endif // ENABLE_CUDA_CODE
+            {
+                m_stack.set_piece_available(m_piece_index);
+            }
+#ifdef ENABLE_CUDA_CODE
+            __syncwarp(0xFFFFFFFF);
+#endif // ENABLE_CUDA_CODE
+        }
+
+      protected:
+
+        inline
+        __device__
+        CUDA_glutton_max_stack & get_stack()
+        {
+            return m_stack;
+        }
+      private:
+        CUDA_glutton_max_stack & m_stack;
+        uint32_t m_piece_index;
+    };
+
     class CUDA_glutton_max
     {
 
@@ -948,47 +1003,6 @@ namespace edge_matching_puzzle
 
                         // Get position index corresponding to this info index
                         position_index_t l_position_index = l_stack.get_position_index(static_cast<info_index_t >(l_info_index));
-
-                        class unvailability_lock_gard
-                        {
-                          public:
-                            inline
-                            __device__
-                            unvailability_lock_gard(CUDA_glutton_max_stack & p_stack
-                                                   ,uint32_t p_piece_index
-                                                   ):
-                            m_stack(p_stack),
-                            m_piece_index(p_piece_index)
-                            {
-#ifdef ENABLE_CUDA_CODE
-                                if(!threadIdx.x)
-                                {
-#endif // ENABLE_CUDA_CODE
-                                    m_stack.set_piece_unavailable(m_piece_index);
-#ifdef ENABLE_CUDA_CODE
-                                }
-                            __syncwarp(0xFFFFFFFF);
-#endif // ENABLE_CUDA_CODE
-                            }
-
-                            inline
-                            __device__
-                            ~unvailability_lock_gard()
-                            {
-#ifdef ENABLE_CUDA_CODE
-                                if(!threadIdx.x)
-#endif // ENABLE_CUDA_CODE
-                                {
-                                    m_stack.set_piece_available(m_piece_index);
-                                }
-#ifdef ENABLE_CUDA_CODE
-                                __syncwarp(0xFFFFFFFF);
-#endif // ENABLE_CUDA_CODE
-                            }
-                          private:
-                            CUDA_glutton_max_stack & m_stack;
-                            uint32_t m_piece_index;
-                        };
 
                         unvailability_lock_gard l_lock{l_stack, l_piece_index};
 
