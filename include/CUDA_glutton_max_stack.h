@@ -92,17 +92,6 @@ namespace edge_matching_puzzle
         CUDA_piece_position_info2 &
         get_next_level_position_info(info_index_t p_info_index);
 
-        [[nodiscard]]
-        inline
-        __device__ __host__
-        const CUDA_piece_position_info2 &
-        get_best_candidate_info(info_index_t p_info_index) const;
-
-        inline
-        __device__ __host__
-        CUDA_piece_position_info2 &
-        get_best_candidate_info(info_index_t p_info_index);
-
         inline
         void set_position_info(info_index_t p_info_index
                               ,const CUDA_piece_position_info2 & p_info
@@ -271,16 +260,6 @@ namespace edge_matching_puzzle
         __device__
         void clear_piece_info();
 
-        /**
-         * Remove best candidates from position piece info to avoid to treat
-         * them multiple times
-         */
-         [[maybe_unused]]
-        inline
-        __device__
-        void
-        unmark_best_candidates();
-
         typedef uint32_t played_info_t;
 
         /**
@@ -350,34 +329,6 @@ namespace edge_matching_puzzle
         get_position_info(uint32_t p_level
                          ,info_index_t p_info_index
                          );
-
-        /**
-         * Return information related to best candidate at this position index
-         * at this level
-         * @param p_level
-         * @param p_info_index
-         * @return Position information: available transitions
-         */
-        [[nodiscard]]
-        inline
-        __device__ __host__
-        const CUDA_piece_position_info2 & get_best_candidate_info(uint32_t p_level
-                                                                 ,info_index_t p_info_index
-                                                                 ) const;
-
-        /**
-         * Return information related to best candidate at this position index
-         * at this level
-         * @param p_level
-         * @param p_info_index
-         * @return Position information: available transitions
-         */
-        inline
-        __device__ __host__
-        CUDA_piece_position_info2 & get_best_candidate_info(uint32_t p_level
-                                                           ,info_index_t p_info_index
-                                                           );
-
 
         [[nodiscard]]
         inline
@@ -468,7 +419,6 @@ namespace edge_matching_puzzle
           t_piece_infos m_thread_piece_infos[32];
 
         CUDA_piece_position_info2 * m_position_infos;
-        CUDA_piece_position_info2 * m_best_candidate_infos;
     };
 
     //-------------------------------------------------------------------------
@@ -516,14 +466,12 @@ namespace edge_matching_puzzle
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
                          }
     , m_position_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
-    , m_best_candidate_infos{new CUDA_piece_position_info2[(p_size * (p_size + 1)) / 2]}
     {
     }
 
     //-------------------------------------------------------------------------
     CUDA_glutton_max_stack::~CUDA_glutton_max_stack()
     {
-        delete[] m_best_candidate_infos;
         delete[] m_position_infos;
     }
 
@@ -566,22 +514,6 @@ namespace edge_matching_puzzle
     {
         assert(m_level + 1 < m_size);
         return get_position_info(m_level + 1, p_info_index);
-    }
-
-    //-------------------------------------------------------------------------
-    __device__ __host__
-    const CUDA_piece_position_info2 &
-    CUDA_glutton_max_stack::get_best_candidate_info(info_index_t p_info_index) const
-    {
-        return get_best_candidate_info(m_level, p_info_index);
-    }
-
-    //-------------------------------------------------------------------------
-    __device__ __host__
-    CUDA_piece_position_info2 &
-    CUDA_glutton_max_stack::get_best_candidate_info(info_index_t p_info_index)
-    {
-        return get_best_candidate_info(m_level, p_info_index);
     }
 
     //-------------------------------------------------------------------------
@@ -629,28 +561,6 @@ namespace edge_matching_puzzle
     {
         assert(p_info_index < m_size - p_level);
         return m_position_infos[compute_situation_index(p_level) + static_cast<uint32_t>(p_info_index)];
-    }
-
-    //-------------------------------------------------------------------------
-    __device__ __host__
-    const CUDA_piece_position_info2 &
-    CUDA_glutton_max_stack::get_best_candidate_info(uint32_t p_level
-                                                   ,info_index_t p_info_index
-                                                   ) const
-    {
-        assert(p_info_index < m_size - p_level);
-        return m_best_candidate_infos[compute_situation_index(p_level) + static_cast<uint32_t>(p_info_index)];
-    }
-
-    //-------------------------------------------------------------------------
-    __device__ __host__
-    CUDA_piece_position_info2 &
-    CUDA_glutton_max_stack::get_best_candidate_info(uint32_t p_level
-                                                   ,info_index_t p_info_index
-                                                   )
-    {
-        assert(p_info_index < m_size - p_level);
-        return m_best_candidate_infos[compute_situation_index(p_level) + static_cast<uint32_t>(p_info_index)];
     }
 
     //-------------------------------------------------------------------------
@@ -912,18 +822,6 @@ namespace edge_matching_puzzle
             }
         }
 #endif // ENABLE_CUDA_CODE
-    }
-
-    //-------------------------------------------------------------------------
-    [[maybe_unused]]
-    __device__
-    void
-    CUDA_glutton_max_stack::unmark_best_candidates()
-    {
-        for(info_index_t l_info_index{0u}; l_info_index < get_level_nb_info(); ++l_info_index)
-        {
-            get_position_info(info_index_t(l_info_index)).apply_xor(get_position_info(l_info_index), get_best_candidate_info(l_info_index));
-        }
     }
 
     //-------------------------------------------------------------------------

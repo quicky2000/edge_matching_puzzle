@@ -53,16 +53,6 @@ namespace edge_matching_puzzle
                     ,my_cuda::CUDA_memory_managed_array<uint32_t> & p_array
                     );
 
-    [[maybe_unused]]
-    __device__
-    void print_best_candidate_info(unsigned int p_indent_level
-                                  ,const CUDA_glutton_max_stack & p_stack
-                                  )
-    {
-        my_cuda::print_single(p_indent_level, "Best candidate info:");
-        CUDA_glutton_max::print_position_info(p_indent_level, p_stack, &CUDA_glutton_max_stack::get_best_candidate_info);
-    }
-
     //-------------------------------------------------------------------------
     void launch_CUDA_glutton_max(const emp_piece_db & p_piece_db
                                 ,const emp_FSM_info & p_info
