@@ -1637,17 +1637,9 @@ namespace edge_matching_puzzle
             my_cuda::print_single(0, "Apply best candidate");
             CUDA_glutton_max::apply_best_candidate(l_best_information, l_stack, p_color_constraints);
 
-            // For latest level we do not search for best score at is zero in any case
-            if(l_stack.get_level() < (l_stack.get_size() - 1))
-            {
-                l_new_level = true;
-                my_cuda::print_single(0, "after applying change\n");
-                CUDA_glutton_max::print_position_info(6, l_stack);
-            }
-            else if(l_stack.get_level() < l_stack.get_size())
-            {
-                l_new_level = false;
-            }
+            l_new_level = true;
+            my_cuda::print_single(0, "after applying change\n");
+            CUDA_glutton_max::print_position_info(6, l_stack);
         }
 
         my_cuda::print_single(0, "End with stack level %i", l_stack.get_level());
