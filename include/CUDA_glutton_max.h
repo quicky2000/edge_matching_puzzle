@@ -36,6 +36,7 @@
 #include <algorithm>
 #endif // ENABLE_CUDA_CODE
 #define LOG_EXECUTION
+#define VERBOSITY_LEVEL 7
 
 #include "CUDA_print.h"
 
@@ -646,23 +647,31 @@ namespace edge_matching_puzzle
             {
                 if(p_do_apply(l_result_info_index))
                 {
+#if VERBOSITY_LEVEL >= 6
                     my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(p_stack.get_position_index(l_result_info_index)));
+#endif // VERBOSITY_LEVEL >= 6
 #ifdef ENABLE_CUDA_CODE
                     uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
                     uint32_t l_result_capability = l_capability & p_mask_to_apply;
+#if VERBOSITY_LEVEL >= 6
                     my_cuda::print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, p_mask_to_apply, l_result_capability);
+#endif // VERBOSITY_LEVEL >= 6
 #else // ENABLE_CUDA_CODE
                     pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
                     pseudo_CUDA_thread_variable<uint32_t> l_result_capability =  l_capability & p_mask_to_apply;
+#if VERBOSITY_LEVEL >= 6
                     uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, l_capability);
                     for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
                     {
                         my_cuda::print_mask(5, l_print_mask, {l_threadIdx_x, 1, 1}, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability[l_threadIdx_x], p_mask_to_apply[l_threadIdx_x], l_result_capability[l_threadIdx_x]);
                     }
+#endif // VERBOSITY_LEVEL >= 6
 #endif // ENABLE_CUDA_CODE
                     if(p_is_position_invalid(l_result_capability))
                     {
+#if VERBOSITY_LEVEL >= 6
                         my_cuda::print_single(5, "INVALID\n");
+#endif // VERBOSITY_LEVEL >= 6
                         return true;
                     }
                     p_treat_simple_mask(l_result_info_index, l_capability, l_result_capability);
@@ -693,7 +702,9 @@ namespace edge_matching_puzzle
             for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
             {
                 uint32_t l_color_id = g_pieces[p_piece_index][(l_orientation_index + p_piece_orientation) % 4];
+#if VERBOSITY_LEVEL >= 6
                 my_cuda::print_single(5, "Color Id %i", l_color_id);
+#endif // VERBOSITY_LEVEL >= 6
                 if(l_color_id)
                 {
                     // Compute position index related to piece side
@@ -702,13 +713,17 @@ namespace edge_matching_puzzle
                     // Check if position is free, if this not the case there is no corresponding index
                     if(!p_stack.is_position_free(l_related_position_index))
                     {
+#if VERBOSITY_LEVEL >= 6
                         my_cuda::print_single(5, "Position %i is not free\n", static_cast<uint32_t>(l_related_position_index));
+#endif // VERBOSITY_LEVEL >= 6
                         continue;
                     }
 
                     // Compute corresponding info index
                     info_index_t l_related_info_index = p_stack.get_info_index(l_related_position_index);
+#if VERBOSITY_LEVEL >= 6
                     my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_related_info_index), static_cast<uint32_t>(l_related_position_index));
+#endif // VERBOSITY_LEVEL >= 6
 
 #ifdef ENABLE_CUDA_CODE
                     uint32_t l_capability = p_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
@@ -722,6 +737,7 @@ namespace edge_matching_puzzle
                     pseudo_CUDA_thread_variable<uint32_t> l_result_capability{l_capability & l_constraint_capability};
 #endif // ENABLE_CUDA_CODE
 
+#if VERBOSITY_LEVEL >= 6
 #ifdef ENABLE_CUDA_CODE
                     my_cuda::print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability | l_constraint_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_capability, l_constraint_capability, l_result_capability);
 #else // ENABLE_CUDA_CODE
@@ -733,11 +749,14 @@ namespace edge_matching_puzzle
                         my_cuda::print_mask(5, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult 0x%08" PRIx32 "\n", l_capability[threadIdx.x], l_constraint_capability[threadIdx.x], l_result_capability[threadIdx.x]);
                     }
 #endif // ENABLE_CUDA_CODE
+#endif // VERBOSITY_LEVEL >= 6
 
                     // Check validity after applying masks
                     if(p_is_position_invalid(l_result_capability))
                     {
+#if VERBOSITY_LEVEL >= 6
                         my_cuda::print_single(5, "INVALID\n");
+#endif // VERBOSITY_LEVEL >= 6
                         return true;
                     }
 
@@ -771,14 +790,16 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                           )
         {
+#if VERBOSITY_LEVEL >= 5
 #ifdef ENABLE_CUDA_CODE
-            my_cuda::print_all(2,"Thread available variables = 0x%" PRIx32, p_thread_variable);
+            my_cuda::print_all(4,"Thread available variables = 0x%" PRIx32, p_thread_variable);
 #else // ENABLE_CUDA_CODE
             for(dim3 threadIdx{0, 0, 0} ; threadIdx.x < 32 ; ++threadIdx.x)
             {
-                my_cuda::print_all(2, threadIdx, "Thread available variables = 0x%" PRIx32, p_thread_variable[threadIdx.x]);
+                my_cuda::print_all(4, threadIdx, "Thread available variables = 0x%" PRIx32, p_thread_variable[threadIdx.x]);
             }
 #endif // ENABLE_CUDA_CODE
+#endif // VERBOSITY_LEVEL >= 4
 
             // At the beginning all threads participates to ballot
             unsigned int l_ballot_result = 0xFFFFFFFF;
@@ -789,13 +810,17 @@ namespace edge_matching_puzzle
                 // Sync between threads to determine who as some available variables
 #ifdef ENABLE_CUDA_CODE
                 l_ballot_result = __ballot_sync(l_ballot_result, (int) p_thread_variable);
-                my_cuda::print_mask(3, l_ballot_result, "Thread available variables = 0x%" PRIx32, p_thread_variable);
+#if VERBOSITY_LEVEL >= 6
+                my_cuda::print_mask(5, l_ballot_result, "Thread available variables = 0x%" PRIx32, p_thread_variable);
+#endif // VERBOSITY_LEVEL >= 6
 #else // ENABLE_CUDA_CODE
                 l_ballot_result = __ballot_sync(l_ballot_result, p_thread_variable);
+#if VERBOSITY_LEVEL >= 6
                 for(dim3 l_threadIdx{0, 1 , 1}; l_threadIdx.x < 32; ++l_threadIdx.x)
                 {
-                    my_cuda::print_mask(3, l_ballot_result, l_threadIdx, "Thread available variables = 0x%" PRIx32, p_thread_variable[l_threadIdx.x]);
+                    my_cuda::print_mask(5, l_ballot_result, l_threadIdx, "Thread available variables = 0x%" PRIx32, p_thread_variable[l_threadIdx.x]);
                 }
+#endif // VERBOSITY_LEVEL >= 6
 #endif // ENABLE_CUDA_CODE
 
 
@@ -805,7 +830,9 @@ namespace edge_matching_puzzle
                 // Determine first lane/thread having an available variable. Result is greater than 0 due to assert
                 unsigned l_elected_thread = __ffs((int)l_ballot_result) - 1;
 
+#if VERBOSITY_LEVEL >= 4
                 my_cuda::print_single(3, "Elected thread : %i", l_elected_thread);
+#endif // VERBOSITY_LEVEL >= 4
 
                 // Eliminate thread from next ballot
                 l_ballot_result &= ~(1u << l_elected_thread);
@@ -821,12 +848,16 @@ namespace edge_matching_puzzle
                 // Iterate on available variables of elected thread
                 do
                 {
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Current available variables : 0x%" PRIx32, l_thread_variable);
+#endif // VERBOSITY_LEVEL >= 5
 
                     // Determine first available variable. Result  cannot be 0 due to ballot
                     unsigned l_bit_index = __ffs((int)l_thread_variable) - 1;
 
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Bit index : %i", l_bit_index);
+#endif // VERBOSITY_LEVEL >= 5
 
                     // Set variable bit to zero
                     uint32_t l_mask = ~(1u << l_bit_index);
@@ -849,7 +880,9 @@ namespace edge_matching_puzzle
             if(threadIdx.x == p_elected_thread)
 #endif // ENABLE_CUDA_CODE
             {
+#if VERBOSITY_LEVEL >= 7
                 my_cuda::print_single(6, "-> Info %" PRIu32 " Word %" PRIu32 " bit %" PRIu32, static_cast<uint32_t>(p_info_index), p_elected_thread, p_bit_index);
+#endif // VERBOSITY_LEVEL >= 7
                 p_stack.get_position_info(p_info_index).clear_bit(p_elected_thread, p_bit_index);
             }
         }
@@ -868,11 +901,15 @@ namespace edge_matching_puzzle
                                   ,const CUDA_color_constraints & p_color_constraints
                                   )
         {
-            my_cuda::print_single(1,"==> Remove invalid transitions");
+#if VERBOSITY_LEVEL >= 3
+            my_cuda::print_single(2,"==> Remove invalid transitions");
+#endif // VERBOSITY_LEVEL >= 3
             bool l_invalid_found;
             do
             {
-                my_cuda::print_single(1,"Start loop");
+#if VERBOSITY_LEVEL >= 3
+                my_cuda::print_single(2,"Start loop");
+#endif // VERBOSITY_LEVEL >= 3
                 l_invalid_found = false;
                 // Iterate on all level position information to check each
                 // available transition and remove the one that lead to invalid situation
@@ -881,7 +918,9 @@ namespace edge_matching_puzzle
                      ++l_info_index
                     )
                 {
-                    my_cuda::print_single(1,"Info index = %i <=> Position = %i", static_cast<uint32_t>(l_info_index), static_cast<uint32_t>(p_stack.get_position_index(static_cast<info_index_t>(l_info_index))));
+#if VERBOSITY_LEVEL >= 4
+                    my_cuda::print_single(3,"Info index = %i <=> Position = %i", static_cast<uint32_t>(l_info_index), static_cast<uint32_t>(p_stack.get_position_index(static_cast<info_index_t>(l_info_index))));
+#endif // VERBOSITY_LEVEL >= 4
 
                     auto l_init_lambda = [&]()
                     {
@@ -904,12 +943,16 @@ namespace edge_matching_puzzle
                         // Compute piece index
                         uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(p_elected_thread, p_bit_index);
 
+#if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "Piece index : %i", l_piece_index);
+#endif // VERBOSITY_LEVEL >= 5
 
                         // Piece orientation
                         uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(p_elected_thread, p_bit_index);
 
+#if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "Piece orientation : %i", l_piece_orientation);
+#endif // VERBOSITY_LEVEL >= 5
 
                         // Get position index corresponding to this info index
                         position_index_t l_position_index = p_stack.get_position_index(static_cast<info_index_t >(l_info_index));
@@ -954,7 +997,9 @@ namespace edge_matching_puzzle
                         };
 
                         // Apply color constraint
+#if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "Apply color constraints");
+#endif // VERBOSITY_LEVEL >= 5
                         if(CUDA_glutton_max::apply_color_constraints(l_piece_index, l_piece_orientation, l_position_index, p_stack, p_color_constraints, l_mask_to_apply, CUDA_glutton_max::is_position_invalid, l_lambda_treat_applied_color))
                         {
                             l_invalid_found = true;
@@ -991,7 +1036,9 @@ namespace edge_matching_puzzle
                         };
 
                         // This is reached only if no invalid position was detected in the previous loop
+#if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "Apply piece constraints before selected index");
+#endif // VERBOSITY_LEVEL >= 5
                         if(CUDA_glutton_max::apply_simple_mask(static_cast<info_index_t>(0u), l_info_index, p_stack, l_mask_to_apply, l_lamda_do_apply, p_is_position_invalid, l_lambda_treat_simple_mask))
                         {
                             l_invalid_found = true;
@@ -1000,7 +1047,9 @@ namespace edge_matching_puzzle
                         }
 
                         // This is reached only if no invalid position was detected in the previous loop
+#if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "Apply piece constraints after selected index");
+#endif // VERBOSITY_LEVEL >= 5
                         if(CUDA_glutton_max::apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), p_stack.get_level_nb_info(), p_stack, l_mask_to_apply, l_lamda_do_apply, p_is_position_invalid, l_lambda_treat_simple_mask))
                         {
                             l_invalid_found = true;
@@ -1010,7 +1059,9 @@ namespace edge_matching_puzzle
 
                         // This is reached only if no invalid position was detected in the previous loop
                         // Manage pieces info
+#if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "Check pieces info");
+#endif // VERBOSITY_LEVEL >= 5
                         for(unsigned int l_piece_info_index = 0; l_piece_info_index < 8; ++l_piece_info_index)
                         {
 #ifdef ENABLE_CUDA_CODE
@@ -1021,8 +1072,12 @@ namespace edge_matching_puzzle
                             if(!__all_sync(0xFFFFFFFFu, l_piece_info))
                             {
                                 l_invalid_found = true;
-                                my_cuda::print_single(5, "INVALID PIECES:\n");
+#if VERBOSITY_LEVEL >= 5
+                                my_cuda::print_single(4, "INVALID PIECES:\n");
+#endif // VERBOSITY_LEVEL >= 5
+#if VERBOSITY_LEVEL >= 6
                                 CUDA_glutton_max::debug_message_pieces(l_piece_info_index, l_piece_info);
+#endif // VERBOSITY_LEVEL >= 6
                                 clear_invalid_bit(p_stack, l_info_index, p_elected_thread, p_bit_index);
                                 return;
                             }
@@ -1040,7 +1095,9 @@ namespace edge_matching_puzzle
 
                     if(!p_stack.is_position_valid(l_info_index))
                      {
-                        my_cuda::print_single(0, "INFO %" PRIu32 " completely cleared !", static_cast<uint32_t>(l_info_index));
+#if VERBOSITY_LEVEL >= 3
+                        my_cuda::print_single(2, "INFO %" PRIu32 " completely cleared !", static_cast<uint32_t>(l_info_index));
+#endif // VERBOSITY_LEVEL >= 3
                         //exit(-1);
                         return false;
                      }
@@ -1119,7 +1176,9 @@ namespace edge_matching_puzzle
                 ++l_info_index
                )
             {
-                my_cuda::print_single(1,"Info index = %i <=> Position = %i", static_cast<uint32_t>(l_info_index), static_cast<uint32_t>(p_stack.get_position_index(static_cast<info_index_t>(l_info_index))));
+#if VERBOSITY_LEVEL >= 4
+                my_cuda::print_single(3,"Info index = %i <=> Position = %i", static_cast<uint32_t>(l_info_index), static_cast<uint32_t>(p_stack.get_position_index(static_cast<info_index_t>(l_info_index))));
+#endif // VERBOSITY_LEVEL >= 4
 
                 // Each thread get its word in position info
 #ifdef ENABLE_CUDA_CODE
@@ -1157,12 +1216,16 @@ namespace edge_matching_puzzle
                     // Compute piece index
                     uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(p_elected_thread, p_bit_index);
 
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Piece index : %i", l_piece_index);
+#endif // VERBOSITY_LEVEL >= 4
 
                     // Piece orientation
                     uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(p_elected_thread, p_bit_index);
 
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Piece orientation : %i", l_piece_orientation);
+#endif // VERBOSITY_LEVEL >= 4
 
                     // Get position index corresponding to this info index
                     position_index_t l_position_index = p_stack.get_position_index(static_cast<info_index_t >(l_info_index));
@@ -1204,11 +1267,15 @@ namespace edge_matching_puzzle
 #endif // ENABLE_CUDA_CODE
                         CUDA_glutton_max::analyze_info(p_result_capability, l_piece_infos);
                         CUDA_glutton_max::count_result_nb_bits(p_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+#if VERBOSITY_LEVEL >= 6
                         CUDA_glutton_max::debug_message_info_bits(5, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+#endif // VERBOSITY_LEVEL >= 6
                     };
 
                     // Apply color constraint
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Apply color constraints");
+#endif // VERBOSITY_LEVEL >= 5
                     if(CUDA_glutton_max::apply_color_constraints(l_piece_index, l_piece_orientation, l_position_index, p_stack, p_color_constraints, l_mask_to_apply, CUDA_glutton_max::is_position_invalid, l_lambda_treat_applied_color))
                     {
                         my_cuda::print_single(1, "SHOULD NOT BE REACHED 1");
@@ -1244,11 +1311,15 @@ namespace edge_matching_puzzle
                     {
                         CUDA_glutton_max::analyze_info(p_result_capability, l_piece_infos);
                         CUDA_glutton_max::count_result_nb_bits(p_result_capability, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+#if VERBOSITY_LEVEL >= 6
                         CUDA_glutton_max::debug_message_info_bits(5, l_info_bits_min, l_info_bits_max, l_info_bits_total);
+#endif // VERBOSITY_LEVEL >= 6
                     };
 
                     // This is reached only if no invalid position was detected in the previous loop
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Apply piece constraints before selected index");
+#endif // VERBOSITY_LEVEL >= 5
                     if(CUDA_glutton_max::apply_simple_mask(static_cast<info_index_t>(0u), l_info_index, p_stack, l_mask_to_apply, l_lamda_do_apply, p_is_position_invalid, l_lambda_treat_simple_mask))
                     {
                         my_cuda::print_single(1, "SHOULD NOT BE REACHED 2");
@@ -1259,7 +1330,9 @@ namespace edge_matching_puzzle
                     }
 
                     // This is reached only if no invalid position was detected in the previous loop
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Apply piece constraints after selected index");
+#endif // VERBOSITY_LEVEL >= 5
                     if(CUDA_glutton_max::apply_simple_mask(l_info_index + static_cast<uint32_t>(1u), p_stack.get_level_nb_info(), p_stack, l_mask_to_apply, l_lamda_do_apply, p_is_position_invalid, l_lambda_treat_simple_mask))
                     {
                         my_cuda::print_single(1, "SHOULD NOT BE REACHED 3");
@@ -1271,7 +1344,10 @@ namespace edge_matching_puzzle
 
                     // This is reached only if no invalid position was detected in the previous loop
                     // Manage pieces info
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Compute pieces info");
+#endif // VERBOSITY_LEVEL >= 5
+
 #ifdef ENABLE_CUDA_CODE
                     uint32_t l_piece_info_total_bit = 0;
                     uint32_t l_piece_info_min_bits = 0xFFFFFFFFu;
@@ -1308,11 +1384,13 @@ namespace edge_matching_puzzle
 #else // ENABLE_CUDA_CODE
                                     CUDA_glutton_max::update_stats(l_piece_info[l_threadIdx_x], l_piece_info_min_bits[l_threadIdx_x], l_piece_info_max_bits[l_threadIdx_x], l_piece_info_total_bit[l_threadIdx_x]);
 #endif // ENABLE_CUDA_CODE
+#if VERBOSITY_LEVEL >= 6
 #ifdef ENABLE_CUDA_CODE
                                     my_cuda::print_all(5, "Piece %i:\nMin %3i\tMax %3i\tTotal %i\n", l_info_piece_index, l_piece_info_min_bits, l_piece_info_max_bits, l_piece_info_total_bit);
 #else // ENABLE_CUDA_CODE
                                     my_cuda::print_all(5, {l_threadIdx_x, 1, 1}, "Piece %i:\nMin %3i\tMax %3i\tTotal %i\n", l_info_piece_index[l_threadIdx_x], l_piece_info_min_bits[l_threadIdx_x], l_piece_info_max_bits[l_threadIdx_x], l_piece_info_total_bit[l_threadIdx_x]);
 #endif // ENABLE_CUDA_CODE
+#endif // VERBOSITY_LEVEL >= 6
                                 }
 #ifndef ENABLE_CUDA_CODE
                             }
@@ -1320,8 +1398,12 @@ namespace edge_matching_puzzle
                         }
                         else
                         {
-                            my_cuda::print_single(5, "INVALID PIECES:\n");
+#if VERBOSITY_LEVEL >= 5
+                            my_cuda::print_single(4, "INVALID PIECES:\n");
+#endif // VERBOSITY_LEVEL >= 5
+#if VERBOSITY_LEVEL >= 6
                             CUDA_glutton_max::debug_message_pieces(l_piece_info_index, l_piece_info);
+#endif // VERBOSITY_LEVEL >= 6
                             my_cuda::print_single(1, "SHOULD NOT BE REACHED 4");
 #ifndef ENABLE_CUDA_CODE
                             exit(-1);
@@ -1346,15 +1428,21 @@ namespace edge_matching_puzzle
                     my_cuda::reduce_max_sync(l_piece_info_max_bits);
                     l_info_bits_max = l_piece_info_max_bits[0] > l_info_bits_max ? l_piece_info_max_bits[0] : l_info_bits_max;
 #endif // ENABLE_CUDA_CODE
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "After reduction");
                     my_cuda::print_single(4, "Min %3i\tMax %3i\tTotal %i\n", l_info_bits_min, l_info_bits_max, l_info_bits_total);
+#endif // VERBOSITY_LEVEL >= 5
 
                     // compare with global stats
                     uint32_t l_min_max_score = (l_info_bits_max << 16u) + l_info_bits_min;
+#if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Total %i\tMinMax %i\n", l_info_bits_total, l_min_max_score);
+#endif // VERBOSITY_LEVEL >= 5
                     if(l_info_bits_total > l_best_total_score || (l_info_bits_total == l_best_total_score && l_min_max_score > l_best_min_max_score) || p_stack.get_level() == p_stack.get_size() - 1)
                     {
+#if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "New best score Total %i MinMax %i\n", l_info_bits_total, l_min_max_score);
+#endif // VERBOSITY_LEVEL >= 5
                         l_best_total_score = l_info_bits_total;
                         l_best_min_max_score = l_min_max_score;
                         // Store transition characteristics
@@ -1376,7 +1464,9 @@ namespace edge_matching_puzzle
                             )
         {
             // Apply best candidate
-            print_position_info(6, p_stack);
+#if VERBOSITY_LEVEL >= 6
+            print_position_info(5, p_stack);
+#endif // VERBOSITY_LEVEL >= 6
 
             info_index_t l_info_index{0};
             unsigned int l_elected_thread;
@@ -1387,24 +1477,32 @@ namespace edge_matching_puzzle
             std::tie(l_info_index, l_elected_thread, l_bit_index) = decode_best_info(p_best_information);
 #endif // ENABLE_CUDA_CODE
 
-            my_cuda::print_single(1, "Info index %i Elected thread %i Bit index : %i", static_cast<uint32_t>(l_info_index), l_elected_thread, l_bit_index);
+#if VERBOSITY_LEVEL >= 4
+            my_cuda::print_single(3, "Info index %i Elected thread %i Bit index : %i", static_cast<uint32_t>(l_info_index), l_elected_thread, l_bit_index);
+#endif // VERBOSITY_LEVEL >= 4
 
             // Set variable bit to zero in best candidate and current info
             CUDA_piece_position_info2 & l_position_info = p_stack.get_position_info(l_info_index);
             l_position_info.clear_bit(l_elected_thread, l_bit_index);
 
-            my_cuda::print_single(0, "after clear\n");
-            print_position_info(6, p_stack);
+#if VERBOSITY_LEVEL >= 6
+            my_cuda::print_single(5, "after clear\n");
+            print_position_info(5, p_stack);
+#endif // VERBOSITY_LEVEL >= 6
 
             // Compute piece index
             uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
 
-            my_cuda::print_single(0, "Piece index : %i", l_piece_index);
+#if VERBOSITY_LEVEL >= 5
+            my_cuda::print_single(4, "Piece index : %i", l_piece_index);
+#endif // VERBOSITY_LEVEL >= 5
 
             // Piece orientation
             uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
 
-            my_cuda::print_single(0, "Piece orientation : %i", l_piece_orientation);
+#if VERBOSITY_LEVEL >= 5
+            my_cuda::print_single(4, "Piece orientation : %i", l_piece_orientation);
+#endif // VERBOSITY_LEVEL >= 5
 
             // Get position index corresponding to this info index
             position_index_t l_position_index = p_stack.get_position_index(l_info_index);
@@ -1418,7 +1516,7 @@ namespace edge_matching_puzzle
 
             if (compute_next_level_position_info(info_index_t(0u), l_info_index, p_stack, l_mask_to_apply))
             {
-                my_cuda::print_single(1, "SHOULD NOT BE REACHED 6");
+                my_cuda::print_single(4, "SHOULD NOT BE REACHED 6");
 #ifndef ENABLE_CUDA_CODE
                 exit(-1);
 #endif // ENABLE_CUDA_CODE
@@ -1427,7 +1525,7 @@ namespace edge_matching_puzzle
             // Last position is not treated here because next level has 1 position less
             if (compute_next_level_position_info(l_info_index + 1, p_stack.get_level_nb_info() - 1, p_stack, l_mask_to_apply))
             {
-                my_cuda::print_single(1, "SHOULD NOT BE REACHED 7");
+                my_cuda::print_single(4, "SHOULD NOT BE REACHED 7");
 #ifndef ENABLE_CUDA_CODE
                 exit(-1);
 #endif // ENABLE_CUDA_CODE
@@ -1437,12 +1535,16 @@ namespace edge_matching_puzzle
             if (l_info_index < (p_stack.get_level_nb_info() - 1) && p_stack.get_level() < (p_stack.get_size() - 1))
             {
                 // Last position in next level it will be located at l_best_candidate_index
-                my_cuda::print_single(0, "Info %i -> %i:\n", static_cast<uint32_t>(p_stack.get_level_nb_info()) - 1, static_cast<uint32_t>(l_info_index));
+#if VERBOSITY_LEVEL >= 5
+                my_cuda::print_single(4, "Info %i -> %i:\n", static_cast<uint32_t>(p_stack.get_level_nb_info()) - 1, static_cast<uint32_t>(l_info_index));
+#endif // VERBOSITY_LEVEL >= 5
 #ifdef ENABLE_CUDA_CODE
                 uint32_t l_capability = p_stack.get_position_info(info_index_t(p_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);
                 uint32_t l_constraint = l_mask_to_apply;
                 uint32_t l_result = l_capability & l_constraint;
-                my_cuda::print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
+#if VERBOSITY_LEVEL >= 6
+                my_cuda::print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
+#endif // VERBOSITY_LEVEL >= 6
                 p_stack.get_next_level_position_info(l_info_index).set_word(threadIdx.x , l_result);
                 if(__any_sync(0xFFFFFFFFu, l_result))
                 {
@@ -1453,24 +1555,32 @@ namespace edge_matching_puzzle
 #else // ENABLE_CUDA_CODE
                 pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx){ return p_stack.get_position_info(info_index_t(p_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);}};
                 pseudo_CUDA_thread_variable<uint32_t> l_result = l_capability & l_mask_to_apply;
+#if VERBOSITY_LEVEL >= 6
                 uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, l_capability);
+#endif // VERBOSITY_LEVEL >= 6
                 for (dim3 threadIdx{0, 1, 1}; threadIdx.x < 32; ++threadIdx.x)
                 {
-                    my_cuda::print_mask(1, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability[threadIdx.x], l_mask_to_apply[threadIdx.x], l_result[threadIdx.x]);
+#if VERBOSITY_LEVEL >= 6
+                    my_cuda::print_mask(5, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability[threadIdx.x], l_mask_to_apply[threadIdx.x], l_result[threadIdx.x]);
+#endif // VERBOSITY_LEVEL >= 6
                     p_stack.get_next_level_position_info(l_info_index).set_word(threadIdx.x, l_result[threadIdx.x]);
                 }
                 if(!__any_sync(0xFFFFFFFFu, l_result))
                 {
-                    my_cuda::print_single(2, "INVALID Best");
-                    my_cuda::print_single(1, "SHOULD NOT BE REACHED 8");
+                    my_cuda::print_single(4, "INVALID Best");
+                    my_cuda::print_single(4, "SHOULD NOT BE REACHED 8");
                     exit(-1);
                 }
 #endif // ENABLE_CUDA_CODE
             }
 
+#if VERBOSITY_LEVEL >= 6
             print_device_info_position_index(0, p_stack);
+#endif // VERBOSITY_LEVEL >= 6
             p_stack.push(l_info_index, l_position_index, l_piece_index, l_piece_orientation);
+#if VERBOSITY_LEVEL >= 6
             print_device_info_position_index(0, p_stack);
+#endif // VERBOSITY_LEVEL >= 6
 
             bool l_invalid = false;
 
@@ -1487,14 +1597,16 @@ namespace edge_matching_puzzle
                 // If related index correspond to last position of previous level ( we already did the push ) than result is stored in position where we store the piece
                 info_index_t l_related_target_info_index = p_related_info_index < p_stack.get_level_nb_info() ? p_related_info_index : l_info_index;
 
-                my_cuda::print_single(1, "Color Info %i -> %i:\n", static_cast<uint32_t>(p_related_info_index), static_cast<uint32_t>(l_related_target_info_index));
+#if VERBOSITY_LEVEL >= 5
+                my_cuda::print_single(4, "Color Info %i -> %i:\n", static_cast<uint32_t>(p_related_info_index), static_cast<uint32_t>(l_related_target_info_index));
+#endif // VERBOSITY_LEVEL >= 5
 
                 p_stack.get_position_info(l_related_target_info_index).CUDA_and(p_stack.get_position_info(p_related_info_index), p_color_constraints.get_info(p_color_id - 1, p_orientation_index));
                 if (!p_stack.is_position_valid(l_related_target_info_index))
                 {
-                    my_cuda::print_single(2, "INVALID Best color");
+                    my_cuda::print_single(5, "INVALID Best color");
                     l_invalid = true;
-                    my_cuda::print_single(1, "SHOULD NOT BE REACHED 9");
+                    my_cuda::print_single(5, "SHOULD NOT BE REACHED 9");
 #ifndef ENABLE_CUDA_CODE
                     exit(-1);
 #endif // ENABLE_CUDA_CODE
@@ -1507,7 +1619,7 @@ namespace edge_matching_puzzle
             // Check if we exit from loop because everything was fine or due to invalid position
             if (l_invalid)
             {
-                my_cuda::print_single(1, "SHOULD NOT BE REACHED 10");
+                my_cuda::print_single(3, "SHOULD NOT BE REACHED 10");
 #ifndef ENABLE_CUDA_CODE
                 exit(-1);
 #endif // ENABLE_CUDA_CODE
@@ -1588,41 +1700,63 @@ namespace edge_matching_puzzle
         CUDA_glutton_max_stack & l_stack = p_stacks[l_stack_index];
 
         bool l_new_level = true;
+#if VERBOSITY_LEVEL >= 1
         uint32_t l_step = 0xFFFFFFFFu;
+#endif // VERBOSITY_LEVEL
         info_index_t l_pop_index = static_cast<info_index_t >(0);
         while(l_stack.get_level() < l_stack.get_size())
         {
+#if VERBOSITY_LEVEL >= 1
             ++l_step;
             my_cuda::print_single(0,"Stack level = %i [%i]", l_stack.get_level(), l_step);
+#endif // VERBOSITY_LEVEL >= 1
 
             if((!l_new_level) && (!l_stack.is_position_valid(l_pop_index)))
             {
+#if VERBOSITY_LEVEL >= 1
                  my_cuda::print_single(0, "No more remaining bit in this index %i position %i, go up from one level", static_cast<uint32_t>(l_pop_index), static_cast<uint32_t>(l_stack.get_position_index(l_pop_index)));
+#endif // VERBOSITY_LEVEL >= 1
+#if VERBOSITY_LEVEL >= 2
                  CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+#endif // VERBOSITY_LEVEL >= 2
                  l_pop_index = l_stack.pop();
+#if VERBOSITY_LEVEL >= 2
                  CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+#endif // VERBOSITY_LEVEL >= 2
                  l_new_level = false;
                  continue;
             }
 
-            my_cuda::print_single(0,"Remove invalid bits");
+#if VERBOSITY_LEVEL >= 2
+            my_cuda::print_single(1,"Remove invalid bits");
+#endif // VERBOSITY_LEVEL >= 2
             if(!CUDA_glutton_max::remove_invalid_transitions(l_stack, p_color_constraints))
             {
+#if VERBOSITY_LEVEL >= 1
                 my_cuda::print_single(0, "No best score found, go up from one level");
+#endif // VERBOSITY_LEVEL >= 1
+#if VERBOSITY_LEVEL >= 2
                 CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+#endif // VERBOSITY_LEVEL >= 2
                 l_pop_index = l_stack.pop();
+#if VERBOSITY_LEVEL >= 2
                 CUDA_glutton_max::print_device_info_position_index(0, l_stack);
+#endif // VERBOSITY_LEVEL >= 2
                 l_new_level = false;
                 continue;
             }
 
-            my_cuda::print_single(0,"Search for best score");
+#if VERBOSITY_LEVEL >= 2
+            my_cuda::print_single(1,"Search for best score");
+#endif // VERBOSITY_LEVEL >= 2
             uint32_t l_best_information = CUDA_glutton_max::get_best_candidate(l_stack, p_color_constraints);
 
             // If no best score found there is no interesting transition so go back
             if(0xFFFFFFFFu == l_best_information)
             {
+#if VERBOSITY_LEVEL >= 1
                 my_cuda::print_single(0, "No best score found, go up from one level");
+#endif // VERBOSITY_LEVEL >= 1
                 CUDA_glutton_max::print_device_info_position_index(0, l_stack);
                 l_pop_index = l_stack.pop();
                 CUDA_glutton_max::print_device_info_position_index(0, l_stack);
@@ -1634,12 +1768,16 @@ namespace edge_matching_puzzle
                 continue;
             }
 
-            my_cuda::print_single(0, "Apply best candidate");
+#if VERBOSITY_LEVEL >= 2
+            my_cuda::print_single(1, "Apply best candidate");
+#endif // VERBOSITY_LEVEL >= 2
             CUDA_glutton_max::apply_best_candidate(l_best_information, l_stack, p_color_constraints);
 
             l_new_level = true;
-            my_cuda::print_single(0, "after applying change\n");
-            CUDA_glutton_max::print_position_info(6, l_stack);
+#if VERBOSITY_LEVEL >= 3
+            my_cuda::print_single(2, "after applying change\n");
+            CUDA_glutton_max::print_position_info(2, l_stack);
+#endif // VERBOSITY_LEVEL >= 3
         }
 
         my_cuda::print_single(0, "End with stack level %i", l_stack.get_level());
