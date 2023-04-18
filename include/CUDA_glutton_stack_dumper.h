@@ -77,6 +77,12 @@ namespace edge_matching_puzzle
                         );
 
         void
+        dump_max_played_info(uint32_t p_size
+                            ,const my_cuda::CUDA_memory_managed_array<CUDA_glutton_max_stack::played_info_t> & p_played_info
+                            ,XMLNode & p_node
+                            );
+
+        void
         dump_available_pieces(const uint32_t (&p_available_pieces)[8]
                              ,XMLNode & p_node
                              );
@@ -124,9 +130,11 @@ namespace edge_matching_puzzle
         dump_size(static_cast<uint32_t>(p_stack.get_size()), l_root_node);
         dump_level(p_stack.get_level(), l_root_node);
         dump_nb_pieces(static_cast<uint32_t>(p_stack.get_nb_pieces()), l_root_node);
+        l_root_node.addAttribute("max", std::to_string(p_stack.get_max()).c_str());
         dump_info_to_position(p_stack.get_size(), p_stack.m_info_index_to_position_index, l_root_node);
         dump_position_to_info(static_cast<uint32_t>(p_stack.get_nb_pieces()), p_stack.m_position_index_to_info_index, l_root_node);
         dump_played_info(p_stack.get_size(), p_stack.m_played_info, l_root_node);
+        dump_max_played_info(p_stack.get_max(), p_stack.m_max_played_info, l_root_node);
         dump_available_pieces(p_stack.m_available_pieces, l_root_node);
         dump_position_infos(p_stack, l_root_node);
         l_root_node.writeToFile(m_name.c_str());
@@ -234,6 +242,16 @@ namespace edge_matching_puzzle
                                                )
     {
         dump_array("played_info", p_size, p_played_info, p_node);
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_stack_dumper::dump_max_played_info(uint32_t p_size
+                                                   ,const my_cuda::CUDA_memory_managed_array<CUDA_glutton_max_stack::played_info_t> & p_played_info
+                                                   ,XMLNode & p_node
+                                                   )
+    {
+        dump_array("max_played_info", p_size, p_played_info, p_node);
     }
 
     //-------------------------------------------------------------------------

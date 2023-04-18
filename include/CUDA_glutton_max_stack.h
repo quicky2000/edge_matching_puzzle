@@ -139,6 +139,12 @@ namespace edge_matching_puzzle
         position_index_t
         get_nb_pieces() const;
 
+        [[nodiscard]]
+        inline
+        __device__ __host__
+        uint32_t
+        get_max() const;
+
         /**
          * Number of position info available at current level
          * @return number of position info
@@ -395,6 +401,8 @@ namespace edge_matching_puzzle
 
         uint32_t m_nb_pieces;
 
+        uint32_t m_max;
+
         /**
          * Store correspondence between position index and info index
          */
@@ -409,6 +417,11 @@ namespace edge_matching_puzzle
          * Store position/piece/orientation selected at level
          */
         my_cuda::CUDA_memory_managed_array<played_info_t> m_played_info;
+
+        /**
+         * Store better result position/piece/orientation selected at level
+         */
+        my_cuda::CUDA_memory_managed_array<played_info_t> m_max_played_info;
 
         /**
          * Store available pieces
@@ -430,9 +443,11 @@ namespace edge_matching_puzzle
     : m_size(p_size)
     , m_level{0}
     , m_nb_pieces{p_nb_pieces}
+    , m_max{0}
     , m_info_index_to_position_index(p_size, position_index_t(std::numeric_limits<uint32_t>::max()))
     , m_position_index_to_info_index(p_nb_pieces, info_index_t(std::numeric_limits<uint32_t>::max()))
     , m_played_info(p_size, std::numeric_limits<played_info_t>::max())
+    , m_max_played_info(p_size, std::numeric_limits<played_info_t>::max())
     , m_available_pieces{0, 0, 0, 0, 0, 0, 0, 0}
     , m_thread_piece_infos{{0, 0, 0, 0, 0, 0, 0, 0}
                          ,{0, 0, 0, 0, 0, 0, 0, 0}
@@ -614,6 +629,29 @@ namespace edge_matching_puzzle
             set_piece_unavailable(p_piece_index);
             ++m_level;
         }
+        // Record best reached situation
+        if(m_level > m_max)
+        {
+#ifdef ENABLE_CUDA_CODE
+            for(unsigned int l_index = 0; l_index <= (m_max / 32); ++l_index)
+            {
+                unsigned int l_thread_index = threadIdx.x + 32 * l_index;
+                if(l_thread_index <= m_max)
+                {
+                    m_max_played_info[l_thread_index] = m_played_info[l_thread_index];
+                }
+            }
+            if(!threadIdx.x)
+#else // ENABLE_CUDA_CODE
+            for(unsigned int l_index = 0; l_index <= m_max ; ++l_index)
+            {
+                m_max_played_info[l_index] = m_played_info[l_index];
+            }
+#endif // ENABLE_CUDA_CODE
+            {
+                m_max = m_level;
+            }
+        }
         // Must be bone before overwritting with info_index (see below) in case p_info_index = l_last_info_index
         info_index_t l_last_info_index{m_size - m_level};
         position_index_t l_last_position_index = get_position_index(l_last_info_index);
@@ -664,6 +702,14 @@ namespace edge_matching_puzzle
     CUDA_glutton_max_stack::get_level() const
     {
         return m_level;
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    uint32_t
+    CUDA_glutton_max_stack::get_max() const
+    {
+        return m_max;
     }
 
     //-------------------------------------------------------------------------
