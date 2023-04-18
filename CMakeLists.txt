@@ -111,7 +111,7 @@ set(MY_SOURCE_FILES
     src/feature_dump_solutions.cpp
     src/feature_situation_profile.cpp
     src/feature_system_equation.cpp
-   )
+    include/CUDA_glutton_stack_dumper.h)
 
 
 if(${ENABLE_CUDA_CODE})
@@ -151,6 +151,7 @@ LIST(APPEND DEPENDANCY_LIST "EXT_microhttpd")
 LIST(APPEND DEPENDANCY_LIST "combinatorics")
 LIST(APPEND DEPENDANCY_LIST "simplex")
 LIST(APPEND DEPENDANCY_LIST "my_cuda")
+LIST(APPEND DEPENDANCY_LIST "EXT_xmlParser")
 
 #------------------------------
 #- Generic part

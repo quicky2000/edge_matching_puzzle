@@ -48,6 +48,8 @@ namespace edge_matching_puzzle
 
       public:
 
+        friend class CUDA_glutton_stack_dumper;
+
         inline explicit
         CUDA_glutton_max_stack(uint32_t p_size
                               ,uint32_t p_nb_pieces

@@ -1,4 +1,4 @@
-depend: quicky_exception quicky_utils simple_gui lib_bmp FSM_base FSM_framework parameter_manager EXT_microhttpd combinatorics simplex my_cuda
+depend: quicky_exception quicky_utils simple_gui lib_bmp FSM_base FSM_framework parameter_manager EXT_microhttpd combinatorics simplex my_cuda EXT_xmlParser
 MAIN_CFLAGS:-Wall -ansi -pedantic -g -std=c++17 -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -O3 -DNDEBUG
 ###########:-Wall -ansi -pedantic -g -std=c++17 -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -O0 -g -DGUI -DGUI_SOLUTIONS -DSAVE_THREAD -DDEBUG_SAVE_THREAD
 CFLAGS:

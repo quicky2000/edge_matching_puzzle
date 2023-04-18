@@ -23,6 +23,7 @@
 #include "CUDA_utils.h"
 #include "CUDA_color_constraints.h"
 #include "CUDA_glutton_max_stack.h"
+#include "CUDA_glutton_stack_dumper.h"
 #include "emp_FSM_info.h"
 #include "emp_piece_db.h"
 #include "emp_situation.h"
@@ -1690,6 +1691,7 @@ namespace edge_matching_puzzle
         unsigned int l_stack_index = threadIdx.y + blockIdx.x * blockDim.y;
 #else // ENABLE_CUDA_CODE
         unsigned int l_stack_index = 0;
+        bool l_toc = false;
 #endif // ENABLE_CUDA_CODE
 
         if(l_stack_index >= p_nb_stack)
@@ -1709,6 +1711,14 @@ namespace edge_matching_puzzle
 #if VERBOSITY_LEVEL >= 1
             ++l_step;
             my_cuda::print_single(0,"Stack level = %i [%i]", l_stack.get_level(), l_step);
+#ifndef ENABLE_CUDA_CODE
+            if(!(l_step & 0x3FFu))
+            {
+                CUDA_glutton_stack_dumper l_dumper(l_toc ? "stack_toc.xml" : "stack_tic.xml");
+                l_dumper.dump(l_stack);
+                l_toc = !l_toc;
+            }
+#endif // ENABLE_CUDA_CODE
 #endif // VERBOSITY_LEVEL >= 1
 
             if((!l_new_level) && (!l_stack.is_position_valid(l_pop_index)))

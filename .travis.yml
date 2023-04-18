@@ -58,6 +58,7 @@ before_install:
   - git clone https://github.com/quicky2000/quicky_tools.git
   - git clone https://github.com/quicky2000/quicky_exception.git
   - git clone https://github.com/quicky2000/EXT_microhttpd.git
+  - git clone https://github.com/quicky2000/EXT_xmlParser.git
   - git clone https://github.com/quicky2000/FSM_base.git
   - git clone https://github.com/quicky2000/FSM_framework.git
   - git clone https://github.com/quicky2000/FSM_interfaces.git
