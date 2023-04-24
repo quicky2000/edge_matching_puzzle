@@ -43,61 +43,72 @@ namespace edge_matching_puzzle
 
       private:
 
+        inline static
         void
         dump_size(uint32_t p_size
                  ,XMLNode & p_node
                  );
 
+        inline static
         void
         dump_level(uint32_t p_level
                   ,XMLNode & p_node
                   );
 
+        inline static
         void
         dump_nb_pieces(uint32_t p_nb_pieces
                       ,XMLNode & p_node
                       );
 
+        inline static
         void
         dump_info_to_position(uint32_t p_size
                              ,const my_cuda::CUDA_memory_managed_array<position_index_t> & p_info_to_position
                              ,XMLNode & p_node
                              );
 
+        inline static
         void
         dump_position_to_info(uint32_t p_size
                              ,const my_cuda::CUDA_memory_managed_array<info_index_t> & p_position_to_info
                              ,XMLNode & p_node
                              );
 
+        inline static
         void
         dump_played_info(uint32_t p_size
                         ,const my_cuda::CUDA_memory_managed_array<CUDA_glutton_max_stack::played_info_t> & p_played_info
                         ,XMLNode & p_node
                         );
 
+        inline static
         void
         dump_max_played_info(uint32_t p_size
                             ,const my_cuda::CUDA_memory_managed_array<CUDA_glutton_max_stack::played_info_t> & p_played_info
                             ,XMLNode & p_node
                             );
 
+        inline static
         void
         dump_available_pieces(const uint32_t (&p_available_pieces)[8]
                              ,XMLNode & p_node
                              );
 
+        inline static
         void
         dump_position_infos(const CUDA_glutton_max_stack & p_stack
                            ,XMLNode & p_node
                            );
 
+        inline static
         void
         dump_level(uint32_t p_level
                   ,const CUDA_glutton_max_stack & p_stack
                   ,XMLNode & p_node
                   );
 
+        inline static
         void
         dump(uint32_t p_index
             ,const CUDA_piece_position_info2 & p_position_info
@@ -105,8 +116,9 @@ namespace edge_matching_puzzle
             );
 
         template<typename T>
+        inline static
         void
-        dump_array(std::string p_name
+        dump_array(const std::string & p_name
                   ,uint32_t p_size
                   ,const T & p_info_to_position
                   ,XMLNode & p_node
@@ -266,7 +278,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     template<typename T>
     void
-    CUDA_glutton_stack_dumper::dump_array(std::string p_name
+    CUDA_glutton_stack_dumper::dump_array(const std::string & p_name
                                          ,uint32_t p_size
                                          ,const T & p_info_to_position
                                          ,XMLNode & p_node
