@@ -23,7 +23,7 @@
 #include "CUDA_utils.h"
 #include "CUDA_color_constraints.h"
 #include "CUDA_glutton_max_stack.h"
-#include "CUDA_glutton_stack_dumper.h"
+#include "CUDA_glutton_stack_XML_converter.h"
 #include "emp_FSM_info.h"
 #include "emp_piece_db.h"
 #include "emp_situation.h"
@@ -1714,7 +1714,7 @@ namespace edge_matching_puzzle
 #ifndef ENABLE_CUDA_CODE
             if(!(l_step & 0x3FFu))
             {
-                CUDA_glutton_stack_dumper l_dumper(l_toc ? "stack_toc.xml" : "stack_tic.xml");
+                CUDA_glutton_stack_XML_converter l_dumper(l_toc ? "stack_toc.xml" : "stack_tic.xml");
                 l_dumper.dump(l_stack);
                 l_toc = !l_toc;
             }

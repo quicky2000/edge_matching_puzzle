@@ -16,8 +16,8 @@
       along with this program.  If not, see <http://www.gnu.org/licenses/>
 */
 
-#ifndef EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_STACK_DUMPER_H
-#define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_STACK_DUMPER_H
+#ifndef EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_STACK_XML_CONVERTER_H
+#define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_STACK_XML_CONVERTER_H
 
 #include "CUDA_glutton_max_stack.h"
 #include "CUDA_memory_managed_array.h"
@@ -30,12 +30,12 @@
 
 namespace edge_matching_puzzle
 {
-    class CUDA_glutton_stack_dumper
+    class CUDA_glutton_stack_XML_converter
     {
       public:
 
         inline explicit
-        CUDA_glutton_stack_dumper(std::string p_name);
+        CUDA_glutton_stack_XML_converter(std::string p_name);
 
         inline
         void
@@ -174,7 +174,7 @@ namespace edge_matching_puzzle
     };
 
     //-------------------------------------------------------------------------
-    CUDA_glutton_stack_dumper::CUDA_glutton_stack_dumper(std::string p_name)
+    CUDA_glutton_stack_XML_converter::CUDA_glutton_stack_XML_converter(std::string p_name)
     :m_name{std::move(p_name)}
     {
 
@@ -182,7 +182,7 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::load(CUDA_glutton_max_stack & p_stack)
+    CUDA_glutton_stack_XML_converter::load(CUDA_glutton_max_stack & p_stack)
     {
         XMLResults l_result{eXMLErrorNone,0,0};
         XMLNode l_root_node = XMLNode::parseFile(m_name.c_str(), "CUDA_glutton_stack", &l_result);
@@ -220,7 +220,7 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump(const CUDA_glutton_max_stack & p_stack)
+    CUDA_glutton_stack_XML_converter::dump(const CUDA_glutton_max_stack & p_stack)
     {
         XMLNode l_root_node = XMLNode::createXMLTopNode("CUDA_glutton_stack");
         dump_size(static_cast<uint32_t>(p_stack.get_size()), l_root_node);
@@ -238,9 +238,9 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     uint32_t
-    CUDA_glutton_stack_dumper::extract_attribute(const std::string & p_name
-                                                ,const XMLNode & p_node
-                                                )
+    CUDA_glutton_stack_XML_converter::extract_attribute(const std::string & p_name
+                                                       ,const XMLNode & p_node
+                                                       )
     {
         XMLCSTR l_value_char_ptr = p_node.getAttribute(p_name.c_str());
         if(nullptr == l_value_char_ptr)
@@ -253,10 +253,10 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::check(const std::string & p_attribute_name
-                                    ,uint32_t p_value
-                                    ,const XMLNode & p_node
-                                    )
+    CUDA_glutton_stack_XML_converter::check(const std::string & p_attribute_name
+                                           ,uint32_t p_value
+                                           ,const XMLNode & p_node
+                                           )
     {
         uint32_t l_value = extract_attribute(p_attribute_name, p_node);
         if (l_value != p_value)
@@ -267,9 +267,9 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_position_infos(const CUDA_glutton_max_stack & p_stack
-                                                  ,XMLNode & p_node
-                                                  )
+    CUDA_glutton_stack_XML_converter::dump_position_infos(const CUDA_glutton_max_stack & p_stack
+                                                         ,XMLNode & p_node
+                                                         )
     {
         XMLNode l_node = p_node.addChild("position_infos");
         for(uint32_t l_index = 0; l_index < p_stack.get_size(); ++l_index)
@@ -280,9 +280,9 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::load_position_infos(CUDA_glutton_max_stack & p_stack
-                                                  ,const XMLNode & p_node
-                                                  )
+    CUDA_glutton_stack_XML_converter::load_position_infos(CUDA_glutton_max_stack & p_stack
+                                                         ,const XMLNode & p_node
+                                                         )
     {
         XMLNode l_node = p_node.getChildNode("position_infos");
         if (l_node.isEmpty())
@@ -298,10 +298,10 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_level(uint32_t p_level
-                                         ,const CUDA_glutton_max_stack & p_stack
-                                         ,XMLNode & p_node
-                                         )
+    CUDA_glutton_stack_XML_converter::dump_level(uint32_t p_level
+                                                ,const CUDA_glutton_max_stack & p_stack
+                                                ,XMLNode & p_node
+                                                )
     {
         XMLNode l_node = p_node.addChild("level");
         l_node.addAttribute("index", std::to_string(p_level).c_str());
@@ -313,10 +313,10 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::load_level(uint32_t p_level
-                                         ,CUDA_glutton_max_stack & p_stack
-                                         ,const XMLNode & p_node
-                                         )
+    CUDA_glutton_stack_XML_converter::load_level(uint32_t p_level
+                                                ,CUDA_glutton_max_stack & p_stack
+                                                ,const XMLNode & p_node
+                                                )
     {
         XMLNode l_node = p_node.getChildNode("level", p_level);
         if (l_node.isEmpty())
@@ -332,10 +332,10 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump(uint32_t p_index
-                                   ,const CUDA_piece_position_info2 & p_position_info
-                                   ,XMLNode & p_node
-                                   )
+    CUDA_glutton_stack_XML_converter::dump(uint32_t p_index
+                                          ,const CUDA_piece_position_info2 & p_position_info
+                                          ,XMLNode & p_node
+                                          )
     {
         XMLNode l_node = p_node.addChild("position_info");
         l_node.addAttribute("index", std::to_string(p_index).c_str());
@@ -351,10 +351,10 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::load(uint32_t p_index
-                                   ,CUDA_piece_position_info2 & p_position_info
-                                   ,const XMLNode & p_node
-                                   )
+    CUDA_glutton_stack_XML_converter::load(uint32_t p_index
+                                          ,CUDA_piece_position_info2 & p_position_info
+                                          ,const XMLNode & p_node
+                                          )
     {
         XMLNode l_node = p_node.getChildNode("position_info", p_index);
         if (l_node.isEmpty())
@@ -384,76 +384,76 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_size(uint32_t p_size
-                                        ,XMLNode & p_node
-                                        )
+    CUDA_glutton_stack_XML_converter::dump_size(uint32_t p_size
+                                               ,XMLNode & p_node
+                                               )
     {
         p_node.addAttribute("size", std::to_string(p_size).c_str());
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_level(uint32_t p_level
-                                         ,XMLNode & p_node
-                                         )
+    CUDA_glutton_stack_XML_converter::dump_level(uint32_t p_level
+                                                ,XMLNode & p_node
+                                                )
     {
         p_node.addAttribute("level", std::to_string(p_level).c_str());
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_nb_pieces(uint32_t p_nb_pieces
-                                             ,XMLNode & p_node
-                                             )
+    CUDA_glutton_stack_XML_converter::dump_nb_pieces(uint32_t p_nb_pieces
+                                                    ,XMLNode & p_node
+                                                    )
     {
         p_node.addAttribute("nb_pieces", std::to_string(p_nb_pieces).c_str());
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_info_to_position(uint32_t p_size
-                                                    ,const my_cuda::CUDA_memory_managed_array<position_index_t> & p_info_to_position
-                                                    ,XMLNode & p_node
-                                                    )
+    CUDA_glutton_stack_XML_converter::dump_info_to_position(uint32_t p_size
+                                                           ,const my_cuda::CUDA_memory_managed_array<position_index_t> & p_info_to_position
+                                                           ,XMLNode & p_node
+                                                           )
     {
         dump_array("info_to_position", p_size, p_info_to_position, p_node);
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_position_to_info(uint32_t p_size
-                                                    ,const my_cuda::CUDA_memory_managed_array<info_index_t> & p_position_to_info
-                                                    ,XMLNode & p_node
-                                                    )
+    CUDA_glutton_stack_XML_converter::dump_position_to_info(uint32_t p_size
+                                                           ,const my_cuda::CUDA_memory_managed_array<info_index_t> & p_position_to_info
+                                                           ,XMLNode & p_node
+                                                           )
     {
         dump_array("position_to_info", p_size, p_position_to_info, p_node);
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_played_info(uint32_t p_size
-                                               ,const my_cuda::CUDA_memory_managed_array<CUDA_glutton_max_stack::played_info_t> & p_played_info
-                                               ,XMLNode & p_node
-                                               )
+    CUDA_glutton_stack_XML_converter::dump_played_info(uint32_t p_size
+                                                      ,const my_cuda::CUDA_memory_managed_array<CUDA_glutton_max_stack::played_info_t> & p_played_info
+                                                      ,XMLNode & p_node
+                                                      )
     {
         dump_array("played_info", p_size, p_played_info, p_node);
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_max_played_info(uint32_t p_size
-                                                   ,const my_cuda::CUDA_memory_managed_array<CUDA_glutton_max_stack::played_info_t> & p_played_info
-                                                   ,XMLNode & p_node
-                                                   )
+    CUDA_glutton_stack_XML_converter::dump_max_played_info(uint32_t p_size
+                                                          ,const my_cuda::CUDA_memory_managed_array<CUDA_glutton_max_stack::played_info_t> & p_played_info
+                                                          ,XMLNode & p_node
+                                                          )
     {
         dump_array("max_played_info", p_size, p_played_info, p_node);
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_glutton_stack_dumper::dump_available_pieces(const uint32_t (&p_available_pieces)[8]
-                                                    ,XMLNode & p_node
-                                                    )
+    CUDA_glutton_stack_XML_converter::dump_available_pieces(const uint32_t (&p_available_pieces)[8]
+                                                           ,XMLNode & p_node
+                                                           )
     {
         dump_array("available_pieces", 8, p_available_pieces, p_node);
     }
@@ -461,11 +461,11 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     template<typename T>
     void
-    CUDA_glutton_stack_dumper::dump_array(const std::string & p_name
-                                         ,uint32_t p_size
-                                         ,const T & p_info_to_position
-                                         ,XMLNode & p_node
-                                         )
+    CUDA_glutton_stack_XML_converter::dump_array(const std::string & p_name
+                                                ,uint32_t p_size
+                                                ,const T & p_info_to_position
+                                                ,XMLNode & p_node
+                                                )
     {
         XMLNode l_array_node = p_node.addChild(p_name.c_str());
         l_array_node.addAttribute("size", std::to_string(p_size).c_str());
@@ -482,11 +482,11 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     template<typename T>
     void
-    CUDA_glutton_stack_dumper::load_array(const std::string & p_name
-                                         ,uint32_t p_size
-                                         ,T & p_info_to_position
-                                         ,const XMLNode & p_node
-                                         )
+    CUDA_glutton_stack_XML_converter::load_array(const std::string & p_name
+                                                ,uint32_t p_size
+                                                ,T & p_info_to_position
+                                                ,const XMLNode & p_node
+                                                )
     {
         const XMLNode l_array_node = p_node.getChildNode(p_name.c_str());
         if(l_array_node.isEmpty())
@@ -513,5 +513,5 @@ namespace edge_matching_puzzle
         }
     }
 }
-#endif //EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_STACK_DUMPER_H
+#endif //EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_STACK_XML_CONVERTER_H
 // EOF
