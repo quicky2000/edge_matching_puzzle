@@ -246,7 +246,7 @@ else()
     target_compile_definitions(${PROJECT_NAME} PRIVATE -D$<UPPER_CASE:${PROJECT_NAME}>_SELF_TEST)
     message(Linked librarries ${LINKED_LIBRARIES})
     target_link_libraries(${PROJECT_NAME} ${LINKED_LIBRARIES})
-    target_compile_options(${PROJECT_NAME} PUBLIC -Wall -ansi $<$<CONFIG:Debug>:-O0> ${MY_CPP_FLAGS})
+    target_compile_options(${PROJECT_NAME} PUBLIC -Wall $<$<CONFIG:Debug>:-O0> ${MY_CPP_FLAGS})
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${MY_INCLUDE_DIRECTORIES})
