@@ -1547,7 +1547,7 @@ namespace edge_matching_puzzle
                 my_cuda::print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
 #endif // VERBOSITY_LEVEL >= 6
                 p_stack.get_next_level_position_info(l_info_index).set_word(threadIdx.x , l_result);
-                if(__any_sync(0xFFFFFFFFu, l_result))
+                if(!__any_sync(0xFFFFFFFFu, l_result))
                 {
                     my_cuda::print_single(2, "INVALID Best");
                     my_cuda::print_single(1, "SHOULD NOT BE REACHED 8");
