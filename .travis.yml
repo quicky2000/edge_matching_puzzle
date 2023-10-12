@@ -2,6 +2,10 @@ matrix:
   include:
     - os: linux
       sudo: required
+      dist: jammy
+      compiler: gcc
+    - os: linux
+      sudo: required
       dist: focal
       compiler: gcc
       env: DISTRIB_NAME=focal
@@ -11,7 +15,7 @@ matrix:
       compiler: gcc
       env: DISTRIB_NAME=bionic
     - os: osx
-      osx_image: xcode12.4
+      osx_image: xcode14.2
       env: DISTRIB_NAME=macos
 
 language: cpp
