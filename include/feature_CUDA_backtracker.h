@@ -23,6 +23,7 @@
 #include "emp_strategy_generator.h"
 #include "emp_variable_generator.h"
 #include "emp_FSM_situation.h"
+#include <memory>
 
 namespace edge_matching_puzzle
 {

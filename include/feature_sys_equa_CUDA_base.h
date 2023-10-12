@@ -12,6 +12,7 @@
 #include "emp_situation.h"
 #include "common.h"
 #include <map>
+#include <memory>
 
 namespace edge_matching_puzzle
 {

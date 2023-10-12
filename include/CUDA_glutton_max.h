@@ -30,6 +30,7 @@
 #include "situation_string_formatter.h"
 #include "quicky_exception.h"
 #include <functional>
+#include <memory>
 #ifdef ENABLE_CUDA_CODE
 #include <nvfunctional>
 #else // ENABLE_CUDA_CODE
