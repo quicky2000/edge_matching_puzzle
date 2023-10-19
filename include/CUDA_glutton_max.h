@@ -638,8 +638,8 @@ namespace edge_matching_puzzle
                               ,std::function<bool(info_index_t)> p_do_apply
                               ,std::function<bool(const pseudo_CUDA_thread_variable<uint32_t> &)> p_is_position_invalid
                               ,std::function<void(info_index_t
-                              ,const pseudo_CUDA_thread_variable<uint32_t> &
-                              ,const pseudo_CUDA_thread_variable<uint32_t> &
+                                                 ,const pseudo_CUDA_thread_variable<uint32_t> &
+                                                 ,const pseudo_CUDA_thread_variable<uint32_t> &
                                                  )
                                             > p_treat_simple_mask
 #endif // ENABLE_CUDA_CODE
@@ -656,7 +656,7 @@ namespace edge_matching_puzzle
                     uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
                     uint32_t l_result_capability = l_capability & p_mask_to_apply;
 #if VERBOSITY_LEVEL >= 6
-                    my_cuda::print_mask(1, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, p_mask_to_apply, l_result_capability);
+                    my_cuda::print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, p_mask_to_apply, l_result_capability);
 #endif // VERBOSITY_LEVEL >= 6
 #else // ENABLE_CUDA_CODE
                     pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
@@ -878,13 +878,13 @@ namespace edge_matching_puzzle
                               ,uint32_t p_bit_index
                               )
         {
+#if VERBOSITY_LEVEL >= 7
+            my_cuda::print_single(6, "-> Info %" PRIu32 " Word %" PRIu32 " bit %" PRIu32, static_cast<uint32_t>(p_info_index), p_elected_thread, p_bit_index);
+#endif // VERBOSITY_LEVEL >= 7
 #ifdef ENABLE_CUDA_CODE
             if(threadIdx.x == p_elected_thread)
 #endif // ENABLE_CUDA_CODE
             {
-#if VERBOSITY_LEVEL >= 7
-                my_cuda::print_single(6, "-> Info %" PRIu32 " Word %" PRIu32 " bit %" PRIu32, static_cast<uint32_t>(p_info_index), p_elected_thread, p_bit_index);
-#endif // VERBOSITY_LEVEL >= 7
                 p_stack.get_position_info(p_info_index).clear_bit(p_elected_thread, p_bit_index);
             }
         }
