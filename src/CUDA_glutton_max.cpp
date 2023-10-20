@@ -182,7 +182,8 @@ namespace edge_matching_puzzle
         l_strategy_generator->generate();
         CUDA_glutton_max_naive l_glutton_max{p_piece_db, p_info, l_strategy_generator};
 
-        //l_glutton_max.run();
+        l_glutton_max.run();
+        return ;
 
         switch(p_info.get_nb_pieces())
         {

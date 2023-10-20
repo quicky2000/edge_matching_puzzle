@@ -38,7 +38,7 @@
 #include <algorithm>
 #endif // ENABLE_CUDA_CODE
 #define LOG_EXECUTION
-#define VERBOSITY_LEVEL 7
+#define VERBOSITY_LEVEL 0
 
 #include "CUDA_print.h"
 

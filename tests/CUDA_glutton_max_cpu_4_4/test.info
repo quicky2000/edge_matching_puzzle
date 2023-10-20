@@ -1,4 +1,0 @@
-exe_file:edge_matching_puzzle
-args:<test_location>/../../doc/example/4_4.txt <test_location>/../../doc/example/ressources CUDA_glutton_max --enable_gui=0
-expected_stdout_string:Solution : 16S12E 2N 1W15W 7E11W 5S 8S 6W10N 3W13N14N 9E 4W
-#EOF

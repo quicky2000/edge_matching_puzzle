@@ -1,0 +1,7 @@
+exe_file:edge_matching_puzzle
+args:<test_location>/../../doc/example/5_5.txt <test_location>/../../doc/example/ressources CUDA_glutton_max --enable_gui=false
+timeout:600
+expected_stdout_string:Launch kernels
+expected_stdout_string:Situation with stack played info:
+expected_stdout_string:21W 4N 6W16W25E10S 7W14E12N24E 3E17S 8W19S11S15S18N 9S13S22E 1E20W 2S23N 5S
+#EOF
