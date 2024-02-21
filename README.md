@@ -36,3 +36,10 @@ With CMake and CUDA 11.1 nvcc is not in default path so specify location of nvcc
 ```
 cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_COMPILER=/usr/local/cuda-11.1/bin/nvcc $QUICKY_REPOSITORY/edge_matching_puzzle/
 ```
+
+On OpenSuse Tumbleweed with CUDA 12.3 and gcc-12.3
+
+```
+cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CUDA_COMPILER=/usr/local/cuda-12.3/bin/nvcc -DCMAKE_CXX_COMPILER=/usr/bin/g++-12 -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 -DCMAKE_CUDA_ARCHITECTURES=75  $QUICKY_REPOSITORY/edge_matching_puzzle/
+
+```
