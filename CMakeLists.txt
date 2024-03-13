@@ -19,6 +19,7 @@ set(MY_SOURCE_FILES
     include/CUDA_color_constraints.h
     include/CUDA_glutton_max.h
     include/CUDA_glutton_max_stack.h
+    include/CUDA_glutton_wide.h
     include/CUDA_piece_position_info.h
     include/CUDA_piece_position_info2.h
     include/CUDA_piece_position_info_base.h
@@ -77,6 +78,7 @@ set(MY_SOURCE_FILES
     include/feature_sys_equa_CUDA_base.h
     include/feature_CUDA_backtracker.h
     include/feature_CUDA_glutton_max.h
+    include/feature_CUDA_glutton_wide.h
     include/light_border_pieces_db.h
     include/octet_array.h
     include/piece_position_info.h
@@ -94,6 +96,7 @@ set(MY_SOURCE_FILES
     include/VTK_table_based_dumper.h
     src/border_backtracker.cpp
     src/CUDA_glutton_max.cpp
+    src/CUDA_glutton_wide.cpp
     src/emp_FSM.cpp
     src/emp_FSM_motor.cpp
     src/emp_FSM_situation_analyzer.cpp
@@ -120,6 +123,7 @@ if(${ENABLE_CUDA_CODE})
     set (MY_SOURCE_FILES ${MY_SOURCE_FILES}
          src/CUDA_backtracker.cu
          src/CUDA_glutton_max.cu
+         src/CUDA_glutton_wide.cu
          src/CUDA_piece_position_info_base.cu
         )
 else(${ENABLE_CUDA_CODE})

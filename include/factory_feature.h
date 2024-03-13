@@ -33,6 +33,7 @@
 #include "feature_system_equation.h"
 #include "feature_CUDA_backtracker.h"
 #include "feature_CUDA_glutton_max.h"
+#include "feature_CUDA_glutton_wide.h"
 #include "feature_situation_profile.h"
 #include "feature_profile.h"
 #include "emp_strategy.h"
@@ -145,6 +146,10 @@ namespace edge_matching_puzzle
         else if("CUDA_glutton_max" == p_feature_name)
         {
             l_feature = new feature_CUDA_glutton_max(p_piece_db, p_info);
+        }
+        else if("CUDA_glutton_wide" == p_feature_name)
+        {
+            l_feature = new feature_CUDA_glutton_wide(p_piece_db, p_info);
         }
         else if("situation_profile" == p_feature_name)
         {
