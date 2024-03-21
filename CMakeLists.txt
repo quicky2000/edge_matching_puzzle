@@ -17,6 +17,7 @@ set(MY_SOURCE_FILES
     include/border_exploration.h
     include/CUDA_backtracker_stack.h
     include/CUDA_color_constraints.h
+    include/CUDA_common_glutton.h
     include/CUDA_glutton_max.h
     include/CUDA_glutton_max_stack.h
     include/CUDA_glutton_wide.h
@@ -122,6 +123,7 @@ if(${ENABLE_CUDA_CODE})
     set (MY_CPP_FLAGS -DENABLE_CUDA_CODE)
     set (MY_SOURCE_FILES ${MY_SOURCE_FILES}
          src/CUDA_backtracker.cu
+         src/CUDA_common_glutton.cu
          src/CUDA_glutton_max.cu
          src/CUDA_glutton_wide.cu
          src/CUDA_piece_position_info_base.cu

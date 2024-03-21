@@ -19,27 +19,25 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_WIDE_H
 #define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_WIDE_H
 
+#include "CUDA_common_glutton.h"
+
 /**
  * This file declare functions that will be implemented for
  * CUDA: performance. Corresponding implementation is in CUDA_glutton_wide.cu
  * CPU: alternative implementation to debug algorithm. Corresponding implementation is in CUDA_glutton_wide.cpp
  */
 
-#include "emp_piece_db.h"
-#include "emp_FSM_info.h"
-
 namespace edge_matching_puzzle
 {
-    class CUDA_glutton_wide
+    class CUDA_glutton_wide: public CUDA_common_glutton
     {
     public:
 
         inline
         CUDA_glutton_wide(const emp_piece_db & p_piece_db
                          ,const emp_FSM_info & p_info
-        )
-                :m_piece_db{p_piece_db}
-                ,m_info(p_info)
+                         )
+        : CUDA_common_glutton(p_piece_db, p_info)
         {
 
         }
@@ -48,10 +46,6 @@ namespace edge_matching_puzzle
         run();
 
     private:
-
-        const emp_piece_db & m_piece_db;
-        const emp_FSM_info & m_info;
-
     };
 
 }

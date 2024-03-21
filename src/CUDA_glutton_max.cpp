@@ -36,13 +36,13 @@ namespace edge_matching_puzzle
 
     void CUDA_glutton_max::run()
     {
-        prepare_constants(m_piece_db, m_info);
-        std::unique_ptr<CUDA_color_constraints> l_color_constraints = prepare_color_constraints(m_piece_db, m_info);
+        prepare_constants();
+        std::unique_ptr<CUDA_color_constraints> l_color_constraints = prepare_color_constraints();
         emp_situation l_start_situation;
-        std::unique_ptr<CUDA_glutton_max_stack> l_stack = prepare_stack(m_piece_db, m_info, l_start_situation);
+        std::unique_ptr<CUDA_glutton_max_stack> l_stack = prepare_stack(get_piece_db(), get_info(), l_start_situation);
         std::cout << "Launch kernels" << std::endl;
         kernel(l_stack.get(), 1, *l_color_constraints);
-        display_result(*l_stack, l_start_situation, m_info);
+        display_result(*l_stack, l_start_situation, get_info());
     }
 
     class CUDA_glutton_max_naive: public CUDA_glutton_max, public feature_sys_equa_CUDA_base
@@ -59,6 +59,8 @@ namespace edge_matching_puzzle
         {
 
         }
+
+        using feature_sys_equa_CUDA_base::get_info;
 
         template<unsigned int NB_PIECES>
         void template_run();
