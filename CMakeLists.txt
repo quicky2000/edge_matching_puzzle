@@ -18,6 +18,7 @@ set(MY_SOURCE_FILES
     include/CUDA_backtracker_stack.h
     include/CUDA_color_constraints.h
     include/CUDA_common_glutton.h
+    include/CUDA_common_struct_glutton.h
     include/CUDA_glutton_max.h
     include/CUDA_glutton_max_stack.h
     include/CUDA_glutton_wide.h
