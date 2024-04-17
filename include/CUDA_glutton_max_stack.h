@@ -198,38 +198,6 @@ namespace edge_matching_puzzle
         __device__
         void clear_piece_info();
 
-        typedef uint32_t played_info_t;
-
-        /**
-         * Extract position index from played info
-         * @param p_played_info
-         * @return position index
-         */
-        static inline
-        __host__ __device__
-        position_index_t
-        decode_position_index(played_info_t p_played_info);
-
-        /**
-         * Extract piece index from played info
-         * @param p_played_info
-         * @return piece index
-         */
-        static inline
-        __host__ __device__
-        unsigned int
-        decode_piece_index(played_info_t p_played_info);
-
-        /**
-         * Extract orientation index from played info
-         * @param p_played_info
-         * @return  orientation index
-         */
-        static inline
-        __host__ __device__
-        unsigned int
-        decode_orientation_index(played_info_t p_played_info);
-
       private:
 
         /**
@@ -278,23 +246,6 @@ namespace edge_matching_puzzle
                                     ,position_index_t p_position_index1
                                     ,position_index_t p_position_index2
                                     );
-
-        /**
-         * Encode information of piece position/id/orientation
-         * @param p_position_index
-         * @param p_piece_index
-         * @param p_orientation_index
-         * @return encoded info
-         */
-        static inline
-        __device__
-        played_info_t
-        generate_played_info(position_index_t p_position_index
-                            ,unsigned int p_piece_index
-                            ,unsigned int p_orientation_index
-                            );
-
-
 
         uint32_t m_size;
 
@@ -661,44 +612,6 @@ namespace edge_matching_puzzle
             }
         }
 #endif // ENABLE_CUDA_CODE
-    }
-
-    //-------------------------------------------------------------------------
-    __device__
-    CUDA_glutton_max_stack::played_info_t
-    CUDA_glutton_max_stack::generate_played_info(position_index_t p_position_index,
-                                                 unsigned int p_piece_index,
-                                                 unsigned int p_orientation_index
-                                                )
-    {
-        assert(p_position_index < 256);
-        assert(p_piece_index < 256);
-        assert(p_orientation_index < 4);
-        return (p_orientation_index << 16u) | (p_piece_index << 8u) | static_cast<uint32_t>(p_position_index);
-    }
-
-    //-------------------------------------------------------------------------
-    __host__ __device__
-    position_index_t
-    CUDA_glutton_max_stack::decode_position_index(CUDA_glutton_max_stack::played_info_t p_played_info)
-    {
-        return position_index_t(p_played_info & 0xFFu);
-    }
-
-    //-------------------------------------------------------------------------
-    __host__ __device__
-    unsigned int
-    CUDA_glutton_max_stack::decode_piece_index(CUDA_glutton_max_stack::played_info_t p_played_info)
-    {
-        return (p_played_info >> 8u) & 0xFFu;
-    }
-
-    //-------------------------------------------------------------------------
-    __host__ __device__
-    unsigned int
-    CUDA_glutton_max_stack::decode_orientation_index(CUDA_glutton_max_stack::played_info_t p_played_info)
-    {
-        return p_played_info >> 16u;
     }
 
     //-------------------------------------------------------------------------
