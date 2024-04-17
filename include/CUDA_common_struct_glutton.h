@@ -310,6 +310,7 @@ namespace edge_matching_puzzle
     ,m_info_size{p_info_size}
 #endif
     {
+        assert(p_puzzle_size <= 256);
     }
 
     //-------------------------------------------------------------------------
@@ -456,6 +457,11 @@ namespace edge_matching_puzzle
     bool
     CUDA_common_struct_glutton::is_piece_available(unsigned int p_piece_index) const
     {
+        // Do not check with m_puzzle_size as array is designed to support up
+        // to 256 piece. As CUDA implementation rely on warp, for small puzzle
+        // it is possible that some threads check for piece whose id is greater
+        // than puzzle size. As it is initialised with 0 pieces whose index is
+        // greater than puzzle size will be unavailable
         assert(p_piece_index < 256);
         return m_available_pieces[compute_word_index(p_piece_index)] & (1u << compute_bit_index(p_piece_index));
     }
@@ -467,6 +473,9 @@ namespace edge_matching_puzzle
     {
         assert(p_piece_index < 256);
         assert(!is_piece_available(p_piece_index));
+#ifdef STRICT_CHECKING
+        assert(p_piece_index < m_puzzle_size);
+#endif // STRICT_CHECKING
         m_available_pieces[compute_word_index(p_piece_index)] |= (1u << compute_bit_index(p_piece_index));
     }
 
@@ -477,6 +486,9 @@ namespace edge_matching_puzzle
     {
         assert(p_piece_index < 256);
         assert(is_piece_available(p_piece_index));
+#ifdef STRICT_CHECKING
+        assert(p_piece_index < m_puzzle_size);
+#endif // STRICT_CHECKING
         m_available_pieces[compute_word_index(p_piece_index)] &= ~(1u << compute_bit_index(p_piece_index));
     }
 
