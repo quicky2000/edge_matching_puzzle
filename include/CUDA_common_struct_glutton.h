@@ -27,6 +27,8 @@
 #include <limits>
 #include <cinttypes>
 
+#define STRICT_CHECKING
+
 namespace edge_matching_puzzle
 {
     class CUDA_common_struct_glutton
@@ -189,6 +191,14 @@ namespace edge_matching_puzzle
         );
 
     protected:
+
+#ifdef STRICT_CHECKING
+        [[nodiscard]]
+        inline
+        uint32_t
+        get_nb_played_info() const;
+#endif // STRICT_CHECKING
+
         [[nodiscard]]
         inline
         __device__ __host__
@@ -272,7 +282,6 @@ namespace edge_matching_puzzle
          * Position info for each free position
          */
         CUDA_piece_position_info2 * m_position_infos;
-#define STRICT_CHECKING
 #ifdef STRICT_CHECKING
         uint32_t m_nb_info_index;
 
@@ -308,6 +317,15 @@ namespace edge_matching_puzzle
     {
         delete[] m_position_infos;
     }
+
+#ifdef STRICT_CHECKING
+    //-------------------------------------------------------------------------
+    uint32_t
+    CUDA_common_struct_glutton::get_nb_played_info() const
+    {
+        return m_nb_played_info;
+    }
+#endif
 
     //-------------------------------------------------------------------------
     __device__ __host__
