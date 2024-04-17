@@ -211,6 +211,14 @@ namespace edge_matching_puzzle
         void
         set_position_index(info_index_t p_info_index, position_index_t p_position_index);
 
+        //-------------------------------------------------------------------------
+        [[nodiscard]]
+        inline
+        __device__ __host__
+        bool
+        _is_position_free(position_index_t p_position_index) const;
+
+
         inline
         __device__ __host__
         void
@@ -371,6 +379,14 @@ namespace edge_matching_puzzle
         assert(p_info_index < m_nb_info_index);
 #endif
         m_info_index_to_position_index[static_cast<uint32_t>(p_info_index)] = p_position_index;
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    bool
+    CUDA_common_struct_glutton::_is_position_free(position_index_t p_position_index) const
+    {
+        return m_position_index_to_info_index[static_cast<uint32_t>(p_position_index)] != std::numeric_limits<uint32_t>::max();
     }
 
     //-------------------------------------------------------------------------
