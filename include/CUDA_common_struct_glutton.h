@@ -186,8 +186,8 @@ namespace edge_matching_puzzle
         __device__
         played_info_t
         generate_played_info(position_index_t p_position_index
-                ,unsigned int p_piece_index
-                ,unsigned int p_orientation_index
+                            ,unsigned int p_piece_index
+                            ,unsigned int p_orientation_index
         );
 
     protected:
@@ -197,6 +197,22 @@ namespace edge_matching_puzzle
         inline
         uint32_t
         get_nb_played_info() const;
+
+        [[nodiscard]]
+        inline
+        uint32_t
+        get_nb_info_index() const;
+
+        [[nodiscard]]
+        inline
+        uint32_t
+        get_puzzle_size() const;
+
+        [[nodiscard]]
+        inline
+        uint32_t
+        get_info_size() const;
+
 #endif // STRICT_CHECKING
 
         [[nodiscard]]
@@ -210,6 +226,11 @@ namespace edge_matching_puzzle
         __device__ __host__
         CUDA_piece_position_info2 &
         get_position_info(uint32_t p_info_index);
+
+        inline
+        __device__ __host__
+        void
+        set_position_info(uint32_t p_info_index, const CUDA_piece_position_info2 & p_info);
 
         /**
          * Store which position corresponds to info stored at index
@@ -234,6 +255,25 @@ namespace edge_matching_puzzle
         void
         set_played_info(uint32_t p_index, played_info_t p_played_info);
 
+        /**
+         * Method only used to perform raw operations such as copy
+         * @param p_index index of word
+         * @return word value
+         */
+        [[nodiscard]]
+        inline
+        uint32_t
+        get_raw_available_piece(uint32_t p_index);
+
+        /**
+         * Method only used to perform raw operations such as copy
+         * @param p_index index of word
+         * @param p_value new word value
+         */
+        inline
+        void
+        set_raw_available_piece(uint32_t p_index, uint32_t p_value);
+
     private:
 
         /**
@@ -255,8 +295,6 @@ namespace edge_matching_puzzle
         inline static
         __device__ __host__
         uint32_t compute_bit_index(uint32_t p_index);
-
-
 
         /**
          * Store correspondence between position index and info index
@@ -326,6 +364,25 @@ namespace edge_matching_puzzle
     {
         return m_nb_played_info;
     }
+
+    uint32_t
+    CUDA_common_struct_glutton::get_nb_info_index() const
+    {
+        return m_nb_info_index;
+    }
+
+    uint32_t
+    CUDA_common_struct_glutton::get_puzzle_size() const
+    {
+        return m_puzzle_size;
+    }
+
+    uint32_t
+    CUDA_common_struct_glutton::get_info_size() const
+    {
+        return m_info_size;
+    }
+
 #endif
 
     //-------------------------------------------------------------------------
@@ -348,6 +405,17 @@ namespace edge_matching_puzzle
         assert(p_info_index < m_info_size);
 #endif
         return m_position_infos[p_info_index];
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    void
+    CUDA_common_struct_glutton::set_position_info(uint32_t p_info_index, const CUDA_piece_position_info2 & p_info)
+    {
+#ifdef STRICT_CHECKING
+        assert(p_info_index < m_info_size);
+#endif
+        m_position_infos[p_info_index] = p_info;
     }
 
     //-------------------------------------------------------------------------
@@ -493,6 +561,23 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    uint32_t
+    CUDA_common_struct_glutton::get_raw_available_piece(uint32_t p_index)
+    {
+        assert(p_index < 8);
+        return m_available_pieces[p_index];
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_common_struct_glutton::set_raw_available_piece(uint32_t p_index, uint32_t p_value)
+    {
+        assert(p_index < 8);
+        m_available_pieces[p_index] = p_value;
+    }
+
+
+    //-------------------------------------------------------------------------
     __device__ __host__
     uint32_t
     CUDA_common_struct_glutton::compute_word_index(uint32_t p_index)
@@ -547,7 +632,6 @@ namespace edge_matching_puzzle
     {
         return p_played_info >> 16u;
     }
-
 
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_COMMON_STRUCT_GLUTTON_H
