@@ -21,6 +21,7 @@ set(MY_SOURCE_FILES
     include/CUDA_common_struct_glutton.h
     include/CUDA_glutton_max.h
     include/CUDA_glutton_max_stack.h
+    include/CUDA_glutton_situation.h
     include/CUDA_glutton_wide.h
     include/CUDA_piece_position_info.h
     include/CUDA_piece_position_info2.h

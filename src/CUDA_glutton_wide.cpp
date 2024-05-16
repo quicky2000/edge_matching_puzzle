@@ -28,6 +28,10 @@ namespace edge_matching_puzzle
     void
     CUDA_glutton_wide::run()
     {
+        prepare_constants();
+        std::unique_ptr<CUDA_color_constraints> l_color_constraints = prepare_color_constraints();
+        emp_situation l_start_situation;
+        auto l_situation = prepare_situation(this->get_piece_db(), this->get_info(), l_start_situation);
     }
 
     void launch_CUDA_glutton_wide(const emp_piece_db & p_piece_db

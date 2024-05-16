@@ -20,6 +20,8 @@
 #define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_WIDE_H
 
 #include "CUDA_common_glutton.h"
+#include "CUDA_glutton_situation.h"
+#include "emp_situation.h"
 
 /**
  * This file declare functions that will be implemented for
@@ -44,6 +46,30 @@ namespace edge_matching_puzzle
 
         void
         run();
+
+        inline
+        void
+        play(const CUDA_glutton_situation & p_start_situation
+            ,unsigned int p_x
+            ,unsigned int p_y
+            ,const emp_types::t_oriented_piece & p_piece
+            ,CUDA_glutton_situation & p_end_situation
+        )
+        {
+            //p_start_situation.play_to(static_cast<position_index_t>(get_info().get_position_index(p_x, p_y)))
+        }
+
+        [[nodiscard]]
+        inline static
+        std::unique_ptr<CUDA_glutton_situation>
+        prepare_situation(const emp_piece_db & p_piece_db
+                         ,const emp_FSM_info & p_info
+                         ,emp_situation & p_start_situation
+        )
+        {
+            return std::make_unique<CUDA_glutton_situation>(0, p_info.get_nb_pieces());
+        }
+
 
     private:
     };
