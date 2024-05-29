@@ -67,7 +67,11 @@ namespace edge_matching_puzzle
                          ,emp_situation & p_start_situation
         )
         {
+#if __cplusplus >= 201402
             return std::make_unique<CUDA_glutton_situation>(0, p_info.get_nb_pieces());
+#else // __cplusplus
+            return std::unique_ptr<CUDA_glutton_situation>(new CUDA_glutton_situation(0, p_info.get_nb_pieces()));
+#endif // __cplusplus
         }
 
 
