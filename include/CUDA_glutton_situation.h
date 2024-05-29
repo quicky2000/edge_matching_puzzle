@@ -23,6 +23,14 @@
 
 namespace edge_matching_puzzle
 {
+    /**
+     * Class representing an EMP situation used by CUDA_glutton_wide algorithm
+     * It relies on CUDA_common_struct_glutton class to real store positions
+     * info, positions infos computed from played step + shadowed steps due
+     * to parallel computing
+     * The evaluation of score is performed on additional position info member
+     * computed only from played step
+     */
     class CUDA_glutton_situation: public CUDA_common_struct_glutton
     {
     public:
@@ -31,6 +39,9 @@ namespace edge_matching_puzzle
         CUDA_glutton_situation(uint32_t p_level
                               ,uint32_t p_puzzle_size
                               );
+
+        inline
+        ~CUDA_glutton_situation();
 
 #ifdef STRICT_CHECKING
         [[nodiscard]]
@@ -48,6 +59,23 @@ namespace edge_matching_puzzle
 
     private:
 
+        [[nodiscard]]
+        inline
+        __device__ __host__
+        const CUDA_piece_position_info2 &
+        get_theoric_position_info(uint32_t p_info_index) const;
+
+        inline
+        __device__ __host__
+        void
+        set_theoric_position_info(uint32_t p_info_index, const CUDA_piece_position_info2 & p_info);
+
+        /**
+         * Position info for each free position but they are computed only from
+         * played step and do not take in account the shadowed steps
+         */
+        CUDA_piece_position_info2 * m_theoric_position_infos;
+
     };
 
     //-------------------------------------------------------------------------
@@ -55,7 +83,14 @@ namespace edge_matching_puzzle
                                                   ,uint32_t p_puzzle_size
                                                   )
     :CUDA_common_struct_glutton(p_puzzle_size - p_level, p_level, p_puzzle_size, p_puzzle_size - p_level)
+    ,m_theoric_position_infos{new CUDA_piece_position_info2[p_puzzle_size - p_level]}
     {
+    }
+
+    //-------------------------------------------------------------------------
+    CUDA_glutton_situation::~CUDA_glutton_situation()
+    {
+        delete[] m_theoric_position_infos;
     }
 
     //-------------------------------------------------------------------------
@@ -74,6 +109,29 @@ namespace edge_matching_puzzle
     {
         return CUDA_common_struct_glutton::_is_position_free(p_position_index);
     }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    const CUDA_piece_position_info2 &
+    CUDA_glutton_situation::get_theoric_position_info(uint32_t p_info_index) const
+    {
+#ifdef STRICT_CHECKING
+        assert(p_info_index < this->get_info_size());
+#endif // STRICT_CHECKING
+        return m_theoric_position_infos[p_info_index];
+    }
+
+    //-------------------------------------------------------------------------
+    __device__ __host__
+    void
+    CUDA_glutton_situation::set_theoric_position_info(uint32_t p_info_index, const CUDA_piece_position_info2 & p_info)
+    {
+#ifdef STRICT_CHECKING
+        assert(p_info_index < this->get_info_size());
+#endif // STRICT_CHECKING
+        m_theoric_position_infos[p_info_index] = p_info;
+    }
+
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_SITUATION_H
 //EOF
