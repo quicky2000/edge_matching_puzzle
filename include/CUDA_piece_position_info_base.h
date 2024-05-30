@@ -96,6 +96,18 @@ namespace edge_matching_puzzle
          void CUDA_and(const CUDA_piece_position_info_base & p_a
                       ,const CUDA_piece_position_info_base & p_b
                       );
+
+         /**
+          * AND operator to be used by CUDA threads to use the result in local variable and not in memory
+          * @param p_a the mask to apply
+          * @return result of AND between internal info and provided mask
+          */
+         [[nodiscard]]
+         inline
+         __device__
+         uint32_t
+         CUDA_and(const CUDA_piece_position_info_base & p_a);
+
        protected:
 
          inline
@@ -301,6 +313,18 @@ namespace edge_matching_puzzle
         {
             m_info[l_threadIdx_x] = p_a.m_info[l_threadIdx_x] & p_b.m_info[l_threadIdx_x];
         }
+#endif // ENABLE_CUDA_CODE
+    }
+
+    //-------------------------------------------------------------------------
+    __device__
+    uint32_t
+    CUDA_piece_position_info_base::CUDA_and(const CUDA_piece_position_info_base & p_a)
+    {
+#ifdef ENABLE_CUDA_CODE
+        return m_info[threadIdx.x] & p_a.m_info[threadIdx.x];
+#else // ENABLE_CUDA_CODE
+        throw std::logic_error("No CPU implementation");
 #endif // ENABLE_CUDA_CODE
     }
 
