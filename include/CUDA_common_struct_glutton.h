@@ -183,7 +183,7 @@ namespace edge_matching_puzzle
          */
         [[nodiscard]]
         static inline
-        __device__
+        __device__ __host__
         played_info_t
         generate_played_info(position_index_t p_position_index
                             ,unsigned int p_piece_index
