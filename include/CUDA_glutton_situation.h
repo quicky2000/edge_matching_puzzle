@@ -40,6 +40,12 @@ namespace edge_matching_puzzle
                               ,uint32_t p_puzzle_size
                               );
 
+        inline explicit
+        CUDA_glutton_situation(uint32_t p_level
+                              ,uint32_t p_puzzle_size
+                              ,CUDA_piece_position_info2 * p_initial_capability
+        );
+
         inline
         ~CUDA_glutton_situation();
 
@@ -86,6 +92,21 @@ namespace edge_matching_puzzle
     ,m_theoric_position_infos{new CUDA_piece_position_info2[p_puzzle_size - p_level]}
     {
     }
+
+    //-------------------------------------------------------------------------
+    CUDA_glutton_situation::CUDA_glutton_situation(uint32_t p_level
+                                                  ,uint32_t p_puzzle_size
+                                                  ,CUDA_piece_position_info2 * p_initial_capability
+                                                  )
+    : CUDA_glutton_situation(p_level, p_puzzle_size)
+    {
+        for(unsigned int l_index = 0; l_index < p_puzzle_size; ++l_index)
+        {
+            set_theoric_position_info(l_index, p_initial_capability[l_index]);
+            this->set_position_info(l_index, p_initial_capability[l_index]);
+        }
+    }
+
 
     //-------------------------------------------------------------------------
     CUDA_glutton_situation::~CUDA_glutton_situation()
