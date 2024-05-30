@@ -473,7 +473,11 @@ namespace edge_matching_puzzle
     bool
     CUDA_common_struct_glutton::_is_position_free(position_index_t p_position_index) const
     {
-        return m_position_index_to_info_index[static_cast<uint32_t>(p_position_index)] != std::numeric_limits<uint32_t>::max();
+#ifdef ENABLE_CUDA_CODE
+        return this->get_info_index(p_position_index) != 0xFFFFFFFF;
+#else // ENABLE_CUDA_CODE
+        return this->get_info_index(p_position_index) != std::numeric_limits<uint32_t>::max();
+#endif //ENABLE_CUDA_CODE
     }
 
     //-------------------------------------------------------------------------
