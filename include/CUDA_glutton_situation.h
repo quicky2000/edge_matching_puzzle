@@ -91,6 +91,10 @@ namespace edge_matching_puzzle
     :CUDA_common_struct_glutton(p_puzzle_size - p_level, p_level, p_puzzle_size, p_puzzle_size - p_level)
     ,m_theoric_position_infos{new CUDA_piece_position_info2[p_puzzle_size - p_level]}
     {
+        for(unsigned int l_index = 0; l_index < p_puzzle_size; ++l_index)
+        {
+            set_position_info_relation(static_cast<info_index_t>(l_index), static_cast<position_index_t >(l_index));
+        }
     }
 
     //-------------------------------------------------------------------------
