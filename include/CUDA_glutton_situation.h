@@ -71,6 +71,32 @@ namespace edge_matching_puzzle
 
     private:
 
+        /**
+         * Helper to compute information when define strict checking is not enabled
+         * @param p_level
+         * @param p_puzzle_size
+         * @return
+         */
+        [[nodiscard]]
+        inline static
+        uint32_t
+        compute_nb_info_index(uint32_t p_level
+                             ,uint32_t p_puzzle_size
+        );
+
+        /**
+         * Helper to compute information when define strict checking is not enabled
+         * @param p_level
+         * @param p_puzzle_size
+         * @return
+         */
+        [[nodiscard]]
+        inline static
+        uint32_t
+        compute_info_size(uint32_t p_level
+                         ,uint32_t p_puzzle_size
+                         );
+
         [[nodiscard]]
         inline
         __device__ __host__
@@ -94,7 +120,11 @@ namespace edge_matching_puzzle
     CUDA_glutton_situation::CUDA_glutton_situation(uint32_t p_level
                                                   ,uint32_t p_puzzle_size
                                                   )
-    :CUDA_common_struct_glutton(p_puzzle_size - p_level, p_level, p_puzzle_size, p_puzzle_size - p_level)
+    :CUDA_common_struct_glutton(compute_nb_info_index(p_level, p_puzzle_size)
+                               , p_level
+                               , p_puzzle_size
+                               , compute_info_size(p_level, p_puzzle_size)
+                               )
     ,m_theoric_position_infos{new CUDA_piece_position_info2[p_puzzle_size - p_level]}
     {
         for(unsigned int l_index = 0; l_index < p_puzzle_size; ++l_index)
@@ -117,6 +147,25 @@ namespace edge_matching_puzzle
         }
     }
 
+    //-------------------------------------------------------------------------
+    [[nodiscard]]
+    uint32_t
+    CUDA_glutton_situation::compute_nb_info_index(uint32_t p_level
+                                                 ,uint32_t p_puzzle_size
+                                                 )
+    {
+        return p_puzzle_size - p_level;
+    }
+
+    //-------------------------------------------------------------------------
+    [[nodiscard]]
+    uint32_t
+    CUDA_glutton_situation::compute_info_size(uint32_t p_level
+                                             ,uint32_t p_puzzle_size
+                                             )
+    {
+        return p_puzzle_size - p_level;
+    }
 
     //-------------------------------------------------------------------------
     CUDA_glutton_situation::~CUDA_glutton_situation()
