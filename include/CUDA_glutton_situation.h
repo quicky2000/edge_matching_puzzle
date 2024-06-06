@@ -171,11 +171,11 @@ namespace edge_matching_puzzle
         p_stream <<  "====== Position index <-> Info index ======" << std::endl;
         for(position_index_t l_index{0u}; l_index < p_situation.get_puzzle_size(); ++l_index)
         {
-            std::cout << "Position[" << l_index << "] -> Index " << p_situation.get_info_index(l_index) << std::endl;
+            p_stream << "Position[" << l_index << "] -> Index " << p_situation.get_info_index(l_index) << std::endl;
         }
         for(info_index_t l_index{0u}; l_index < p_situation.get_nb_info_index(); ++l_index)
         {
-            std::cout << "Index[" << l_index << "] -> Position " << p_situation.get_position_index(l_index) << std::endl;
+            p_stream << "Index[" << l_index << "] -> Position " << p_situation.get_position_index(l_index) << std::endl;
         }
 
         for(unsigned int l_index = 0; l_index < p_situation.get_nb_info_index(); ++l_index)
