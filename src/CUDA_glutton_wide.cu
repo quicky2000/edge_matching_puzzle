@@ -34,6 +34,8 @@ namespace edge_matching_puzzle
         auto l_situation = CUDA_glutton_wide::prepare_situation(p_piece_db, p_info, l_start_situation);
 #ifdef STRICT_CHECKING
         std::cout << *l_situation << std::endl;
+#else // STRICT_CHECKING
+        l_situation->print(0, std::cout, 0, this->get_info().get_nb_pieces());;
 #endif // STRICT_CHECKING
     }
 }

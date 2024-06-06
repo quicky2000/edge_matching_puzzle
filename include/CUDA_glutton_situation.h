@@ -55,6 +55,14 @@ namespace edge_matching_puzzle
         inline
         ~CUDA_glutton_situation();
 
+        inline
+        void
+        print(unsigned int p_indent_level
+             ,std::ostream & p_stream
+             ,uint32_t p_level
+             ,uint32_t p_puzzle_size
+             ) const;
+
 #ifdef STRICT_CHECKING
         [[nodiscard]]
         inline
@@ -212,31 +220,45 @@ namespace edge_matching_puzzle
         m_theoric_position_infos[p_info_index] = p_info;
     }
 
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situation::print(unsigned int p_indent_level
+                                 ,std::ostream & p_stream
+                                 ,uint32_t p_level
+                                 ,uint32_t p_puzzle_size
+                                 ) const
+    {
+        p_stream << std::string(p_indent_level, ' ') << "Situation Level " << p_level << ": " << std::endl;
+        p_stream << std::string(p_indent_level, ' ')  << "===== Position index <-> Info index =====" << std::endl;
+        for(position_index_t l_index{0u}; l_index < p_puzzle_size; ++l_index)
+        {
+            p_stream << std::string(p_indent_level, ' ') << "Position[" << l_index << "] -> Index " <<
+            get_info_index(l_index) << std::endl;
+        }
+        uint32_t l_nb_info_index = compute_nb_info_index(p_level, p_puzzle_size);
+        for(info_index_t l_index{0u}; l_index < l_nb_info_index; ++l_index)
+        {
+            p_stream << std::string(p_indent_level, ' ') << "Index[" << l_index << "] -> Position " <<
+            get_position_index(l_index) << std::endl;
+        }
+
+        for(unsigned int l_index = 0; l_index < l_nb_info_index; ++l_index)
+        {
+            p_stream << "Info[" << l_index << "]:" << std::endl;
+            p_stream << get_position_info(l_index) << std::endl;
+        }
+        for(unsigned int l_index = 0; l_index < l_nb_info_index; ++l_index)
+        {
+            p_stream << "Theoric info[" << l_index << "]:" << std::endl;
+            p_stream << get_theoric_position_info(l_index) << std::endl;
+        }
+    }
+
 #ifdef STRICT_CHECKING
     inline
     std::ostream & operator<<(std::ostream & p_stream, const CUDA_glutton_situation & p_situation)
     {
-        p_stream << "Situation Level " << p_situation.get_level() << ": " << std::endl;
-        p_stream <<  "====== Position index <-> Info index ======" << std::endl;
-        for(position_index_t l_index{0u}; l_index < p_situation.get_puzzle_size(); ++l_index)
-        {
-            p_stream << "Position[" << l_index << "] -> Index " << p_situation.get_info_index(l_index) << std::endl;
-        }
-        for(info_index_t l_index{0u}; l_index < p_situation.get_nb_info_index(); ++l_index)
-        {
-            p_stream << "Index[" << l_index << "] -> Position " << p_situation.get_position_index(l_index) << std::endl;
-        }
-
-        for(unsigned int l_index = 0; l_index < p_situation.get_nb_info_index(); ++l_index)
-        {
-            p_stream << "Info[" << l_index << "]:" << std::endl;
-            p_stream << p_situation.get_position_info(l_index) << std::endl;
-        }
-        for(unsigned int l_index = 0; l_index < p_situation.get_nb_info_index(); ++l_index)
-        {
-            p_stream << "Theoric info[" << l_index << "]:" << std::endl;
-            p_stream << p_situation.get_theoric_position_info(l_index) << std::endl;
-        }
+        p_situation.print(0, p_stream, p_situation.get_level(), p_situation.get_puzzle_size());
         return p_stream;
     }
 #endif // STRICT_CHECKING
