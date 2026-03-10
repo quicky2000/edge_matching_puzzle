@@ -226,11 +226,11 @@ namespace edge_matching_puzzle
         std::cout << "Total elapsed time: " << l_elapsed_seconds.count() << "s" << std::endl;
     }
     //-------------------------------------------------------------------------
-    void launch( const emp_piece_db & p_piece_db
-               , const emp_FSM_info & p_info
-               , const emp_variable_generator & p_variable_generator
-               , const emp_strategy_generator & p_strategy_generator
-               )
+    void launch_CUDA_backtracker( const emp_piece_db & p_piece_db
+                                , const emp_FSM_info & p_info
+                                , const emp_variable_generator & p_variable_generator
+                                , const emp_strategy_generator & p_strategy_generator
+                                )
     {
         if(3 == p_info.get_width() && 3 == p_info.get_height())
         {
