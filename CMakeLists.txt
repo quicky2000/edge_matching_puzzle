@@ -8,6 +8,7 @@ set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_CXX_STANDARD 17)
 set(ENABLE_CUDA_CODE off)
 set(IDENTICAL_PIECES off)
+set(ENABLE_CUDA_BACKTRACKER on)
 
 set(MY_SOURCE_FILES
     include/algo_based_feature.h
@@ -124,12 +125,18 @@ set(MY_SOURCE_FILES
 if(${ENABLE_CUDA_CODE})
     set (MY_CPP_FLAGS -DENABLE_CUDA_CODE)
     set (MY_SOURCE_FILES ${MY_SOURCE_FILES}
-         src/CUDA_backtracker.cu
          src/CUDA_common_glutton.cu
          src/CUDA_glutton_max.cu
          src/CUDA_glutton_wide.cu
          src/CUDA_piece_position_info_base.cu
         )
+
+    if(${ENABLE_CUDA_BACKTRACKER})
+    set (MY_SOURCE_FILES ${MY_SOURCE_FILES}
+         src/CUDA_backtracker.cu
+        )
+    set (MY_CPP_FLAGS ${MY_CPP_FLAGS} -DENABLE_CUDA_BACKTRACKER)
+    endif(${ENABLE_CUDA_BACKTRACKER})
 else(${ENABLE_CUDA_CODE})
     set (MY_CPP_FLAGS -pedantic)
 endif(${ENABLE_CUDA_CODE})

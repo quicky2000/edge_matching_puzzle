@@ -30,7 +30,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     void feature_CUDA_backtracker::run()
     {
-#ifdef ENABLE_CUDA_CODE
+#if defined ENABLE_CUDA_CODE && defined ENABLE_CUDA_BACKTRACKER
         launch_CUDA_backtracker(m_piece_db, m_info, m_variable_generator, m_strategy_generator);
 #else
         throw quicky_exception::quicky_logic_exception("You must enable CUDA core for this feature", __LINE__, __FILE__);
