@@ -1,0 +1,19 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "default",
+            "description": "Default settings for my CMake projects",
+            "generator": "Unix Makefiles",
+            "binaryDir": "${workspaceFolder}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "NO",
+                "CMAKE_CUDA_COMPILER": "/usr/local/cuda-12.3/bin/nvcc",
+                "CMAKE_CXX_COMPILER": "/usr/bin/g++-12",
+                "CMAKE_CUDA_HOST_COMPILER": "/usr/bin/g++-12",
+                "CMAKE_CUDA_ARCHITECTURES": "75"
+            }
+        }
+    ]
+}
