@@ -4,6 +4,7 @@ matrix:
       sudo: required
       dist: jammy
       compiler: gcc
+      env: DISTRIB_NAME=jammy
     - os: linux
       sudo: required
       dist: focal
@@ -32,6 +33,7 @@ before_install:
   - cuda_branch=1
   - echo $TRAVIS_BRANCH | grep -i cuda || cuda_branch=0
   - if [[ "$cuda_branch" == "0" ]]; then echo "non-CUDA branch"; else echo "CUDA branch"; fi
+  - if [[ "$cuda_branch" != "0" && "$DISTRIB_NAME" == "jammy" ]]; then sudo apt-get purge 'nvidia-*' ; sudo apt-get autoremove ; sudo apt-get autoclean ; sudo dpkg --purge $(dpkg -l | grep nvidia | awk '{print $2}') ; sudo apt-get install build-essential dkms ; fi
   - if [[ "$cuda_branch" != "0" ]]; then sudo apt-get install linux-headers-$(uname -r); fi
   - if [[ "$cuda_branch" != "0" ]]; then distribution=$(. /etc/os-release;echo $ID$VERSION_ID | sed -e 's/\.//g'); fi
   - if [[ "$cuda_branch" != "0" ]]; then wget https://developer.download.nvidia.com/compute/cuda/repos/$distribution/x86_64/cuda-$distribution.pin; fi
