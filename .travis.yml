@@ -7,9 +7,6 @@ jobs:
     - dist: focal
       compiler: gcc
       env: DISTRIB_NAME=focal
-    - dist: bionic
-      compiler: gcc
-      env: DISTRIB_NAME=bionic
 
 language: cpp
 
