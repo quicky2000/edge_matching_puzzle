@@ -77,6 +77,42 @@ namespace edge_matching_puzzle
         bool
         is_position_free(position_index_t p_position_index) const;
 
+        /**
+         * Fill destination situation with information coming from current
+         * situation
+         * No check on if this is possible to play according to piece borders
+         * It only check if position is free and piece is available
+         * @param p_position_index index of position where turn is played
+         * @param p_piece_index
+         * @param p_orientation_index
+         * @param p_dest_situation destination situation
+         * @param p_level level of current situation
+         * @param p_puzzle_size size of puzzle
+         */
+        inline
+        void
+        play_to(position_index_t p_position_index
+               ,unsigned int p_piece_index
+               ,unsigned int p_orientation_index
+               ,CUDA_glutton_situation & p_dest_situation
+               ,unsigned int p_level
+               ,unsigned int p_puzzle_size
+               );
+
+        /**
+         * Make this step unavailable for play but it is still there for score
+         * @param p_info_index
+         * @param p_word_index
+         * @param p_bit_index
+         */
+        inline
+        __device__
+        void
+        shadow_step(uint32_t p_info_index
+                   ,uint32_t p_word_index
+                   ,uint32_t p_bit_index
+                   );
+
     private:
 
         /**
@@ -115,6 +151,32 @@ namespace edge_matching_puzzle
         __device__ __host__
         void
         set_theoric_position_info(uint32_t p_info_index, const CUDA_piece_position_info2 & p_info);
+
+        inline
+        void
+        apply_color_constraint(uint32_t p_color_id
+                              ,info_index_t p_info_index
+                              ,uint32_t p_mask_to_apply
+                              );
+
+        inline
+        void
+        copy_played_info_to(CUDA_glutton_situation & p_destination
+                           ,unsigned int p_size
+                           );
+
+        inline
+        void
+        copy_available_pieces_to(CUDA_glutton_situation & p_destination);
+
+        inline
+        void
+        copy_position_info_to(CUDA_glutton_situation & p_destination
+                             ,position_index_t p_position_index
+                             ,unsigned int p_nb_info_index
+                             ,unsigned int p_puzzle_size
+                             ,unsigned int p_info_size
+                             );
 
         /**
          * Position info for each free position but they are computed only from
@@ -199,6 +261,27 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situation::apply_color_constraint(uint32_t p_color_id
+                                                  ,info_index_t p_info_index
+                                                  ,uint32_t p_mask_to_apply
+                                                  )
+    {
+#ifdef ENABLE_CUDA_CODE
+        //uint32_t l_capability = p_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
+        //uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
+        //l_constraint_capability &= p_mask_to_apply;
+        //uint32_t l_result_capability = l_capability & l_constraint_capability;
+#else // ENABLE_CUDA_CODE
+        //pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx) { return p_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);}};
+        //pseudo_CUDA_thread_variable<uint32_t> l_constraint_capability{[&](dim3 threadIdx) { return p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);}};
+        //l_constraint_capability &= p_mask_to_apply;
+        //pseudo_CUDA_thread_variable<uint32_t> l_result_capability{l_capability & l_constraint_capability};
+#endif // ENABLE_CUDA_CODE
+
+    }
+
+    //-------------------------------------------------------------------------
     __device__ __host__
     const CUDA_piece_position_info2 &
     CUDA_glutton_situation::get_theoric_position_info(uint32_t p_info_index) const
@@ -262,6 +345,111 @@ namespace edge_matching_puzzle
         return p_stream;
     }
 #endif // STRICT_CHECKING
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situation::play_to(position_index_t p_position_index
+                                   ,unsigned int p_piece_index
+                                   ,unsigned int p_orientation_index
+                                   ,CUDA_glutton_situation & p_dest_situation
+                                   ,unsigned int p_level
+                                   ,unsigned int p_puzzle_size
+    )
+    {
+#ifdef STRICT_CHECKING
+        assert(this->get_level() == p_level);
+        assert(p_dest_situation.get_level() == (p_level - 1));
+        assert(this->is_piece_available(p_piece_index));
+        assert(this->is_position_free(p_position_index));
+#endif // STRICT_CHECKING
+
+        copy_played_info_to(p_dest_situation, p_level);
+        p_dest_situation.set_played_info(p_level, generate_played_info(p_position_index, p_piece_index, p_orientation_index));
+
+        copy_available_pieces_to(p_dest_situation);
+        p_dest_situation.set_piece_unavailable(p_piece_index);
+
+        copy_position_info_to(p_dest_situation, p_position_index
+                , p_puzzle_size - p_level
+                , p_puzzle_size
+                , p_puzzle_size - p_level
+        );
+
+    }
+
+    //-------------------------------------------------------------------------
+    __device__
+    void
+    CUDA_glutton_situation::shadow_step(uint32_t p_info_index
+                                       ,uint32_t p_word_index
+                                       ,uint32_t p_bit_index
+                                       )
+    {
+        this->get_position_info(p_info_index).clear_bit(p_word_index, p_bit_index);
+    }
+
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situation::copy_available_pieces_to(CUDA_glutton_situation & p_destination)
+    {
+        for(unsigned int l_index = 0; l_index < 8; ++l_index)
+        {
+            p_destination.set_raw_available_piece(l_index, get_raw_available_piece(l_index));
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situation::copy_played_info_to(CUDA_glutton_situation & p_destination
+                                               ,unsigned int p_size
+    )
+    {
+#ifdef STRICT_CHECKING
+        assert(p_size <= this->get_nb_played_info());
+        assert(p_size <= p_destination.get_nb_played_info());
+#endif // STRICT_CHECKING
+        for(unsigned int l_index = 0; l_index < p_size; ++l_index)
+        {
+            p_destination.set_played_info(l_index, this->get_played_info(l_index));
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situation::copy_position_info_to(CUDA_glutton_situation & p_destination
+                                                 ,position_index_t p_position_index
+                                                 ,unsigned int p_nb_info_index
+                                                 ,unsigned int p_puzzle_size
+                                                 ,unsigned int p_info_size
+                                                 )
+    {
+#ifdef STRICT_CHECKING
+        assert(p_nb_info_index == this->get_nb_info_index());
+        assert(p_puzzle_size == this->get_puzzle_size());
+        assert(p_position_index < this->get_puzzle_size());
+        assert(p_info_size == this->get_info_size());
+#endif // STRICT_CHECKING
+        info_index_t l_info_index = get_info_index(p_position_index);
+#ifdef STRICT_CHECKING
+        assert(l_info_index != std::numeric_limits<uint32_t>::max());
+#endif // STRICT_CHECKING
+
+        unsigned int l_new_index = 0;
+        for(unsigned int l_index = 0; l_index < static_cast<uint32_t>(l_info_index); ++l_index)
+        {
+            set_position_info_relation(static_cast<info_index_t>(l_new_index), get_position_index(static_cast<info_index_t>(l_index)));
+            p_destination.set_position_info(l_new_index, get_position_info(l_index));
+            ++l_new_index;
+        }
+        for(unsigned int l_index = static_cast<uint32_t>(l_info_index) + 1; l_index < p_info_size ; ++l_index)
+        {
+            set_position_info_relation(static_cast<info_index_t>(l_new_index), get_position_index(static_cast<info_index_t>(l_index)));
+            p_destination.set_position_info(l_new_index, get_position_info(l_index));
+            ++l_new_index;
+        }
+
+    }
 
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_SITUATION_H
