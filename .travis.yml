@@ -1,17 +1,14 @@
 jobs:
   include:
     - os: linux
-      sudo: required
       dist: jammy
       compiler: gcc
       env: DISTRIB_NAME=jammy
     - os: linux
-      sudo: required
       dist: focal
       compiler: gcc
       env: DISTRIB_NAME=focal
     - os: linux
-      sudo: required
       dist: bionic
       compiler: gcc
       env: DISTRIB_NAME=bionic
