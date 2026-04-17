@@ -1,15 +1,13 @@
+os: linux
 jobs:
   include:
-    - os: linux
-      dist: jammy
+    - dist: jammy
       compiler: gcc
       env: DISTRIB_NAME=jammy
-    - os: linux
-      dist: focal
+    - dist: focal
       compiler: gcc
       env: DISTRIB_NAME=focal
-    - os: linux
-      dist: bionic
+    - dist: bionic
       compiler: gcc
       env: DISTRIB_NAME=bionic
 
