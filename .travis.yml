@@ -1,4 +1,4 @@
-matrix:
+jobs:
   include:
     - os: linux
       sudo: required
