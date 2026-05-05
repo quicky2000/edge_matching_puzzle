@@ -31,12 +31,9 @@ namespace edge_matching_puzzle
         CUDA_glutton_wide::prepare_constants(p_piece_db, p_info);
         std::unique_ptr<CUDA_color_constraints> l_color_constraints = CUDA_glutton_wide::prepare_color_constraints(p_piece_db, p_info);
         emp_situation l_start_situation;
-        auto l_situation = CUDA_glutton_wide::prepare_situation(p_piece_db, p_info, l_start_situation);
-#ifdef STRICT_CHECKING
-        std::cout << *l_situation << std::endl;
-#else // STRICT_CHECKING
-        l_situation->print(0, std::cout, 0, this->get_info().get_nb_pieces());;
-#endif // STRICT_CHECKING
+        auto l_situations = CUDA_glutton_wide::prepare_situation(p_piece_db, p_info, l_start_situation);
+        CUDA_glutton_situation l_glutton_situation{*l_situations, 0};
+        std::cout << l_glutton_situation << std::endl;
     }
 }
 // EOF

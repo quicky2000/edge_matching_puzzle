@@ -19,50 +19,42 @@
 #ifndef EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_SITUATION_H
 #define EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_SITUATION_H
 
-#include "CUDA_common_struct_glutton.h"
+#include "CUDA_glutton_situations.h"
 
 namespace edge_matching_puzzle
 {
     /**
      * Class representing an EMP situation used by CUDA_glutton_wide algorithm
-     * It relies on CUDA_common_struct_glutton class to real store positions
-     * info, positions infos computed from played step + shadowed steps due
-     * to parallel computing
-     * The evaluation of score is performed on additional position info member
-     * computed only from played step
+     * It relies on CUDA_glutton_situations that contain all the information in
+     * a way optimised for GPU computation.
+     * This class acts as a proxy to simplify access to single situation information
      */
-    class CUDA_glutton_situation: public CUDA_common_struct_glutton
+    class CUDA_glutton_situation
     {
 
-#ifdef STRICT_CHECKING
         friend
         std::ostream & operator<<(std::ostream & p_stream, const CUDA_glutton_situation & p_situation);
-#endif // STRICT_CHECKING
 
     public:
 
+        /**
+         * Pseudo Constructor on a situation stored in CUDA_glutton_situations
+         * at index provided as parameter
+         * @param p_situations
+         * @param p_situation_index
+         */
         inline explicit
-        CUDA_glutton_situation(uint32_t p_level
-                              ,uint32_t p_puzzle_size
+        CUDA_glutton_situation(CUDA_glutton_situations & p_situations
+                              ,uint32_t p_situation_index
                               );
-
-        inline explicit
-        CUDA_glutton_situation(uint32_t p_level
-                              ,uint32_t p_puzzle_size
-                              ,CUDA_piece_position_info2 * p_initial_capability
-        );
-
-        inline
-        ~CUDA_glutton_situation();
 
         inline
         void
         print(unsigned int p_indent_level
              ,std::ostream & p_stream
-             ,uint32_t p_level
-             ,uint32_t p_puzzle_size
              ) const;
 
+#if 0
 #ifdef STRICT_CHECKING
         [[nodiscard]]
         inline
@@ -112,46 +104,11 @@ namespace edge_matching_puzzle
                    ,uint32_t p_word_index
                    ,uint32_t p_bit_index
                    );
+#endif // 0
 
     private:
 
-        /**
-         * Helper to compute information when define strict checking is not enabled
-         * @param p_level
-         * @param p_puzzle_size
-         * @return
-         */
-        [[nodiscard]]
-        inline static
-        uint32_t
-        compute_nb_info_index(uint32_t p_level
-                             ,uint32_t p_puzzle_size
-        );
-
-        /**
-         * Helper to compute information when define strict checking is not enabled
-         * @param p_level
-         * @param p_puzzle_size
-         * @return
-         */
-        [[nodiscard]]
-        inline static
-        uint32_t
-        compute_info_size(uint32_t p_level
-                         ,uint32_t p_puzzle_size
-                         );
-
-        [[nodiscard]]
-        inline
-        __device__ __host__
-        const CUDA_piece_position_info2 &
-        get_theoric_position_info(uint32_t p_info_index) const;
-
-        inline
-        __device__ __host__
-        void
-        set_theoric_position_info(uint32_t p_info_index, const CUDA_piece_position_info2 & p_info);
-
+#if 0
         inline
         void
         apply_color_constraint(uint32_t p_color_id
@@ -177,72 +134,25 @@ namespace edge_matching_puzzle
                              ,unsigned int p_puzzle_size
                              ,unsigned int p_info_size
                              );
+#endif // 0
 
-        /**
-         * Position info for each free position but they are computed only from
-         * played step and do not take in account the shadowed steps
-         */
-        CUDA_piece_position_info2 * m_theoric_position_infos;
+        CUDA_glutton_situations & m_situations;
+
+        uint32_t m_situation_index;
 
     };
 
     //-------------------------------------------------------------------------
-    CUDA_glutton_situation::CUDA_glutton_situation(uint32_t p_level
-                                                  ,uint32_t p_puzzle_size
+    CUDA_glutton_situation::CUDA_glutton_situation(CUDA_glutton_situations & p_situations
+                                                  ,uint32_t p_situation_index
                                                   )
-    :CUDA_common_struct_glutton(compute_nb_info_index(p_level, p_puzzle_size)
-                               , p_level
-                               , p_puzzle_size
-                               , compute_info_size(p_level, p_puzzle_size)
-                               )
-    ,m_theoric_position_infos{new CUDA_piece_position_info2[p_puzzle_size - p_level]}
+    :m_situations{p_situations}
+    ,m_situation_index{p_situation_index}
     {
-        for(unsigned int l_index = 0; l_index < p_puzzle_size; ++l_index)
-        {
-            set_position_info_relation(static_cast<info_index_t>(l_index), static_cast<position_index_t >(l_index));
-        }
+        assert(p_situation_index < m_situations.get_nb_situation());
     }
 
-    //-------------------------------------------------------------------------
-    CUDA_glutton_situation::CUDA_glutton_situation(uint32_t p_level
-                                                  ,uint32_t p_puzzle_size
-                                                  ,CUDA_piece_position_info2 * p_initial_capability
-                                                  )
-    : CUDA_glutton_situation(p_level, p_puzzle_size)
-    {
-        for(unsigned int l_index = 0; l_index < p_puzzle_size; ++l_index)
-        {
-            set_theoric_position_info(l_index, p_initial_capability[l_index]);
-            this->set_position_info(l_index, p_initial_capability[l_index]);
-        }
-    }
-
-    //-------------------------------------------------------------------------
-    [[nodiscard]]
-    uint32_t
-    CUDA_glutton_situation::compute_nb_info_index(uint32_t p_level
-                                                 ,uint32_t p_puzzle_size
-                                                 )
-    {
-        return p_puzzle_size - p_level;
-    }
-
-    //-------------------------------------------------------------------------
-    [[nodiscard]]
-    uint32_t
-    CUDA_glutton_situation::compute_info_size(uint32_t p_level
-                                             ,uint32_t p_puzzle_size
-                                             )
-    {
-        return p_puzzle_size - p_level;
-    }
-
-    //-------------------------------------------------------------------------
-    CUDA_glutton_situation::~CUDA_glutton_situation()
-    {
-        delete[] m_theoric_position_infos;
-    }
-
+#if 0
     //-------------------------------------------------------------------------
 #ifdef STRICT_CHECKING
     uint32_t
@@ -257,7 +167,7 @@ namespace edge_matching_puzzle
     bool
     CUDA_glutton_situation::is_position_free(position_index_t p_position_index) const
     {
-        return CUDA_common_struct_glutton::_is_position_free(p_position_index);
+        return m_situations.is_position_free(m_situation_index, p_position_index);
     }
 
     //-------------------------------------------------------------------------
@@ -281,71 +191,49 @@ namespace edge_matching_puzzle
 
     }
 
-    //-------------------------------------------------------------------------
-    __device__ __host__
-    const CUDA_piece_position_info2 &
-    CUDA_glutton_situation::get_theoric_position_info(uint32_t p_info_index) const
-    {
-#ifdef STRICT_CHECKING
-        assert(p_info_index < this->get_info_size());
-#endif // STRICT_CHECKING
-        return m_theoric_position_infos[p_info_index];
-    }
-
-    //-------------------------------------------------------------------------
-    __device__ __host__
-    void
-    CUDA_glutton_situation::set_theoric_position_info(uint32_t p_info_index, const CUDA_piece_position_info2 & p_info)
-    {
-#ifdef STRICT_CHECKING
-        assert(p_info_index < this->get_info_size());
-#endif // STRICT_CHECKING
-        m_theoric_position_infos[p_info_index] = p_info;
-    }
+#endif // 0
 
     //-------------------------------------------------------------------------
     void
     CUDA_glutton_situation::print(unsigned int p_indent_level
                                  ,std::ostream & p_stream
-                                 ,uint32_t p_level
-                                 ,uint32_t p_puzzle_size
                                  ) const
     {
-        p_stream << std::string(p_indent_level, ' ') << "Situation Level " << p_level << ": " << std::endl;
+        p_stream << std::string(p_indent_level, ' ') << "Situation Level " << m_situations.get_level() << ": " << std::endl;
         p_stream << std::string(p_indent_level, ' ')  << "===== Position index <-> Info index =====" << std::endl;
-        for(position_index_t l_index{0u}; l_index < p_puzzle_size; ++l_index)
+        for(position_index_t l_index{0u}; l_index < m_situations.get_puzzle_size(); ++l_index)
         {
             p_stream << std::string(p_indent_level, ' ') << "Position[" << l_index << "] -> Index " <<
-            get_info_index(l_index) << std::endl;
+            m_situations.get_info_index(m_situation_index, l_index) << std::endl;
         }
-        uint32_t l_nb_info_index = compute_nb_info_index(p_level, p_puzzle_size);
+        uint32_t l_nb_info_index = m_situations.get_situation_info_nb();
         for(info_index_t l_index{0u}; l_index < l_nb_info_index; ++l_index)
         {
             p_stream << std::string(p_indent_level, ' ') << "Index[" << l_index << "] -> Position " <<
-            get_position_index(l_index) << std::endl;
+            m_situations.get_position_index(m_situation_index, l_index) << std::endl;
         }
 
-        for(unsigned int l_index = 0; l_index < l_nb_info_index; ++l_index)
+        for(info_index_t l_index{0u}; l_index < l_nb_info_index; ++l_index)
         {
             p_stream << "Info[" << l_index << "]:" << std::endl;
-            p_stream << get_position_info(l_index) << std::endl;
+            p_stream << m_situations.get_position_info(m_situation_index, l_index) << std::endl;
         }
-        for(unsigned int l_index = 0; l_index < l_nb_info_index; ++l_index)
+        for(info_index_t l_index{0u}; l_index < l_nb_info_index; ++l_index)
         {
             p_stream << "Theoric info[" << l_index << "]:" << std::endl;
-            p_stream << get_theoric_position_info(l_index) << std::endl;
+            p_stream << m_situations.get_theoric_position_info(m_situation_index, l_index) << std::endl;
         }
     }
 
-#ifdef STRICT_CHECKING
     inline
-    std::ostream & operator<<(std::ostream & p_stream, const CUDA_glutton_situation & p_situation)
+    std::ostream &
+    operator<<(std::ostream & p_stream, const CUDA_glutton_situation & p_situation)
     {
-        p_situation.print(0, p_stream, p_situation.get_level(), p_situation.get_puzzle_size());
+        p_situation.print(0, p_stream);
         return p_stream;
     }
-#endif // STRICT_CHECKING
 
+#if 0
     //-------------------------------------------------------------------------
     void
     CUDA_glutton_situation::play_to(position_index_t p_position_index
@@ -385,7 +273,7 @@ namespace edge_matching_puzzle
                                        ,uint32_t p_bit_index
                                        )
     {
-        this->get_position_info(p_info_index).clear_bit(p_word_index, p_bit_index);
+        m_situations.get_position_info(m_situation_index, p_info_index).clear_bit(p_word_index, p_bit_index);
     }
 
 
@@ -450,7 +338,7 @@ namespace edge_matching_puzzle
         }
 
     }
-
+#endif // 0
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_SITUATION_H
 //EOF

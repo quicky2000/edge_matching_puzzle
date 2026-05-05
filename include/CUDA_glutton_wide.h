@@ -61,7 +61,7 @@ namespace edge_matching_puzzle
 
         [[nodiscard]]
         inline static
-        std::unique_ptr<CUDA_glutton_situation>
+        std::unique_ptr<CUDA_glutton_situations>
         prepare_situation(const emp_piece_db & p_piece_db
                          ,const emp_FSM_info & p_info
                          ,emp_situation & p_start_situation
@@ -69,9 +69,9 @@ namespace edge_matching_puzzle
         {
             auto * l_initial_capability = prepare_initial_capability(p_piece_db, p_info);
 #if __cplusplus >= 201402
-            return std::make_unique<CUDA_glutton_situation>(0, p_info.get_nb_pieces(), l_initial_capability);
+            return std::make_unique<CUDA_glutton_situations>(p_info.get_nb_pieces(), l_initial_capability);
 #else // __cplusplus
-            return std::unique_ptr<CUDA_glutton_situation>(new CUDA_glutton_situation(0, p_info.get_nb_pieces()));
+            return std::unique_ptr<CUDA_glutton_situations>(new CUDA_glutton_situations(p_info.get_nb_pieces(), l_initial_capability));
 #endif // __cplusplus
         }
 
