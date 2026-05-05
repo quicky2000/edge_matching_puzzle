@@ -1529,7 +1529,10 @@ namespace edge_matching_puzzle
         unsigned int l_stack_index = threadIdx.y + blockIdx.x * blockDim.y;
 #else // ENABLE_CUDA_CODE
         unsigned int l_stack_index = 0;
+#if VERBOSITY_LEVEL >= 1
+
         bool l_toc = false;
+#endif // VERBOSITY_LEVEL >= 1
 #endif // ENABLE_CUDA_CODE
 
         if(l_stack_index >= p_nb_stack)
