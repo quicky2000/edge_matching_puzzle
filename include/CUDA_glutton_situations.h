@@ -149,6 +149,32 @@ namespace edge_matching_puzzle
                       ) const;
 
         /**
+         * Help method to compute word index in a bitfield composed of 32 bits
+         * words
+         * @param p_raw_bit_index
+         * @return word index
+         */
+        [[nodiscard]]
+        inline static
+        uint32_t compute_word_index(uint32_t p_raw_bit_index);
+
+        /**
+         * Help method to compute bit index in a word for a bitfield composed
+         * of 32 bits words
+         * @param p_raw_bit_index
+         * @return bit index
+         */
+        [[nodiscard]]
+        inline static
+        uint32_t compute_bit_index(uint32_t p_raw_bit_index);
+
+        [[nodiscard]]
+        inline static
+        uint32_t
+        compute_raw_bit_index(uint32_t p_word_index
+                             ,uint32_t p_bit_index
+                             );
+        /**
          * Type representing a step
          */
         typedef uint32_t played_info_t;
@@ -298,27 +324,6 @@ namespace edge_matching_puzzle
         compute_available_piece_index(uint32_t p_situation_index
                                      ,uint32_t p_piece_index
                                      ) const;
-                                 
-        /**
-         * Help method to compute word index in a bitfield composed of 32 bits
-         * words
-         * @param p_index
-         * @return word index
-         */
-        [[nodiscard]]
-        inline static
-        uint32_t compute_word_index(uint32_t p_index);
-
-        /**
-         * Help method to compute bit index in a word for a bitfield composed
-         * of 32 bits words
-         * @param p_index
-         * @return bit index
-         */
-        [[nodiscard]]
-        inline static
-        uint32_t compute_bit_index(uint32_t p_index);
-
 
         /**
          * Position info for each free position.
@@ -693,19 +698,29 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     [[nodiscard]]
     uint32_t
-    CUDA_glutton_situations::compute_word_index(uint32_t p_index)
+    CUDA_glutton_situations::compute_word_index(uint32_t p_raw_bit_index)
     {
-        uint32_t l_word_index = p_index / 32;
+        uint32_t l_word_index = p_raw_bit_index / 32;
         return l_word_index;
     }
 
     //-------------------------------------------------------------------------
     [[nodiscard]]
     uint32_t
-    CUDA_glutton_situations::compute_bit_index(uint32_t p_index)
+    CUDA_glutton_situations::compute_bit_index(uint32_t p_raw_bit_index)
     {
-        uint32_t l_bit_index = p_index % 32;
+        uint32_t l_bit_index = p_raw_bit_index % 32;
         return l_bit_index;
+    }
+
+    //-------------------------------------------------------------------------
+    [[nodiscard]]
+    uint32_t
+    CUDA_glutton_situations::compute_raw_bit_index(uint32_t p_word_index
+                                                  ,uint32_t p_bit_index
+                                                  )
+    {
+        return p_word_index * 32 + p_bit_index;
     }
 
 }
