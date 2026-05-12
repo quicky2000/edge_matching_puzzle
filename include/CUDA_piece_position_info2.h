@@ -112,6 +112,29 @@ namespace edge_matching_puzzle
                                         );
 
         /**
+         * Compute piece index corresponding to global bit index provided as parameter
+         * with piece index between 0 and n-1 with n the piece number and global
+         * bit index between 0 and 256*4-1 with 256 the piece number and 4 the orientation number
+         * @param p_global_bit_index global bit index of bit containing piece information
+         * @return piece index corresponding to global bit index provided as parameter
+         */
+        inline static
+        __host__ __device__
+        unsigned int
+        compute_piece_index(unsigned int p_global_bit_index);
+
+        /**
+         * Compute piece orientation corresponding to global bit index provided as parameter
+         * with global bit index between 0 and 256*4-1 with 256 the piece number and 4 the orientation number
+         * @param p_global_bit_index global bit index of bit containing piece information
+         * @return piece orientation corresponding to global bit index provided as parameter
+         */
+        inline static
+        __host__ __device__
+        emp_types::t_orientation
+        compute_piece_orientation(unsigned int p_global_bit_index);
+
+        /**
          * Compute index of word where info corresponding to piece is store
          * @param p_piece_index : Piece index ( 0 to n-1 with n the piece number)
          * @return index of word containing piece information
@@ -227,6 +250,24 @@ namespace edge_matching_puzzle
                                                   )
     {
         return 8 * p_word_index + p_bit_index / 4;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    unsigned int
+    CUDA_piece_position_info2::compute_piece_index(unsigned int p_global_bit_index)
+    {
+        assert(p_global_bit_index < 256 * 4);
+        return p_global_bit_index / 4;
+    }
+
+    //-------------------------------------------------------------------------
+    __host__ __device__
+    emp_types::t_orientation
+    CUDA_piece_position_info2::compute_piece_orientation(unsigned int p_global_bit_index)
+    {
+        assert(p_global_bit_index < 256 * 4);
+        return static_cast<emp_types::t_orientation>(p_global_bit_index % 4);
     }
 
     //-------------------------------------------------------------------------
