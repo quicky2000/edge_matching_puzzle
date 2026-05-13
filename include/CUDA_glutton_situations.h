@@ -122,6 +122,19 @@ namespace edge_matching_puzzle
         get_position_info(uint32_t p_situation_index
                          ,info_index_t p_info_index
                          ) const;
+
+         /**
+         * Get info for position corresponding to info index in
+         * situation corresponding to situation index
+         * @param p_situation_index
+         * @param p_info_index
+         * @param p_info
+         */
+        inline
+        CUDA_piece_position_info2 &
+        get_position_info(uint32_t p_situation_index
+                         ,info_index_t p_info_index
+                         );
         /**
          * Indicate which position corresponds to info stored at index
          * @param p_situation_index situation index
@@ -596,6 +609,16 @@ namespace edge_matching_puzzle
     CUDA_glutton_situations::get_position_info(uint32_t p_situation_index
                                               ,info_index_t p_info_index
                                               ) const
+    {
+        // Boundary checking is done in index computation
+        return m_position_infos[compute_info_global_index(p_situation_index, p_info_index)];
+    }
+
+    //-------------------------------------------------------------------------
+    CUDA_piece_position_info2 &
+    CUDA_glutton_situations::get_position_info(uint32_t p_situation_index
+                                              ,info_index_t p_info_index
+                                              )
     {
         // Boundary checking is done in index computation
         return m_position_infos[compute_info_global_index(p_situation_index, p_info_index)];
