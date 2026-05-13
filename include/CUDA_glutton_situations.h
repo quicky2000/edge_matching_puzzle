@@ -162,6 +162,17 @@ namespace edge_matching_puzzle
                       ) const;
 
         /**
+         * Mark position corresponding to position index as occupied
+         * @param p_situation_index situation index
+         * @param p_position_index position index
+         */
+        inline
+        void
+        invalidate_pos2info_index(uint32_t p_situation_index
+                                 ,position_index_t p_position_index
+                                 );
+
+        /**
          * Help method to compute word index in a bitfield composed of 32 bits
          * words
          * @param p_raw_bit_index
@@ -672,6 +683,19 @@ namespace edge_matching_puzzle
         uint32_t l_pos2info_index = compute_pos2info_index(p_situation_index, p_position_index);
         assert(l_pos2info_index < m_puzzle_size * m_nb_situation);
         return m_position_index_to_info_index[static_cast<uint32_t>(l_pos2info_index)];
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situations::invalidate_pos2info_index(uint32_t p_situation_index
+                                                      ,position_index_t p_position_index
+                                                      )
+    {
+        assert(p_position_index < m_puzzle_size);
+        assert(p_situation_index < m_nb_situation);
+        uint32_t l_pos2info_index = compute_pos2info_index(p_situation_index, p_position_index);
+        assert(l_pos2info_index < m_puzzle_size * m_nb_situation);
+        m_position_index_to_info_index[static_cast<uint32_t>(l_pos2info_index)] = std::numeric_limits<uint32_t>::max();
     }
 
     //-------------------------------------------------------------------------
