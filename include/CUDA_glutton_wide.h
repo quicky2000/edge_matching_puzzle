@@ -77,8 +77,42 @@ namespace edge_matching_puzzle
 
 
     private:
+
+        /**
+         * Compute first set bit in position info after provided index
+         * @param p_info position info to check
+         * @param p_start_index index after which to check bit value
+         * @return index of first set bit after provided index or 0 if no bit is set after provided index
+         */
+        inline
+        uint32_t
+        ffs(const CUDA_piece_position_info2 & p_info
+           ,uint32_t p_start_index
+           ) const;
+
     };
 
+    //-------------------------------------------------------------------------
+    uint32_t
+    CUDA_glutton_wide::ffs(const CUDA_piece_position_info2 & p_info
+                          ,uint32_t p_start_index
+                          ) const
+    {
+        uint32_t l_start_word_index = CUDA_glutton_situations::compute_word_index(p_start_index);
+        uint32_t l_start_bit_index = CUDA_glutton_situations::compute_bit_index(p_start_index);
+        uint32_t l_bit_mask = ((1u << l_start_bit_index) - 1u);
+        for(unsigned int l_word_index = l_start_word_index; l_word_index < 32; ++l_word_index)
+        {
+            uint32_t l_word = p_info.get_word(l_word_index) & ~l_bit_mask;
+            int32_t l_fss = __ffs(l_word);
+            if (l_fss != 0)
+            {
+                return l_fss + 32 * l_word_index;
+            }
+            l_bit_mask = 0;
+        }
+        return 0;
+    }
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_WIDE_H
 // EOF
