@@ -350,6 +350,21 @@ namespace edge_matching_puzzle
                                      ) const;
 
         /**
+         * Compute index in m_available_pieces array corresponding to situation
+         * index and available piece index. This is use only to copy part of
+         * the array when copying available pieces from one situation to another.
+         * @param p_situation_index situation index
+         * @param p_available_piece_index available piece index between 0 and 7
+         * @return index in m_available_pieces array corresponding to situation index and available piece index
+         */
+        [[nodiscard]]
+        inline
+        uint32_t
+        compute_raw_available_pieces_index(uint32_t p_situation_index
+                                          ,uint32_t p_available_pieces_index
+                                          ) const;
+
+        /**
          * Position info for each free position.
          * It takes in account the shadowed steps
          */
@@ -644,6 +659,18 @@ namespace edge_matching_puzzle
     {
         // Boundary checking is done in index computation
         m_position_infos[compute_info_global_index(p_situation_index, p_info_index)] = p_info;
+    }
+
+    //-------------------------------------------------------------------------
+    [[nodiscard]]
+    uint32_t
+    CUDA_glutton_situations::compute_raw_available_pieces_index(uint32_t p_situation_index
+                                                               ,uint32_t p_available_pieces_index
+                                                               ) const
+    {
+        assert(p_available_pieces_index < 8);
+        assert(p_situation_index < m_nb_situation);
+        return 8 * p_situation_index + p_available_pieces_index;
     }
 
     //-------------------------------------------------------------------------
