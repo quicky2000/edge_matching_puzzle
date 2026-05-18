@@ -207,6 +207,21 @@ namespace edge_matching_puzzle
         
         private:
 
+        /**
+         * Copy available pieces from situation corresponding to source situation
+         * index in source situations to situation corresponding to destination
+         * situation index in current situations
+         * @param p_dest_situation_index index of destination situation in current situations
+         * @param p_source source situations
+         * @param p_source_situation_index index of source situation in source situations
+         */
+        inline
+        void
+        copy_available_pieces_from(uint32_t p_dest_situation_index
+                                  ,const CUDA_glutton_situations & p_source
+                                  ,uint32_t p_source_situation_index
+                                  );
+
         [[nodiscard]]
         inline
         played_info_t
@@ -659,6 +674,22 @@ namespace edge_matching_puzzle
     {
         // Boundary checking is done in index computation
         m_position_infos[compute_info_global_index(p_situation_index, p_info_index)] = p_info;
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situations::copy_available_pieces_from(uint32_t p_dest_situation_index
+                                                      ,const CUDA_glutton_situations & p_source
+                                                      ,uint32_t p_source_situation_index
+                                                      )
+    {
+        assert(this->m_level == (p_source.m_level + 1));
+        assert(p_dest_situation_index < m_nb_situation);
+        assert(p_source_situation_index < p_source.m_nb_situation);
+        for(unsigned int l_index = 0; l_index < 8; ++l_index)
+        {
+            m_available_pieces[compute_raw_available_pieces_index(p_dest_situation_index, l_index)] = p_source.m_available_pieces[compute_raw_available_pieces_index(p_source_situation_index, l_index)];
+        }
     }
 
     //-------------------------------------------------------------------------

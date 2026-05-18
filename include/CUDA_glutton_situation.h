@@ -124,10 +124,6 @@ namespace edge_matching_puzzle
 
         inline
         void
-        copy_available_pieces_to(CUDA_glutton_situation & p_destination);
-
-        inline
-        void
         copy_position_info_to(CUDA_glutton_situation & p_destination
                              ,position_index_t p_position_index
                              ,unsigned int p_nb_info_index
@@ -276,16 +272,6 @@ namespace edge_matching_puzzle
         m_situations.get_position_info(m_situation_index, p_info_index).clear_bit(p_word_index, p_bit_index);
     }
 
-
-    //-------------------------------------------------------------------------
-    void
-    CUDA_glutton_situation::copy_available_pieces_to(CUDA_glutton_situation & p_destination)
-    {
-        for(unsigned int l_index = 0; l_index < 8; ++l_index)
-        {
-            p_destination.set_raw_available_piece(l_index, get_raw_available_piece(l_index));
-        }
-    }
 
     //-------------------------------------------------------------------------
     void
