@@ -70,28 +70,6 @@ namespace edge_matching_puzzle
         is_position_free(position_index_t p_position_index) const;
 
         /**
-         * Fill destination situation with information coming from current
-         * situation
-         * No check on if this is possible to play according to piece borders
-         * It only check if position is free and piece is available
-         * @param p_position_index index of position where turn is played
-         * @param p_piece_index
-         * @param p_orientation_index
-         * @param p_dest_situation destination situation
-         * @param p_level level of current situation
-         * @param p_puzzle_size size of puzzle
-         */
-        inline
-        void
-        play_to(position_index_t p_position_index
-               ,unsigned int p_piece_index
-               ,unsigned int p_orientation_index
-               ,CUDA_glutton_situation & p_dest_situation
-               ,unsigned int p_level
-               ,unsigned int p_puzzle_size
-               );
-
-        /**
          * Make this step unavailable for play but it is still there for score
          * @param p_info_index
          * @param p_word_index
@@ -185,37 +163,6 @@ namespace edge_matching_puzzle
     }
 
 #if 0
-    //-------------------------------------------------------------------------
-    void
-    CUDA_glutton_situation::play_to(position_index_t p_position_index
-                                   ,unsigned int p_piece_index
-                                   ,unsigned int p_orientation_index
-                                   ,CUDA_glutton_situation & p_dest_situation
-                                   ,unsigned int p_level
-                                   ,unsigned int p_puzzle_size
-    )
-    {
-#ifdef STRICT_CHECKING
-        assert(this->get_level() == p_level);
-        assert(p_dest_situation.get_level() == (p_level - 1));
-        assert(this->is_piece_available(p_piece_index));
-        assert(this->is_position_free(p_position_index));
-#endif // STRICT_CHECKING
-
-        copy_played_info_to(p_dest_situation, p_level);
-        p_dest_situation.set_played_info(p_level, generate_played_info(p_position_index, p_piece_index, p_orientation_index));
-
-        copy_available_pieces_to(p_dest_situation);
-        p_dest_situation.set_piece_unavailable(p_piece_index);
-
-        copy_position_info_to(p_dest_situation, p_position_index
-                , p_puzzle_size - p_level
-                , p_puzzle_size
-                , p_puzzle_size - p_level
-        );
-
-    }
-
     //-------------------------------------------------------------------------
     __device__
     void

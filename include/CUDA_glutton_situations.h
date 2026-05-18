@@ -23,6 +23,7 @@
 #include "CUDA_memory_managed_item.h"
 #include "CUDA_memory_managed_array.h"
 #include "CUDA_piece_position_info2.h"
+#include "CUDA_common_struct_glutton.h"
 #include "CUDA_types.h"
 #include <limits>
 #include <cinttypes>
@@ -96,6 +97,17 @@ namespace edge_matching_puzzle
         is_position_free(uint32_t p_situation_index
                         ,position_index_t p_position_index
                         ) const;
+
+        inline
+        void
+        play_from(uint32_t p_dest_situation_index
+                 ,const CUDA_glutton_situations & p_source
+                 ,uint32_t p_source_situation_index
+                 ,info_index_t p_info_index
+                 ,uint32_t p_piece_index
+                 ,emp_types::t_orientation p_orientation
+                 ,const CUDA_color_constraints & p_color_constraints
+                 );
 
         /**
          * Get the theoric info for position corresponding to info index in
@@ -720,6 +732,47 @@ namespace edge_matching_puzzle
     {
         // Boundary checking is done in index computation
         m_position_infos[compute_info_global_index(p_situation_index, p_info_index)] = p_info;
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situations::play_from(uint32_t p_dest_situation_index
+                                      ,const CUDA_glutton_situations & p_source
+                                      ,uint32_t p_source_situation_index
+                                      ,info_index_t p_info_index
+                                      ,uint32_t p_piece_index
+                                      ,emp_types::t_orientation p_orientation
+                                      ,const CUDA_color_constraints & p_color_constraints
+                                      )
+    {
+        assert(this->m_level == (p_source.m_level + 1));
+        assert(p_dest_situation_index < m_nb_situation);
+        assert(p_source_situation_index < p_source.m_nb_situation);
+        assert(p_piece_index < m_puzzle_size);
+
+        // Need to look at source position because at this step destination situation is not filled
+        auto l_position_index = p_source.get_position_index(p_source_situation_index, p_info_index);
+        assert(p_source.is_position_free(p_source_situation_index, l_position_index));
+
+        apply_color_constraint_from(p_dest_situation_index
+                                   ,p_source
+                                   ,p_source_situation_index
+                                   ,p_info_index
+                                   ,p_piece_index
+                                   ,p_orientation
+                                   ,p_color_constraints
+                                   );
+        copy_position_info_relation_from(p_dest_situation_index
+                                        ,p_source
+                                        ,p_source_situation_index
+                                        ,l_position_index
+                                        );
+        copy_played_info_from(p_dest_situation_index
+                             ,p_source
+                             ,p_source_situation_index
+                             );
+        set_piece_unavailable(p_dest_situation_index, p_piece_index);
+        set_played_info(p_dest_situation_index, m_level - 1, CUDA_common_struct_glutton::generate_played_info(l_position_index, p_piece_index, static_cast<uint32_t>(p_orientation)));
     }
 
     //-------------------------------------------------------------------------
