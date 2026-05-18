@@ -116,14 +116,6 @@ namespace edge_matching_puzzle
                               ,uint32_t p_mask_to_apply
                               );
 
-        inline
-        void
-        copy_position_info_to(CUDA_glutton_situation & p_destination
-                             ,position_index_t p_position_index
-                             ,unsigned int p_nb_info_index
-                             ,unsigned int p_puzzle_size
-                             ,unsigned int p_info_size
-                             );
 #endif // 0
 
         CUDA_glutton_situations & m_situations;
@@ -267,41 +259,6 @@ namespace edge_matching_puzzle
     }
 
 
-    //-------------------------------------------------------------------------
-    void
-    CUDA_glutton_situation::copy_position_info_to(CUDA_glutton_situation & p_destination
-                                                 ,position_index_t p_position_index
-                                                 ,unsigned int p_nb_info_index
-                                                 ,unsigned int p_puzzle_size
-                                                 ,unsigned int p_info_size
-                                                 )
-    {
-#ifdef STRICT_CHECKING
-        assert(p_nb_info_index == this->get_nb_info_index());
-        assert(p_puzzle_size == this->get_puzzle_size());
-        assert(p_position_index < this->get_puzzle_size());
-        assert(p_info_size == this->get_info_size());
-#endif // STRICT_CHECKING
-        info_index_t l_info_index = get_info_index(p_position_index);
-#ifdef STRICT_CHECKING
-        assert(l_info_index != std::numeric_limits<uint32_t>::max());
-#endif // STRICT_CHECKING
-
-        unsigned int l_new_index = 0;
-        for(unsigned int l_index = 0; l_index < static_cast<uint32_t>(l_info_index); ++l_index)
-        {
-            set_position_info_relation(static_cast<info_index_t>(l_new_index), get_position_index(static_cast<info_index_t>(l_index)));
-            p_destination.set_position_info(l_new_index, get_position_info(l_index));
-            ++l_new_index;
-        }
-        for(unsigned int l_index = static_cast<uint32_t>(l_info_index) + 1; l_index < p_info_size ; ++l_index)
-        {
-            set_position_info_relation(static_cast<info_index_t>(l_new_index), get_position_index(static_cast<info_index_t>(l_index)));
-            p_destination.set_position_info(l_new_index, get_position_info(l_index));
-            ++l_new_index;
-        }
-
-    }
 #endif // 0
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_GLUTTON_SITUATION_H

@@ -208,6 +208,20 @@ namespace edge_matching_puzzle
         private:
 
         /**
+         * Copy and recompute position/info relation from situation
+         * corresponding to source situation index in source situations to
+         * situation corresponding to destination situation index in current
+         * situations
+         */
+        inline
+        void
+        copy_position_info_relation_from(uint32_t p_dest_situation_index
+                                        ,const CUDA_glutton_situations & p_source
+                                        ,uint32_t p_source_situation_index
+                                        ,position_index_t p_info_index
+                                        );
+
+        /**
          * Copy played info from situation corresponding to source situation
          * index in source situations to situation corresponding to destination
          * situation index in current situations
@@ -689,6 +703,45 @@ namespace edge_matching_puzzle
     {
         // Boundary checking is done in index computation
         m_position_infos[compute_info_global_index(p_situation_index, p_info_index)] = p_info;
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situations::copy_position_info_relation_from(uint32_t p_dest_situation_index
+                                                            ,const CUDA_glutton_situations & p_source
+                                                            ,uint32_t p_source_situation_index
+                                                            ,position_index_t p_position_index
+                                                            )
+    {
+        assert(this->m_level == (p_source.m_level + 1));
+        assert(p_position_index < m_puzzle_size);
+        assert(p_dest_situation_index < m_nb_situation);
+        assert(p_source_situation_index < p_source.m_nb_situation);
+
+        invalidate_pos2info_index(p_dest_situation_index, p_position_index);
+
+        std::array<std::tuple<position_index_t, position_index_t, info_index_t>, 2> l_ranges
+        {{{position_index_t{0}, (static_cast<uint32_t>(p_position_index) - 1 > m_puzzle_size) ? position_index_t{0} : p_position_index - 1, info_index_t(0)},
+          {p_position_index + 1, position_index_t{m_puzzle_size}, info_index_t(1)}
+         }
+        };
+        // We need to update the relation for all position info with index greater than info index as they are shifted by one position in new situation compared to source situation
+        for(const auto & l_range: l_ranges)
+        {
+            for(position_index_t l_index{std::get<0>(l_range)}; l_index < std::get<1>(l_range); ++l_index)
+            {
+                if(get_info_index(p_source_situation_index, l_index) == std::numeric_limits<info_index_t>::max())
+                {
+                    auto l_pos2info_index = compute_pos2info_index(p_dest_situation_index, l_index);
+                    m_position_index_to_info_index[static_cast<uint32_t>(l_pos2info_index)] = std::numeric_limits<info_index_t>::max();
+                }
+                else
+                {
+                    info_index_t l_info_index = p_source.get_info_index(p_source_situation_index, l_index);
+                    set_position_info_relation(p_dest_situation_index, l_info_index - std::get<2>(l_range), l_index);
+                }
+            }
+        }
     }
 
     //-------------------------------------------------------------------------
