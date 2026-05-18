@@ -118,12 +118,6 @@ namespace edge_matching_puzzle
 
         inline
         void
-        copy_played_info_to(CUDA_glutton_situation & p_destination
-                           ,unsigned int p_size
-                           );
-
-        inline
-        void
         copy_position_info_to(CUDA_glutton_situation & p_destination
                              ,position_index_t p_position_index
                              ,unsigned int p_nb_info_index
@@ -272,22 +266,6 @@ namespace edge_matching_puzzle
         m_situations.get_position_info(m_situation_index, p_info_index).clear_bit(p_word_index, p_bit_index);
     }
 
-
-    //-------------------------------------------------------------------------
-    void
-    CUDA_glutton_situation::copy_played_info_to(CUDA_glutton_situation & p_destination
-                                               ,unsigned int p_size
-    )
-    {
-#ifdef STRICT_CHECKING
-        assert(p_size <= this->get_nb_played_info());
-        assert(p_size <= p_destination.get_nb_played_info());
-#endif // STRICT_CHECKING
-        for(unsigned int l_index = 0; l_index < p_size; ++l_index)
-        {
-            p_destination.set_played_info(l_index, this->get_played_info(l_index));
-        }
-    }
 
     //-------------------------------------------------------------------------
     void
