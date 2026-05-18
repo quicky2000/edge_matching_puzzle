@@ -208,6 +208,23 @@ namespace edge_matching_puzzle
         private:
 
         /**
+         * Apply color constraint corresponding to piece and orientation provided
+         * as parameter from situation corresponding to source situation index
+         * in source situations to situation corresponding to destination
+         * situation index in current situations
+         */
+        inline
+        void
+        apply_color_constraint_from(uint32_t p_dest_situation_index
+                                   ,const CUDA_glutton_situations & p_source
+                                   ,uint32_t p_source_situation_index
+                                   ,info_index_t p_info_index
+                                   ,uint32_t p_piece_index
+                                   ,emp_types::t_orientation p_orientation
+                                   ,const CUDA_color_constraints & p_color_constraints
+                                   );
+
+        /**
          * Copy and recompute position/info relation from situation
          * corresponding to source situation index in source situations to
          * situation corresponding to destination situation index in current
@@ -703,6 +720,98 @@ namespace edge_matching_puzzle
     {
         // Boundary checking is done in index computation
         m_position_infos[compute_info_global_index(p_situation_index, p_info_index)] = p_info;
+    }
+
+    //-------------------------------------------------------------------------
+    void
+    CUDA_glutton_situations::apply_color_constraint_from(uint32_t p_dest_situation_index
+                                                        ,const CUDA_glutton_situations & p_source
+                                                        ,uint32_t p_source_situation_index
+                                                        ,info_index_t p_info_index
+                                                        ,uint32_t p_piece_index
+                                                        ,emp_types::t_orientation p_orientation
+                                                        ,const CUDA_color_constraints & p_color_constraints
+                                                        )
+    {
+        assert(this->m_level == (p_source.m_level + 1));
+        assert(p_dest_situation_index < m_nb_situation);
+        assert(p_source_situation_index < p_source.m_nb_situation);
+        assert(p_piece_index < m_puzzle_size);
+
+        // Need to look at source position because at this step destination situation is not filled
+        auto l_position_index = p_source.get_position_index(p_source_situation_index, p_info_index);
+        assert(p_source.is_position_free(p_source_situation_index, l_position_index));
+
+        pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return CUDA_piece_position_info2::compute_piece_word_index(p_piece_index) == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(CUDA_piece_position_info2::compute_piece_bit_index(p_piece_index, p_orientation))): 0xFFFFFFFFu;}};
+        pseudo_CUDA_thread_variable<info_index_t> l_related_positions{p_info_index};
+
+        //---------------------------------------------------------------------
+        //- WARNING !!!! THE CURRENT CODE DON'T MANAGE THEORIC INFO
+        //---------------------------------------------------------------------
+
+        // Appply the four colours constraints
+        for(emp_types::t_orientation l_orientation : emp_types::get_orientations())
+        {
+            uint32_t l_color_id = g_pieces[p_piece_index][(static_cast<uint32_t>(l_orientation) + static_cast<uint32_t>(p_orientation)) % 4];
+
+            if (!l_color_id)
+            {
+                continue;
+            }
+
+            position_index_t l_related_position = l_position_index + g_position_offset[static_cast<uint32_t>(l_orientation)];
+            if(!p_source.is_position_free(p_source_situation_index, l_related_position))
+            {
+                continue;
+            }
+            info_index_t l_related_info_index = p_source.get_info_index(p_source_situation_index, l_related_position);
+            uint32_t l_offset = p_info_index < l_related_info_index;
+            l_related_positions[static_cast<uint32_t>(l_orientation)] = l_related_info_index;
+
+            pseudo_CUDA_thread_variable<uint32_t> l_constraint_capability{[&](dim3 threadIdx) { return p_color_constraints.get_info(l_color_id - 1, static_cast<uint32_t>(l_orientation)).get_word(threadIdx.x);}};
+            l_constraint_capability &= l_mask_to_apply;
+
+            pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx) { return p_source.get_position_info(p_source_situation_index, l_related_info_index).get_word(threadIdx.x);}};
+            pseudo_CUDA_thread_variable<uint32_t> l_result_capability{l_capability & l_constraint_capability};
+
+            if(!__any_sync(0xFFFFFFFFu, l_result_capability))
+            {
+                exit(-1);
+            }
+            for (dim3 threadIdx{0, 1, 1}; threadIdx.x < 32; ++threadIdx.x)
+            {
+#if VERBOSITY_LEVEL >= 6
+                    my_cuda::print_mask(5, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability[threadIdx.x], l_mask_to_apply[threadIdx.x], l_result[threadIdx.x]);
+#endif // VERBOSITY_LEVEL >= 6
+                    this->get_position_info(p_dest_situation_index, l_related_info_index - l_offset).set_word(threadIdx.x, l_result_capability[threadIdx.x]);
+            }
+
+        }
+
+        // Apply the mask on other info
+        for(info_index_t l_index{0}; l_index < info_index_t{p_source.get_situation_info_nb()}; ++l_index)
+        {
+            std::cout << "Info index " << static_cast<uint32_t>(l_index) << "\n";
+            pseudo_CUDA_thread_variable<uint32_t> l_matching_related_position{[&](dim3 threadIdx) { return l_related_positions[threadIdx.x] == l_index;}};
+            if(__any_sync(0x1Fu, l_matching_related_position))
+            {
+                continue;
+            }
+            pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx) { return p_source.get_position_info(p_source_situation_index, static_cast<info_index_t>(l_index)).get_word(threadIdx.x);}};
+            pseudo_CUDA_thread_variable<uint32_t> l_result_capability{l_capability & l_mask_to_apply};
+            if(!__any_sync(0xFFFFFFFFu, l_result_capability))
+            {
+                exit(-1);
+            }
+            info_index_t l_offset{p_info_index < l_index};
+            for (dim3 threadIdx{0, 1, 1}; threadIdx.x < 32; ++threadIdx.x)
+            {
+#if VERBOSITY_LEVEL >= 6
+                my_cuda::print_mask(5, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability[threadIdx.x], l_mask_to_apply[threadIdx.x], l_result[threadIdx.x]);
+#endif // VERBOSITY_LEVEL >= 6
+                this->get_position_info(p_dest_situation_index, l_index - l_offset).set_word(threadIdx.x, l_result_capability[threadIdx.x]);
+            }
+        }
     }
 
     //-------------------------------------------------------------------------

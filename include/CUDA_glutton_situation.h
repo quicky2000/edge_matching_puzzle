@@ -108,16 +108,6 @@ namespace edge_matching_puzzle
 
     private:
 
-#if 0
-        inline
-        void
-        apply_color_constraint(uint32_t p_color_id
-                              ,info_index_t p_info_index
-                              ,uint32_t p_mask_to_apply
-                              );
-
-#endif // 0
-
         CUDA_glutton_situations & m_situations;
 
         uint32_t m_situation_index;
@@ -150,27 +140,6 @@ namespace edge_matching_puzzle
     CUDA_glutton_situation::is_position_free(position_index_t p_position_index) const
     {
         return m_situations.is_position_free(m_situation_index, p_position_index);
-    }
-
-    //-------------------------------------------------------------------------
-    void
-    CUDA_glutton_situation::apply_color_constraint(uint32_t p_color_id
-                                                  ,info_index_t p_info_index
-                                                  ,uint32_t p_mask_to_apply
-                                                  )
-    {
-#ifdef ENABLE_CUDA_CODE
-        //uint32_t l_capability = p_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
-        //uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
-        //l_constraint_capability &= p_mask_to_apply;
-        //uint32_t l_result_capability = l_capability & l_constraint_capability;
-#else // ENABLE_CUDA_CODE
-        //pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx) { return p_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);}};
-        //pseudo_CUDA_thread_variable<uint32_t> l_constraint_capability{[&](dim3 threadIdx) { return p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);}};
-        //l_constraint_capability &= p_mask_to_apply;
-        //pseudo_CUDA_thread_variable<uint32_t> l_result_capability{l_capability & l_constraint_capability};
-#endif // ENABLE_CUDA_CODE
-
     }
 
 #endif // 0
