@@ -99,6 +99,7 @@ namespace edge_matching_puzzle
                         ) const;
 
         inline
+        __device__
         void
         play_from(uint32_t p_dest_situation_index
                  ,const CUDA_glutton_situations & p_source
@@ -226,6 +227,7 @@ namespace edge_matching_puzzle
          * situation index in current situations
          */
         inline
+        __device__
         void
         apply_color_constraint_from(uint32_t p_dest_situation_index
                                    ,const CUDA_glutton_situations & p_source
@@ -735,6 +737,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    __device__
     void
     CUDA_glutton_situations::play_from(uint32_t p_dest_situation_index
                                       ,const CUDA_glutton_situations & p_source
@@ -776,6 +779,7 @@ namespace edge_matching_puzzle
     }
 
     //-------------------------------------------------------------------------
+    __device__
     void
     CUDA_glutton_situations::apply_color_constraint_from(uint32_t p_dest_situation_index
                                                         ,const CUDA_glutton_situations & p_source
@@ -795,9 +799,13 @@ namespace edge_matching_puzzle
         auto l_position_index = p_source.get_position_index(p_source_situation_index, p_info_index);
         assert(p_source.is_position_free(p_source_situation_index, l_position_index));
 
+#ifdef ENABLE_CUDA_CODE
+        uint32_t l_mask_to_apply = threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(CUDA_piece_position_info2::compute_piece_bit_index(p_piece_index, p_orientation))): 0xFFFFFFFFu;;
+        info_index_t l_related_positions = p_info_index;
+#else // ENABLE_CUDA_CODE
         pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return CUDA_piece_position_info2::compute_piece_word_index(p_piece_index) == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(CUDA_piece_position_info2::compute_piece_bit_index(p_piece_index, p_orientation))): 0xFFFFFFFFu;}};
         pseudo_CUDA_thread_variable<info_index_t> l_related_positions{p_info_index};
-
+#endif
         //---------------------------------------------------------------------
         //- WARNING !!!! THE CURRENT CODE DON'T MANAGE THEORIC INFO
         //---------------------------------------------------------------------
@@ -819,6 +827,15 @@ namespace edge_matching_puzzle
             }
             info_index_t l_related_info_index = p_source.get_info_index(p_source_situation_index, l_related_position);
             uint32_t l_offset = p_info_index < l_related_info_index;
+
+#ifdef ENABLE_CUDA_CODE
+            l_related_positions = threadIdx.x == static_cast<uint32_t>(l_orientation) ? l_related_info_index : l_related_positions;
+            uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, static_cast<uint32_t>(l_orientation)).get_word(threadIdx.x);
+            l_constraint_capability &= l_mask_to_apply;
+
+            uint32_t l_capability = p_source.get_position_info(p_source_situation_index, l_related_info_index).get_word(threadIdx.x);
+            uint32_t l_result_capability = l_capability & l_constraint_capability;
+#else // ENABLE_CUDA_CODE
             l_related_positions[static_cast<uint32_t>(l_orientation)] = l_related_info_index;
 
             pseudo_CUDA_thread_variable<uint32_t> l_constraint_capability{[&](dim3 threadIdx) { return p_color_constraints.get_info(l_color_id - 1, static_cast<uint32_t>(l_orientation)).get_word(threadIdx.x);}};
@@ -826,11 +843,15 @@ namespace edge_matching_puzzle
 
             pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx) { return p_source.get_position_info(p_source_situation_index, l_related_info_index).get_word(threadIdx.x);}};
             pseudo_CUDA_thread_variable<uint32_t> l_result_capability{l_capability & l_constraint_capability};
+#endif // ENABLE_CUDA_CODE
 
             if(!__any_sync(0xFFFFFFFFu, l_result_capability))
             {
                 exit(-1);
             }
+#ifdef ENABLE_CUDA_CODE
+            this->get_position_info(p_dest_situation_index, l_related_info_index - l_offset).set_word(threadIdx.x, l_result_capability);
+#else // ENABLE_CUDA_CODE
             for (dim3 threadIdx{0, 1, 1}; threadIdx.x < 32; ++threadIdx.x)
             {
 #if VERBOSITY_LEVEL >= 6
@@ -838,25 +859,40 @@ namespace edge_matching_puzzle
 #endif // VERBOSITY_LEVEL >= 6
                     this->get_position_info(p_dest_situation_index, l_related_info_index - l_offset).set_word(threadIdx.x, l_result_capability[threadIdx.x]);
             }
+#endif // ENABLE_CUDA_CODE
 
         }
 
         // Apply the mask on other info
         for(info_index_t l_index{0}; l_index < info_index_t{p_source.get_situation_info_nb()}; ++l_index)
         {
-            std::cout << "Info index " << static_cast<uint32_t>(l_index) << "\n";
+#ifdef ENABLE_CUDA_CODE
+            if(__any_sync(0x1Fu, l_related_positions == l_index))
+            {
+                continue;
+            }
+#else // ENABLE_CUDA_CODE
             pseudo_CUDA_thread_variable<uint32_t> l_matching_related_position{[&](dim3 threadIdx) { return l_related_positions[threadIdx.x] == l_index;}};
             if(__any_sync(0x1Fu, l_matching_related_position))
             {
                 continue;
             }
+#endif // ENABLE_CUDA_CODE
+#ifdef ENABLE_CUDA_CODE
+            uint32_t l_capability{p_source.get_position_info(p_source_situation_index, static_cast<info_index_t>(l_index)).get_word(threadIdx.x)};
+            uint32_t l_result_capability{l_capability & l_mask_to_apply};
+#else // ENABLE_CUDA_CODE
             pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx) { return p_source.get_position_info(p_source_situation_index, static_cast<info_index_t>(l_index)).get_word(threadIdx.x);}};
             pseudo_CUDA_thread_variable<uint32_t> l_result_capability{l_capability & l_mask_to_apply};
+#endif // ENABLE_CUDA_CODE
             if(!__any_sync(0xFFFFFFFFu, l_result_capability))
             {
                 exit(-1);
             }
             info_index_t l_offset{p_info_index < l_index};
+#ifdef ENABLE_CUDA_CODE
+            this->get_position_info(p_dest_situation_index, l_index - l_offset).set_word(threadIdx.x, l_result_capability);
+#else // ENABLE_CUDA_CODE
             for (dim3 threadIdx{0, 1, 1}; threadIdx.x < 32; ++threadIdx.x)
             {
 #if VERBOSITY_LEVEL >= 6
@@ -864,6 +900,7 @@ namespace edge_matching_puzzle
 #endif // VERBOSITY_LEVEL >= 6
                 this->get_position_info(p_dest_situation_index, l_index - l_offset).set_word(threadIdx.x, l_result_capability[threadIdx.x]);
             }
+#endif // ENABLE_CUDA_CODE
         }
     }
 
