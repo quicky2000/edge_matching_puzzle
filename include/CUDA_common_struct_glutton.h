@@ -190,6 +190,33 @@ namespace edge_matching_puzzle
                             ,unsigned int p_orientation_index
         );
 
+        /**
+         * Help method to compute word index in a bitfield composed of 32 bits
+         * words
+         * @param p_index
+         * @return word index
+         */
+        inline static
+        __device__ __host__
+        uint32_t compute_word_index(uint32_t p_index);
+
+        /**
+         * Help method to compute bit index in a word for a bitfield composed
+         * of 32 bits words
+         * @param p_index
+         * @return bit index
+         */
+        inline static
+        __device__ __host__
+        uint32_t compute_bit_index(uint32_t p_index);
+
+        [[nodiscard]]
+        inline static
+        uint32_t
+        compute_raw_bit_index(uint32_t p_word_index
+                             ,uint32_t p_bit_index
+                             );
+
     protected:
 
 #ifdef STRICT_CHECKING
@@ -275,26 +302,6 @@ namespace edge_matching_puzzle
         set_raw_available_piece(uint32_t p_index, uint32_t p_value);
 
     private:
-
-        /**
-         * Help method to compute word index in a bitfield composed of 32 bits
-         * words
-         * @param p_index
-         * @return word index
-         */
-        inline static
-        __device__ __host__
-        uint32_t compute_word_index(uint32_t p_index);
-
-        /**
-         * Help method to compute bit index in a word for a bitfield composed
-         * of 32 bits words
-         * @param p_index
-         * @return bit index
-         */
-        inline static
-        __device__ __host__
-        uint32_t compute_bit_index(uint32_t p_index);
 
         /**
          * Store correspondence between position index and info index
@@ -586,7 +593,7 @@ namespace edge_matching_puzzle
     uint32_t
     CUDA_common_struct_glutton::compute_word_index(uint32_t p_index)
     {
-        unsigned int l_word_index = p_index / 32;
+        uint32_t l_word_index = p_index / 32;
         return l_word_index;
     }
 
@@ -595,9 +602,20 @@ namespace edge_matching_puzzle
     uint32_t
     CUDA_common_struct_glutton::compute_bit_index(uint32_t p_index)
     {
-        unsigned int l_bit_index = p_index % 32;
+        uint32_t l_bit_index = p_index % 32;
         return l_bit_index;
     }
+
+    //-------------------------------------------------------------------------
+    [[nodiscard]]
+    uint32_t
+    CUDA_common_struct_glutton::compute_raw_bit_index(uint32_t p_word_index
+                                                     ,uint32_t p_bit_index
+                                                     )
+    {
+        return p_word_index * 32 + p_bit_index;
+    }
+
 
     //-------------------------------------------------------------------------
     __device__ __host__

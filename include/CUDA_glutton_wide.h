@@ -101,8 +101,8 @@ namespace edge_matching_puzzle
 #ifdef ENABLE_CUDA_CODE
         // TO IMPLEMENT
 #else // ENABLE_CUDA_CODE
-        uint32_t l_start_word_index = CUDA_glutton_situations::compute_word_index(p_start_index);
-        uint32_t l_start_bit_index = CUDA_glutton_situations::compute_bit_index(p_start_index);
+        uint32_t l_start_word_index = CUDA_common_struct_glutton::compute_word_index(p_start_index);
+        uint32_t l_start_bit_index = CUDA_common_struct_glutton::compute_bit_index(p_start_index);
         uint32_t l_bit_mask = ((1u << l_start_bit_index) - 1u);
         for(unsigned int l_word_index = l_start_word_index; l_word_index < 32; ++l_word_index)
         {

@@ -186,32 +186,6 @@ namespace edge_matching_puzzle
                                  );
 
         /**
-         * Help method to compute word index in a bitfield composed of 32 bits
-         * words
-         * @param p_raw_bit_index
-         * @return word index
-         */
-        [[nodiscard]]
-        inline static
-        uint32_t compute_word_index(uint32_t p_raw_bit_index);
-
-        /**
-         * Help method to compute bit index in a word for a bitfield composed
-         * of 32 bits words
-         * @param p_raw_bit_index
-         * @return bit index
-         */
-        [[nodiscard]]
-        inline static
-        uint32_t compute_bit_index(uint32_t p_raw_bit_index);
-
-        [[nodiscard]]
-        inline static
-        uint32_t
-        compute_raw_bit_index(uint32_t p_word_index
-                             ,uint32_t p_bit_index
-                             );
-        /**
          * Type representing a step
          */
         typedef uint32_t played_info_t;
@@ -594,7 +568,7 @@ namespace edge_matching_puzzle
         // greater than puzzle size will be unavailable
         assert(p_piece_index < 256);
         assert(p_situation_index < m_nb_situation);
-        return m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] & (1u << compute_bit_index(p_piece_index));
+        return m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] & (1u << CUDA_common_struct_glutton::compute_bit_index(p_piece_index));
     }
 
     //-------------------------------------------------------------------------
@@ -609,7 +583,7 @@ namespace edge_matching_puzzle
 #ifdef STRICT_CHECKING
         assert(p_piece_index < m_puzzle_size);
 #endif // STRICT_CHECKING
-        m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] |= (1u << compute_bit_index(p_piece_index));
+        m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] |= (1u << CUDA_common_struct_glutton::compute_bit_index(p_piece_index));
     }
 
     //-------------------------------------------------------------------------
@@ -624,7 +598,7 @@ namespace edge_matching_puzzle
 #ifdef STRICT_CHECKING
         assert(p_piece_index < m_puzzle_size);
 #endif // STRICT_CHECKING
-        m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] &= ~(1u << compute_bit_index(p_piece_index));
+        m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] &= ~(1u << CUDA_common_struct_glutton::compute_bit_index(p_piece_index));
     }
 
     //-------------------------------------------------------------------------
@@ -1074,7 +1048,7 @@ namespace edge_matching_puzzle
     {
         assert(p_situation_index < m_nb_situation);
         assert(p_piece_index < m_puzzle_size);
-        return 8 * p_situation_index + compute_word_index(p_piece_index);
+        return 8 * p_situation_index + CUDA_common_struct_glutton::compute_word_index(p_piece_index);
     }
                                  
     //-------------------------------------------------------------------------
@@ -1085,34 +1059,6 @@ namespace edge_matching_puzzle
                                                       ) const
     {
         return m_level * p_situation_index + p_level_index;
-    }
-
-    //-------------------------------------------------------------------------
-    [[nodiscard]]
-    uint32_t
-    CUDA_glutton_situations::compute_word_index(uint32_t p_raw_bit_index)
-    {
-        uint32_t l_word_index = p_raw_bit_index / 32;
-        return l_word_index;
-    }
-
-    //-------------------------------------------------------------------------
-    [[nodiscard]]
-    uint32_t
-    CUDA_glutton_situations::compute_bit_index(uint32_t p_raw_bit_index)
-    {
-        uint32_t l_bit_index = p_raw_bit_index % 32;
-        return l_bit_index;
-    }
-
-    //-------------------------------------------------------------------------
-    [[nodiscard]]
-    uint32_t
-    CUDA_glutton_situations::compute_raw_bit_index(uint32_t p_word_index
-                                                  ,uint32_t p_bit_index
-                                                  )
-    {
-        return p_word_index * 32 + p_bit_index;
     }
 
 }
