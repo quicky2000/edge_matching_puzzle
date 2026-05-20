@@ -774,6 +774,10 @@ namespace edge_matching_puzzle
                              ,p_source
                              ,p_source_situation_index
                              );
+        copy_available_pieces_from(p_dest_situation_index
+                                  ,p_source
+                                  ,p_source_situation_index
+                                  );
         set_piece_unavailable(p_dest_situation_index, p_piece_index);
         set_played_info(p_dest_situation_index, m_level - 1, CUDA_common_struct_glutton::generate_played_info(l_position_index, p_piece_index, static_cast<uint32_t>(p_orientation)));
     }
