@@ -56,8 +56,8 @@ namespace edge_matching_puzzle
                                         ,*l_situations
                                         ,l_situation_index
                                         ,l_corner_info_index
-                                        ,CUDA_piece_position_info2::compute_piece_index(l_ffs - 1)
-                                        ,CUDA_piece_position_info2::compute_piece_orientation(l_ffs - 1)
+                                        ,CUDA_piece_position_info2::compute_piece_index(static_cast<raw_bit_index_t>(l_ffs - 1))
+                                        ,CUDA_piece_position_info2::compute_piece_orientation(static_cast<raw_bit_index_t>(l_ffs - 1))
                                         ,*l_color_constraints
                                         );
         CUDA_glutton_situation l_result_situation{*l_next_situations, l_situation_index};

@@ -20,6 +20,7 @@
 #define EMP_CUDA_PIECE_POSITION_INFO2_H
 
 #include "CUDA_piece_position_info_base.h"
+#include "CUDA_types.h"
 #include "emp_types.h"
 #include <cassert>
 #include <iostream>
@@ -121,7 +122,7 @@ namespace edge_matching_puzzle
         inline static
         __host__ __device__
         unsigned int
-        compute_piece_index(unsigned int p_global_bit_index);
+        compute_piece_index(raw_bit_index_t p_global_bit_index);
 
         /**
          * Compute piece orientation corresponding to global bit index provided as parameter
@@ -132,7 +133,7 @@ namespace edge_matching_puzzle
         inline static
         __host__ __device__
         emp_types::t_orientation
-        compute_piece_orientation(unsigned int p_global_bit_index);
+        compute_piece_orientation(raw_bit_index_t p_global_bit_index);
 
         /**
          * Compute index of word where info corresponding to piece is store
@@ -255,19 +256,19 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __host__ __device__
     unsigned int
-    CUDA_piece_position_info2::compute_piece_index(unsigned int p_global_bit_index)
+    CUDA_piece_position_info2::compute_piece_index(raw_bit_index_t p_global_bit_index)
     {
         assert(p_global_bit_index < 256 * 4);
-        return p_global_bit_index / 4;
+        return static_cast<uint32_t>(p_global_bit_index) / 4;
     }
 
     //-------------------------------------------------------------------------
     __host__ __device__
     emp_types::t_orientation
-    CUDA_piece_position_info2::compute_piece_orientation(unsigned int p_global_bit_index)
+    CUDA_piece_position_info2::compute_piece_orientation(raw_bit_index_t p_global_bit_index)
     {
         assert(p_global_bit_index < 256 * 4);
-        return static_cast<emp_types::t_orientation>(p_global_bit_index % 4);
+        return static_cast<emp_types::t_orientation>(static_cast<uint32_t>(p_global_bit_index) % 4);
     }
 
     //-------------------------------------------------------------------------
