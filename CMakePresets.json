@@ -5,7 +5,7 @@
             "name": "default",
             "description": "Default settings for my CMake projects",
             "generator": "Unix Makefiles",
-            "binaryDir": "${workspaceFolder}/build",
+            "binaryDir": "$env{QUICKY_BUILD}/edge_matching_puzzle/cmake-build-vsc",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "NO",
