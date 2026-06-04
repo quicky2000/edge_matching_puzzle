@@ -24,6 +24,7 @@
 #ifdef ENABLE_CUDA_CODE
 #include "CUDA_memory_managed_item.h"
 #endif // ENABLE_CUDA_CODE
+#include "CUDA_types.h"
 #include <cassert>
 #include <iostream>
 #include <iomanip>
@@ -69,16 +70,16 @@ namespace edge_matching_puzzle
           */
          inline
          __host__ __device__
-         uint32_t get_word(unsigned int p_index) const;
+         uint32_t get_word(u32_word_index_t p_index) const;
 
          /**
           * Word access for CUDA warp operation
-          * @param p_index Index of ward
+          * @param p_index Index of word
           * @param p_word value to assign to word
           */
          inline
          __host__ __device__
-         void set_word(unsigned int p_index, uint32_t p_word);
+         void set_word(u32_word_index_t p_index, uint32_t p_word);
 
          /**
           * Apply result of xor operator between information contained in 2 oprerands
@@ -125,14 +126,14 @@ namespace edge_matching_puzzle
 
          inline
          __host__ __device__
-         void clear_bit(unsigned int p_word_index
-                       ,unsigned int p_bit_index
+         void clear_bit(u32_word_index_t p_word_index
+                       ,u32_bit_index_t p_bit_index
                        );
 
          inline
          __host__ __device__
-         void set_bit(unsigned int p_word_index
-                     ,unsigned int p_bit_index
+         void set_bit(u32_word_index_t p_word_index
+                     ,u32_bit_index_t p_bit_index
                      );
 
        private:
@@ -184,7 +185,7 @@ namespace edge_matching_puzzle
     CUDA_piece_position_info_base::clear_bit(unsigned int p_bit_index)
     {
         assert(p_bit_index < 1024);
-        clear_bit(p_bit_index / 32, p_bit_index % 32);
+        clear_bit(static_cast<u32_word_index_t>(p_bit_index / 32), static_cast<u32_bit_index_t>(p_bit_index % 32));
     }
 
     //-------------------------------------------------------------------------
@@ -192,7 +193,7 @@ namespace edge_matching_puzzle
     CUDA_piece_position_info_base::set_bit(unsigned int p_bit_index)
     {
         assert(p_bit_index < 1024);
-        set_bit(p_bit_index / 32, p_bit_index % 32);
+        set_bit(static_cast<u32_word_index_t>(static_cast<u32_word_index_t>(p_bit_index) / 32), static_cast<u32_bit_index_t>(p_bit_index % 32));
     }
 
     //-------------------------------------------------------------------------
@@ -209,21 +210,21 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     uint32_t
     __host__ __device__
-    CUDA_piece_position_info_base::get_word(unsigned int p_index) const
+    CUDA_piece_position_info_base::get_word(u32_word_index_t p_index) const
     {
         //assert(p_index < 32);
-        return m_info[p_index];
+        return m_info[static_cast<uint32_t>(p_index)];
     }
 
     //-------------------------------------------------------------------------
     void
     __host__ __device__
-    CUDA_piece_position_info_base::set_word(unsigned int p_index
+    CUDA_piece_position_info_base::set_word(u32_word_index_t p_index
                                            ,uint32_t p_word
                                            )
     {
         //assert(p_index < 32);
-        m_info[p_index] = p_word;
+        m_info[static_cast<uint32_t>(p_index)] = p_word;
     }
 
     //-------------------------------------------------------------------------
@@ -254,25 +255,25 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __host__ __device__
     void
-    CUDA_piece_position_info_base::clear_bit(unsigned int p_word_index
-                                            ,unsigned int p_bit_index
+    CUDA_piece_position_info_base::clear_bit(u32_word_index_t p_word_index
+                                            ,u32_bit_index_t p_bit_index
                                             )
     {
         assert(p_word_index < 32);
         assert(p_bit_index < 32);
-        m_info[p_word_index] &= ~(1u << p_bit_index);
+        m_info[static_cast<uint32_t>(p_word_index)] &= ~(1u << static_cast<uint32_t>(p_bit_index));
     }
 
     //-------------------------------------------------------------------------
     __host__ __device__
     void
-    CUDA_piece_position_info_base::set_bit(unsigned int p_word_index
-                                          ,unsigned int p_bit_index
+    CUDA_piece_position_info_base::set_bit(u32_word_index_t p_word_index
+                                          ,u32_bit_index_t p_bit_index
                                           )
     {
         assert(p_word_index < 32);
         assert(p_bit_index < 32);
-        m_info[p_word_index] |= (1u << p_bit_index);
+        m_info[static_cast<uint32_t>(p_word_index)] |= (1u << static_cast<uint32_t>(p_bit_index));
     }
 
     //-------------------------------------------------------------------------

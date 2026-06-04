@@ -70,7 +70,9 @@ namespace edge_matching_puzzle
                                        )
     {
         assert(p_id < 256);
-        CUDA_piece_position_info_base::clear_bit(8 * static_cast<unsigned int>(p_orientation) + p_id / 32, p_id % 32);
+        CUDA_piece_position_info_base::clear_bit(static_cast<u32_word_index_t>(8 * static_cast<unsigned int>(p_orientation) + p_id / 32)
+                                                ,static_cast<u32_bit_index_t>(p_id % 32)
+                                                );
     }
 
     //-------------------------------------------------------------------------
@@ -80,7 +82,9 @@ namespace edge_matching_puzzle
                                      )
     {
         assert(p_index < 256);
-        CUDA_piece_position_info_base::set_bit(8 * static_cast<unsigned int>(p_orientation) + p_index / 32, p_index % 32);
+        CUDA_piece_position_info_base::set_bit(static_cast<u32_word_index_t>(8 * static_cast<unsigned int>(p_orientation) + p_index / 32)
+                                              ,static_cast<u32_bit_index_t>(p_index % 32)
+                                              );
     }
 
     //-------------------------------------------------------------------------
@@ -103,7 +107,7 @@ namespace edge_matching_puzzle
             p_stream << "|";
             for (unsigned int l_index = 0; l_index < 8; ++l_index)
             {
-                p_stream << " 0x" << std::hex << std::setfill('0') << std::setw(8) << p_info.get_word(8 * l_orientation_index + l_index) << std::dec << " |";
+                p_stream << " 0x" << std::hex << std::setfill('0') << std::setw(8) << p_info.get_word(static_cast<u32_word_index_t>(8 * l_orientation_index + l_index)) << std::dec << " |";
             }
             p_stream << std::setfill(' ') << std::endl;
         }

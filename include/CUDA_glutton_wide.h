@@ -106,7 +106,7 @@ namespace edge_matching_puzzle
         uint32_t l_bit_mask = ((1u << l_start_bit_index) - 1u);
         for(unsigned int l_word_index = l_start_word_index; l_word_index < 32; ++l_word_index)
         {
-            uint32_t l_word = p_info.get_word(l_word_index) & ~l_bit_mask;
+            uint32_t l_word = p_info.get_word(static_cast<u32_word_index_t>(l_word_index)) & ~l_bit_mask;
             int32_t l_fss = __ffs(l_word);
             if (l_fss != 0)
             {

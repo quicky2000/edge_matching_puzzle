@@ -37,16 +37,18 @@ namespace edge_matching_puzzle
         bool l_valid = true;
         for(unsigned int l_piece_index = p_start_index; l_piece_index < p_end_index; ++l_piece_index)
         {
-            uint32_t l_thread_situation_capability = p_situation_capability.get_capability(NB_PIECES + l_piece_index).get_word(threadIdx.x);
+            uint32_t l_thread_situation_capability = p_situation_capability.get_capability(NB_PIECES + l_piece_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));
             // Apply mask only if available piece
             if(__any_sync(0xFFFFFFFF, l_thread_situation_capability))
             {
-                uint32_t l_thread_transition_capability = p_transition_capability.get_capability(NB_PIECES + l_piece_index).get_word(threadIdx.x);
+                uint32_t l_thread_transition_capability = p_transition_capability.get_capability(NB_PIECES + l_piece_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));
                 uint32_t l_thread_result_capability = l_thread_situation_capability & l_thread_transition_capability;
                 // Check result of mask except for selected piece and current poistion
                 if(__any_sync(0xFFFFFFFF, l_thread_result_capability))
                 {
-                    p_result_capability.get_capability(NB_PIECES + l_piece_index).set_word(threadIdx.x, l_thread_result_capability);
+                    p_result_capability.get_capability(NB_PIECES + l_piece_index).set_word(static_cast<u32_word_index_t>(threadIdx.x)
+                                                                                          ,l_thread_result_capability
+                                                                                          );
                 }
                 else // Exit if position is locked
                 {
@@ -85,7 +87,7 @@ namespace edge_matching_puzzle
         do
         {
             // Search for first bit set
-            uint32_t l_thread_available_variables = l_stack.get_available_variables(l_stack_step).get_capability(l_stack_step).get_word(threadIdx.x);
+            uint32_t l_thread_available_variables = l_stack.get_available_variables(l_stack_step).get_capability(l_stack_step).get_word(static_cast<u32_word_index_t>(threadIdx.x));
 
             // Sync between threads to determine whose as some available variables
             unsigned l_ballot_result = __ballot_sync(0xFFFFFFFF, (int) l_thread_available_variables);
@@ -118,7 +120,9 @@ namespace edge_matching_puzzle
                 l_stack.set_variable_index(l_stack_step, l_variable_id);
                 // Mark piece as used
                 l_thread_available_variables &= ~(1u << l_bit_index);
-                l_stack.get_available_variables(l_stack_step).get_capability(l_stack_step).set_word(threadIdx.x, l_thread_available_variables);
+                l_stack.get_available_variables(l_stack_step).get_capability(l_stack_step).set_word(static_cast<u32_word_index_t>(threadIdx.x)
+                                                                                                   ,l_thread_available_variables
+                                                                                                   );
             }
 
             if(l_stack_step == NB_PIECES - 1)
@@ -134,14 +138,16 @@ namespace edge_matching_puzzle
             // Compute new positions after current one as we now that current one will be all 0
             for (unsigned int l_position_piece_index = l_stack_step + 1; l_position_piece_index < NB_PIECES; ++l_position_piece_index)
             {
-                uint32_t l_thread_situation_capability = l_situation_capability.get_capability(l_position_piece_index).get_word(threadIdx.x);
-                uint32_t l_thread_transition_capability = l_transition_capability.get_capability(l_position_piece_index).get_word(threadIdx.x);
+                uint32_t l_thread_situation_capability = l_situation_capability.get_capability(l_position_piece_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));
+                uint32_t l_thread_transition_capability = l_transition_capability.get_capability(l_position_piece_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));
                 uint32_t l_thread_result_capability = l_thread_situation_capability & l_thread_transition_capability;
 
                 // Check result of mask except for selected piece and current poistion
                 if(__any_sync(0xFFFFFFFF, l_thread_result_capability))
                 {
-                    l_result_capability.get_capability(l_position_piece_index).set_word(threadIdx.x, l_thread_result_capability);
+                    l_result_capability.get_capability(l_position_piece_index).set_word(static_cast<u32_word_index_t>(threadIdx.x)
+                                                                                       ,l_thread_result_capability
+                                                                                       );
                 }
                 else // Exit if position is locked
                 {
@@ -164,7 +170,7 @@ namespace edge_matching_puzzle
 
             if(l_situation_valid)
             {
-                l_result_capability.get_capability(NB_PIECES + l_piece_id).set_word(threadIdx.x, 0x0);
+                l_result_capability.get_capability(NB_PIECES + l_piece_id).set_word(static_cast<u32_word_index_t>(threadIdx.x), 0x0);
                 ++l_stack_step;
             }
         }

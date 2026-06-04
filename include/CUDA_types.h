@@ -29,6 +29,16 @@ namespace edge_matching_puzzle
      * Type used to represent global index of bit in a bitfield composed of x bits words
      */
     using raw_bit_index_t = my_cuda::CUDA_strong_primitive<uint32_t, struct raw_bit_index>;
+
+    /**
+     * Type used to represent index of word in a bitfield composed of 32 bits words
+     */
+    using u32_word_index_t = my_cuda::CUDA_strong_primitive<uint32_t, struct u32_word_index>;
+
+    /**
+     * Type used to represent index of bit in a word in a bitfield composed of 32 bits words
+     */
+    using u32_bit_index_t = my_cuda::CUDA_strong_primitive<uint32_t, struct u32_bit_index>;
 }
 #endif //EDGE_MATCHING_PUZZLE_CUDA_TYPES_H
 // EOF

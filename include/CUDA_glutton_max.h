@@ -297,11 +297,11 @@ namespace edge_matching_puzzle
             {
 #ifdef ENABLE_CUDA_CODE
                 my_cuda::print_single(p_indent_level + 1, "Index = %" PRIu32 " <=> Position = %" PRIu32 "\n" ,static_cast<uint32_t>(l_display_index), static_cast<uint32_t>(p_stack.get_position_index(l_display_index)));
-                uint32_t l_word = (p_stack.*p_accessor)(l_display_index).get_word(threadIdx.x);
+                uint32_t l_word = (p_stack.*p_accessor)(l_display_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));
                 my_cuda::print_mask(p_indent_level + 2, __ballot_sync(0xFFFFFFFF, l_word), "Info = 0x%" PRIx32, l_word);
 #else // ENABLE_CUDA_CODE
                 my_cuda::print_single(p_indent_level + 1, {0, 1, 1}, "Index = %" PRIu32 " <=> Position = %" PRIu32 "\n" ,static_cast<uint32_t>(l_display_index), static_cast<uint32_t>(p_stack.get_position_index(l_display_index)));
-                pseudo_CUDA_thread_variable<uint32_t> l_word{[&](dim3 threadIdx){ return (p_stack.*p_accessor)(l_display_index).get_word(threadIdx.x);}};
+                pseudo_CUDA_thread_variable<uint32_t> l_word{[&](dim3 threadIdx){ return (p_stack.*p_accessor)(l_display_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));}};
                 uint32_t l_print_mask = __ballot_sync(0xFFFFFFFF, l_word);
                 for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++l_threadIdx_x)
                 {
@@ -438,11 +438,13 @@ namespace edge_matching_puzzle
                                        )
             {
 #ifdef ENABLE_CUDA_CODE
-                p_stack.get_next_level_position_info(p_result_info_index).set_word(threadIdx.x, p_result);
+                p_stack.get_next_level_position_info(p_result_info_index).set_word(static_cast<u32_word_index_t>(threadIdx.x), p_result);
 #else // ENABLE_CUDA_CODE
                 for(unsigned int l_threadIdx_x = 0; l_threadIdx_x < 32; ++ l_threadIdx_x)
                 {
-                    p_stack.get_next_level_position_info(p_result_info_index).set_word(l_threadIdx_x, p_result[l_threadIdx_x]);
+                    p_stack.get_next_level_position_info(p_result_info_index).set_word(static_cast<u32_word_index_t>(l_threadIdx_x)
+                                                                                      ,p_result[l_threadIdx_x]
+                                                                                      );
                 }
 #endif // ENABLE_CUDA_CODE
             };
@@ -494,13 +496,13 @@ namespace edge_matching_puzzle
                     my_cuda::print_single(5, "Info %i <=> Position %i :\n", static_cast<uint32_t>(l_result_info_index), static_cast<uint32_t>(p_stack.get_position_index(l_result_info_index)));
 #endif // VERBOSITY_LEVEL >= 6
 #ifdef ENABLE_CUDA_CODE
-                    uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);
+                    uint32_t l_capability = p_stack.get_position_info(l_result_info_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));
                     uint32_t l_result_capability = l_capability & p_mask_to_apply;
 #if VERBOSITY_LEVEL >= 6
                     my_cuda::print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, p_mask_to_apply, l_result_capability);
 #endif // VERBOSITY_LEVEL >= 6
 #else // ENABLE_CUDA_CODE
-                    pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(threadIdx.x);}};
+                    pseudo_CUDA_thread_variable<uint32_t> l_capability {[&](dim3 threadIdx){return p_stack.get_position_info(l_result_info_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));}};
                     pseudo_CUDA_thread_variable<uint32_t> l_result_capability =  l_capability & p_mask_to_apply;
 #if VERBOSITY_LEVEL >= 6
                     uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, l_capability);
@@ -569,13 +571,13 @@ namespace edge_matching_puzzle
 #endif // VERBOSITY_LEVEL >= 6
 
 #ifdef ENABLE_CUDA_CODE
-                    uint32_t l_capability = p_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);
-                    uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);
+                    uint32_t l_capability = p_stack.get_position_info(l_related_info_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));
+                    uint32_t l_constraint_capability = p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));
                     l_constraint_capability &= p_mask_to_apply;
                     uint32_t l_result_capability = l_capability & l_constraint_capability;
 #else // ENABLE_CUDA_CODE
-                    pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx) { return p_stack.get_position_info(l_related_info_index).get_word(threadIdx.x);}};
-                    pseudo_CUDA_thread_variable<uint32_t> l_constraint_capability{[&](dim3 threadIdx) { return p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(threadIdx.x);}};
+                    pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx) { return p_stack.get_position_info(l_related_info_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));}};
+                    pseudo_CUDA_thread_variable<uint32_t> l_constraint_capability{[&](dim3 threadIdx) { return p_color_constraints.get_info(l_color_id - 1, l_orientation_index).get_word(static_cast<u32_word_index_t>(threadIdx.x));}};
                     l_constraint_capability &= p_mask_to_apply;
                     pseudo_CUDA_thread_variable<uint32_t> l_result_capability{l_capability & l_constraint_capability};
 #endif // ENABLE_CUDA_CODE
@@ -726,7 +728,7 @@ namespace edge_matching_puzzle
             if(threadIdx.x == p_elected_thread)
 #endif // ENABLE_CUDA_CODE
             {
-                p_stack.get_position_info(p_info_index).clear_bit(p_elected_thread, p_bit_index);
+                p_stack.get_position_info(p_info_index).clear_bit(static_cast<u32_word_index_t>(p_elected_thread), static_cast<u32_bit_index_t>(p_bit_index));
             }
         }
 
@@ -784,14 +786,14 @@ namespace edge_matching_puzzle
                                        )
                     {
                         // Compute piece index
-                        uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(p_elected_thread, p_bit_index);
+                        uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(static_cast<u32_word_index_t>(p_elected_thread), static_cast<u32_bit_index_t>(p_bit_index));
 
 #if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "Piece index : %i", l_piece_index);
 #endif // VERBOSITY_LEVEL >= 5
 
                         // Piece orientation
-                        uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(p_elected_thread, p_bit_index);
+                        uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(static_cast<u32_word_index_t>(p_elected_thread), static_cast<u32_bit_index_t>(p_bit_index));
 
 #if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "Piece orientation : %i", l_piece_orientation);
@@ -806,10 +808,10 @@ namespace edge_matching_puzzle
 
 #ifdef ENABLE_CUDA_CODE
                         CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = p_stack.get_thread_piece_info();
-                        uint32_t l_mask_to_apply = p_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(p_bit_index)): 0xFFFFFFFFu;
+                        uint32_t l_mask_to_apply = p_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(static_cast<u32_bit_index_t>(p_bit_index))): 0xFFFFFFFFu;
 #else // ENABLE_CUDA_CODE
 
-                        pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return p_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(p_bit_index)): 0xFFFFFFFFu;}};
+                        pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return p_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(static_cast<u32_bit_index_t>(p_bit_index))): 0xFFFFFFFFu;}};
                         pseudo_CUDA_thread_variable<CUDA_glutton_max_stack::t_piece_infos> l_piece_infos{[&](dim3 threadIdx){return p_stack.get_thread_piece_info(threadIdx.x);}};
 #endif // ENABLE_CUDA_CODE
 
@@ -929,9 +931,9 @@ namespace edge_matching_puzzle
 
                     // Each thread get its word in position info
 #ifdef ENABLE_CUDA_CODE
-                    uint32_t l_thread_available_variables = p_stack.get_position_info(info_index_t(l_info_index)).get_word(threadIdx.x);
+                    uint32_t l_thread_available_variables = p_stack.get_position_info(info_index_t(l_info_index)).get_word(static_cast<u32_word_index_t>(threadIdx.x));
 #else // ENABLE_CUDA_CODE
-                    pseudo_CUDA_thread_variable<uint32_t> l_thread_available_variables{[&](dim3 threadIdx){return p_stack.get_position_info(info_index_t(l_info_index)).get_word(threadIdx.x);}};
+                    pseudo_CUDA_thread_variable<uint32_t> l_thread_available_variables{[&](dim3 threadIdx){return p_stack.get_position_info(info_index_t(l_info_index)).get_word(static_cast<u32_word_index_t>(threadIdx.x));}};
 #endif // ENABLE_CUDA_CODE
 
                     CUDA_glutton_max::warp_iterate(l_thread_available_variables, l_lambda, l_init_lambda, CUDA_glutton_max::is_position_invalid);
@@ -1025,9 +1027,9 @@ namespace edge_matching_puzzle
 
                 // Each thread get its word in position info
 #ifdef ENABLE_CUDA_CODE
-                uint32_t l_thread_available_variables = p_stack.get_position_info(info_index_t(l_info_index)).get_word(threadIdx.x);
+                uint32_t l_thread_available_variables = p_stack.get_position_info(info_index_t(l_info_index)).get_word(static_cast<u32_word_index_t>(threadIdx.x));
 #else // ENABLE_CUDA_CODE
-                pseudo_CUDA_thread_variable<uint32_t> l_thread_available_variables{[&](dim3 threadIdx){return p_stack.get_position_info(info_index_t(l_info_index)).get_word(threadIdx.x);}};
+                pseudo_CUDA_thread_variable<uint32_t> l_thread_available_variables{[&](dim3 threadIdx){return p_stack.get_position_info(info_index_t(l_info_index)).get_word(static_cast<u32_word_index_t>(threadIdx.x));}};
 #endif // ENABLE_CUDA_CODE
 
                 uint32_t l_info_bits_min = 0xFFFFFFFFu;
@@ -1057,14 +1059,14 @@ namespace edge_matching_puzzle
                                    )
                 {
                     // Compute piece index
-                    uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(p_elected_thread, p_bit_index);
+                    uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(static_cast<u32_word_index_t>(p_elected_thread), static_cast<u32_bit_index_t>(p_bit_index));
 
 #if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Piece index : %i", l_piece_index);
 #endif // VERBOSITY_LEVEL >= 4
 
                     // Piece orientation
-                    uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(p_elected_thread, p_bit_index);
+                    uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(static_cast<u32_word_index_t>(p_elected_thread), static_cast<u32_bit_index_t>(p_bit_index));
 
 #if VERBOSITY_LEVEL >= 5
                     my_cuda::print_single(4, "Piece orientation : %i", l_piece_orientation);
@@ -1079,9 +1081,9 @@ namespace edge_matching_puzzle
 
 #ifdef ENABLE_CUDA_CODE
                     CUDA_glutton_max_stack::t_piece_infos & l_piece_infos = p_stack.get_thread_piece_info();
-                    uint32_t l_mask_to_apply = p_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(p_bit_index)): 0xFFFFFFFFu;
+                    uint32_t l_mask_to_apply = p_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(static_cast<u32_bit_index_t>(p_bit_index))): 0xFFFFFFFFu;
 #else // ENABLE_CUDA_CODE
-                    pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return p_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(p_bit_index)): 0xFFFFFFFFu;}};
+                    pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return p_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(static_cast<u32_bit_index_t>(p_bit_index))): 0xFFFFFFFFu;}};
                     pseudo_CUDA_thread_variable<CUDA_glutton_max_stack::t_piece_infos> l_piece_infos{[&](dim3 threadIdx){return p_stack.get_thread_piece_info(threadIdx.x);}};
 #endif // ENABLE_CUDA_CODE
 
@@ -1326,7 +1328,7 @@ namespace edge_matching_puzzle
 
             // Set variable bit to zero in best candidate and current info
             CUDA_piece_position_info2 & l_position_info = p_stack.get_position_info(l_info_index);
-            l_position_info.clear_bit(l_elected_thread, l_bit_index);
+            l_position_info.clear_bit(static_cast<u32_word_index_t>(l_elected_thread), static_cast<u32_bit_index_t>(l_bit_index));
 
 #if VERBOSITY_LEVEL >= 6
             my_cuda::print_single(5, "after clear\n");
@@ -1334,14 +1336,14 @@ namespace edge_matching_puzzle
 #endif // VERBOSITY_LEVEL >= 6
 
             // Compute piece index
-            uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(l_elected_thread, l_bit_index);
+            uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(static_cast<u32_word_index_t>(l_elected_thread), static_cast<u32_bit_index_t>(l_bit_index));
 
 #if VERBOSITY_LEVEL >= 5
             my_cuda::print_single(4, "Piece index : %i", l_piece_index);
 #endif // VERBOSITY_LEVEL >= 5
 
             // Piece orientation
-            uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(l_elected_thread, l_bit_index);
+            uint32_t l_piece_orientation = CUDA_piece_position_info2::compute_orientation_index(static_cast<u32_word_index_t>(l_elected_thread), static_cast<u32_bit_index_t>(l_bit_index));
 
 #if VERBOSITY_LEVEL >= 5
             my_cuda::print_single(4, "Piece orientation : %i", l_piece_orientation);
@@ -1352,9 +1354,9 @@ namespace edge_matching_puzzle
 
             // Compute mask to apply which set piece bit to 0
 #ifdef ENABLE_CUDA_CODE
-            uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)): 0xFFFFFFFFu;
+            uint32_t l_mask_to_apply = l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(static_cast<u32_bit_index_t>(l_bit_index))) : 0xFFFFFFFFu;
 #else // ENABLE_CUDA_CODE
-            pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(l_bit_index)) : 0xFFFFFFFFu;}};
+            pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return l_elected_thread == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(static_cast<u32_bit_index_t>(l_bit_index))) : 0xFFFFFFFFu;}};
 #endif // ENABLE_CUDA_CODE
 
             if (compute_next_level_position_info(info_index_t(0u), l_info_index, p_stack, l_mask_to_apply))
@@ -1382,13 +1384,13 @@ namespace edge_matching_puzzle
                 my_cuda::print_single(4, "Info %i -> %i:\n", static_cast<uint32_t>(p_stack.get_level_nb_info()) - 1, static_cast<uint32_t>(l_info_index));
 #endif // VERBOSITY_LEVEL >= 5
 #ifdef ENABLE_CUDA_CODE
-                uint32_t l_capability = p_stack.get_position_info(info_index_t(p_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);
+                uint32_t l_capability = p_stack.get_position_info(info_index_t(p_stack.get_level_nb_info() - 1)).get_word(static_cast<u32_word_index_t>(threadIdx.x));
                 uint32_t l_constraint = l_mask_to_apply;
                 uint32_t l_result = l_capability & l_constraint;
 #if VERBOSITY_LEVEL >= 6
                 my_cuda::print_mask(5, __ballot_sync(0xFFFFFFFFu, l_capability), "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability, l_constraint, l_result);
 #endif // VERBOSITY_LEVEL >= 6
-                p_stack.get_next_level_position_info(l_info_index).set_word(threadIdx.x , l_result);
+                p_stack.get_next_level_position_info(l_info_index).set_word(static_cast<u32_word_index_t>(threadIdx.x) , l_result);
                 if(!__any_sync(0xFFFFFFFFu, l_result))
                 {
                     my_cuda::print_single(2, "INVALID Best");
@@ -1396,7 +1398,7 @@ namespace edge_matching_puzzle
                     return;
                 }
 #else // ENABLE_CUDA_CODE
-                pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx){ return p_stack.get_position_info(info_index_t(p_stack.get_level_nb_info() - 1)).get_word(threadIdx.x);}};
+                pseudo_CUDA_thread_variable<uint32_t> l_capability{[&](dim3 threadIdx){ return p_stack.get_position_info(info_index_t(p_stack.get_level_nb_info() - 1)).get_word(static_cast<u32_word_index_t>(threadIdx.x));}};
                 pseudo_CUDA_thread_variable<uint32_t> l_result = l_capability & l_mask_to_apply;
 #if VERBOSITY_LEVEL >= 6
                 uint32_t l_print_mask = __ballot_sync(0xFFFFFFFFu, l_capability);
@@ -1406,7 +1408,7 @@ namespace edge_matching_puzzle
 #if VERBOSITY_LEVEL >= 6
                     my_cuda::print_mask(5, l_print_mask, threadIdx, "Capability 0x%08" PRIx32 "\nConstraint 0x%08" PRIx32 "\nResult     0x%08" PRIx32 "\n", l_capability[threadIdx.x], l_mask_to_apply[threadIdx.x], l_result[threadIdx.x]);
 #endif // VERBOSITY_LEVEL >= 6
-                    p_stack.get_next_level_position_info(l_info_index).set_word(threadIdx.x, l_result[threadIdx.x]);
+                    p_stack.get_next_level_position_info(l_info_index).set_word(static_cast<u32_word_index_t>(threadIdx.x), l_result[threadIdx.x]);
                 }
                 if(!__any_sync(0xFFFFFFFFu, l_result))
                 {

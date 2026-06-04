@@ -318,12 +318,12 @@ namespace edge_matching_puzzle
     bool CUDA_glutton_max_stack::is_position_valid(info_index_t p_info_index) const
     {
 #ifdef ENABLE_CUDA_CODE
-         return __any_sync(0xFFFFFFFFu, get_position_info(p_info_index).get_word(threadIdx.x));
+         return __any_sync(0xFFFFFFFFu, get_position_info(p_info_index).get_word(static_cast<u32_word_index_t>(threadIdx.x)));
 #else // ENABLE_CUDA_CODE
          bool l_any = false;
          for(dim3 threadIdx{0, 1, 1}; (!l_any) && threadIdx.x < 32; ++threadIdx.x)
          {
-             l_any |= get_position_info(p_info_index).get_word(threadIdx.x) != 0;
+             l_any |= get_position_info(p_info_index).get_word(static_cast<u32_word_index_t>(threadIdx.x)) != 0;
          }
          return l_any;
 #endif // ENABLE_CUDA_CODE

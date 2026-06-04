@@ -342,7 +342,7 @@ namespace edge_matching_puzzle
         for(uint32_t l_index = 0; l_index < 32; ++l_index)
         {
             std::stringstream l_stream;
-            l_stream << "0x" << std::hex << std::setfill('0') << std::setw(8) << p_position_info.get_word(l_index);
+            l_stream << "0x" << std::hex << std::setfill('0') << std::setw(8) << p_position_info.get_word(static_cast<u32_word_index_t>(l_index));
             XMLNode l_item_node = l_node.addChild("word");
             l_item_node.addText(l_stream.str().c_str());
             l_item_node.addAttribute("index", std::to_string(l_index).c_str());
@@ -376,7 +376,7 @@ namespace edge_matching_puzzle
                 throw quicky_exception::quicky_logic_exception("Missing word text in " + std::string(p_node.getName()) + " node of file '" + m_name + "'", __LINE__, __FILE__);
             }
             uint32_t l_value = static_cast<uint32_t>(std::stoul(l_value_char_ptr, nullptr, 0));
-            p_position_info.set_word(l_index, l_value);
+            p_position_info.set_word(static_cast<u32_word_index_t>(l_index), l_value);
         }
 
     }
