@@ -60,7 +60,7 @@ namespace edge_matching_puzzle
         [[nodiscard]]
         inline
         __host__ __device__
-        bool is_piece_available(unsigned int p_piece_index)const;
+        bool is_piece_available(piece_index_t p_piece_index)const;
 
         /**
          * Indicate that piece designed by piece index is not used
@@ -68,7 +68,7 @@ namespace edge_matching_puzzle
          */
         inline
         __host__ __device__
-        void set_piece_available(unsigned int p_piece_index);
+        void set_piece_available(piece_index_t p_piece_index);
 
         /**
          * Indicate that piece designed by piece index is used
@@ -76,7 +76,7 @@ namespace edge_matching_puzzle
          */
         inline
         __host__ __device__
-        void set_piece_unavailable(unsigned int p_piece_index);
+        void set_piece_unavailable(piece_index_t p_piece_index);
 
         /**
          * Store relation between index of position info and position index
@@ -160,7 +160,7 @@ namespace edge_matching_puzzle
         [[nodiscard]]
         static inline
         __host__ __device__
-        unsigned int
+        piece_index_t
         decode_piece_index(played_info_t p_played_info);
 
         /**
@@ -186,7 +186,7 @@ namespace edge_matching_puzzle
         __device__ __host__
         played_info_t
         generate_played_info(position_index_t p_position_index
-                            ,unsigned int p_piece_index
+                            ,piece_index_t p_piece_index
                             ,unsigned int p_orientation_index
         );
 
@@ -534,7 +534,7 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __host__ __device__
     bool
-    CUDA_common_struct_glutton::is_piece_available(unsigned int p_piece_index) const
+    CUDA_common_struct_glutton::is_piece_available(piece_index_t p_piece_index) const
     {
         // Do not check with m_puzzle_size as array is designed to support up
         // to 256 piece. As CUDA implementation rely on warp, for small puzzle
@@ -542,33 +542,33 @@ namespace edge_matching_puzzle
         // than puzzle size. As it is initialised with 0 pieces whose index is
         // greater than puzzle size will be unavailable
         assert(p_piece_index < 256);
-        return m_available_pieces[compute_word_index(p_piece_index)] & (1u << compute_bit_index(p_piece_index));
+        return m_available_pieces[compute_word_index(static_cast<uint32_t>(p_piece_index))] & (1u << compute_bit_index(static_cast<uint32_t>(p_piece_index)));
     }
 
     //-------------------------------------------------------------------------
     __host__ __device__
     void
-    CUDA_common_struct_glutton::set_piece_available(unsigned int p_piece_index)
+    CUDA_common_struct_glutton::set_piece_available(piece_index_t p_piece_index)
     {
         assert(p_piece_index < 256);
         assert(!is_piece_available(p_piece_index));
 #ifdef STRICT_CHECKING
         assert(p_piece_index < m_puzzle_size);
 #endif // STRICT_CHECKING
-        m_available_pieces[compute_word_index(p_piece_index)] |= (1u << compute_bit_index(p_piece_index));
+        m_available_pieces[compute_word_index(static_cast<uint32_t>(p_piece_index))] |= (1u << compute_bit_index(static_cast<uint32_t>(p_piece_index)));
     }
 
     //-------------------------------------------------------------------------
     __host__ __device__
     void
-    CUDA_common_struct_glutton::set_piece_unavailable(unsigned int p_piece_index)
+    CUDA_common_struct_glutton::set_piece_unavailable(piece_index_t p_piece_index)
     {
         assert(p_piece_index < 256);
         assert(is_piece_available(p_piece_index));
 #ifdef STRICT_CHECKING
         assert(p_piece_index < m_puzzle_size);
 #endif // STRICT_CHECKING
-        m_available_pieces[compute_word_index(p_piece_index)] &= ~(1u << compute_bit_index(p_piece_index));
+        m_available_pieces[compute_word_index(static_cast<uint32_t>(p_piece_index))] &= ~(1u << compute_bit_index(static_cast<uint32_t>(p_piece_index)));
     }
 
     //-------------------------------------------------------------------------
@@ -620,15 +620,15 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     __device__ __host__
     CUDA_common_struct_glutton::played_info_t
-    CUDA_common_struct_glutton::generate_played_info(position_index_t p_position_index,
-                                                 unsigned int p_piece_index,
-                                                 unsigned int p_orientation_index
+    CUDA_common_struct_glutton::generate_played_info(position_index_t p_position_index
+                                                    ,piece_index_t p_piece_index
+                                                    ,unsigned int p_orientation_index
     )
     {
         assert(p_position_index < 256);
         assert(p_piece_index < 256);
         assert(p_orientation_index < 4);
-        return (p_orientation_index << 16u) | (p_piece_index << 8u) | static_cast<uint32_t>(p_position_index);
+        return (p_orientation_index << 16u) | (static_cast<uint32_t>(p_piece_index) << 8u) | static_cast<uint32_t>(p_position_index);
     }
 
     //-------------------------------------------------------------------------
@@ -641,10 +641,10 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     __device__ __host__
-    unsigned int
+    piece_index_t
     CUDA_common_struct_glutton::decode_piece_index(CUDA_common_struct_glutton::played_info_t p_played_info)
     {
-        return (p_played_info >> 8u) & 0xFFu;
+        return static_cast<piece_index_t>((p_played_info >> 8u) & 0xFFu);
     }
 
     //-------------------------------------------------------------------------

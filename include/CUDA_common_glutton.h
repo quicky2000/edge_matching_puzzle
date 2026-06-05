@@ -131,7 +131,9 @@ namespace edge_matching_puzzle
                             emp_types::t_color_id l_color_id{p_piece_db.get_piece(l_piece_index + 1).get_color(l_opposite_orientation, l_piece_orientation)};
                             if(l_color_id == l_iter_color)
                             {
-                                l_color_constraints->get_info(l_color_index, static_cast<unsigned int>(l_color_orientation)).set_bit(l_piece_index, l_piece_orientation);
+                                l_color_constraints->get_info(l_color_index, static_cast<unsigned int>(l_color_orientation)).set_bit(static_cast<piece_index_t>(l_piece_index)
+                                                                                                                                    ,l_piece_orientation
+                                                                                                                                    );
                             }
                         }
                     }
@@ -163,7 +165,9 @@ namespace edge_matching_puzzle
                         for (unsigned int l_corner_index = 0; l_corner_index < 4; ++l_corner_index)
                         {
                             const emp_piece_corner & l_corner = p_piece_db.get_corner(l_corner_index);
-                            l_initial_capability[l_position_index].set_bit(l_corner.get_id() - 1, l_corner.compute_orientation(l_border1, l_border2));
+                            l_initial_capability[l_position_index].set_bit(static_cast<piece_index_t>(l_corner.get_id() - 1)
+                                                                          ,l_corner.compute_orientation(l_border1, l_border2)
+                                                                          );
                         }
                     }
                         break;
@@ -173,7 +177,9 @@ namespace edge_matching_puzzle
                         for(unsigned int l_border_index = 0; l_border_index < p_info.get_nb_borders(); ++l_border_index)
                         {
                             const emp_piece_border & l_border = p_piece_db.get_border(l_border_index);
-                            l_initial_capability[l_position_index].set_bit(l_border.get_id() - 1, l_border.compute_orientation(l_border_orientation));
+                            l_initial_capability[l_position_index].set_bit(static_cast<piece_index_t>(l_border.get_id() - 1)
+                                                                          ,l_border.compute_orientation(l_border_orientation)
+                                                                          );
                         }
                     }
                         break;
@@ -183,7 +189,9 @@ namespace edge_matching_puzzle
                             const emp_piece & l_center = p_piece_db.get_center(l_center_index);
                             for (auto l_iter: emp_types::get_orientations())
                             {
-                                l_initial_capability[l_position_index].set_bit(l_center.get_id() - 1, l_iter);
+                                l_initial_capability[l_position_index].set_bit(static_cast<piece_index_t>(l_center.get_id() - 1)
+                                                                              ,l_iter
+                                                                              );
                             }
                         }
                         break;

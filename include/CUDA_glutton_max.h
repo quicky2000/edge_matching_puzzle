@@ -59,7 +59,7 @@ namespace edge_matching_puzzle
         inline
         __device__
         unvailability_lock_gard(CUDA_glutton_max_stack & p_stack
-                               ,uint32_t p_piece_index
+                               ,piece_index_t p_piece_index
                                )
                                :m_stack(p_stack)
                                ,m_piece_index(p_piece_index)
@@ -100,7 +100,7 @@ namespace edge_matching_puzzle
         }
       private:
         CUDA_glutton_max_stack & m_stack;
-        uint32_t m_piece_index;
+        piece_index_t m_piece_index;
     };
 
     class CUDA_glutton_max: public CUDA_common_glutton
@@ -130,7 +130,7 @@ namespace edge_matching_puzzle
             std::unique_ptr<CUDA_glutton_max_stack> l_stack{new CUDA_glutton_max_stack(l_size,l_nb_pieces)};
             for(unsigned int l_piece_index = 0; l_piece_index < l_nb_pieces; ++l_piece_index)
             {
-                l_stack->set_piece_available(l_piece_index);
+                l_stack->set_piece_available(static_cast<piece_index_t>(l_piece_index));
             }
 
             // Prepare stack with info of initial situation
@@ -147,7 +147,7 @@ namespace edge_matching_puzzle
                 }
                 else
                 {
-                    l_stack->set_piece_unavailable(p_start_situation.get_piece(l_x, l_y).first - 1);
+                    l_stack->set_piece_unavailable(static_cast<piece_index_t>(p_start_situation.get_piece(l_x, l_y).first - 1));
                 }
             }
             delete[] l_initial_capability;
@@ -197,7 +197,7 @@ namespace edge_matching_puzzle
                     unsigned int l_y = p_info.get_y(static_cast<uint32_t>(CUDA_glutton_max_stack::decode_position_index(l_played_info)));
                     assert(!p_start_situation.contains_piece(l_x, l_y));
                     p_start_situation.set_piece(l_x, l_y
-                                               ,emp_types::t_oriented_piece{static_cast<emp_types::t_piece_id >(1 + CUDA_glutton_max_stack::decode_piece_index(l_played_info))
+                                               ,emp_types::t_oriented_piece{static_cast<emp_types::t_piece_id >(1 + static_cast<uint32_t>(CUDA_glutton_max_stack::decode_piece_index(l_played_info)))
                                                ,static_cast<emp_types::t_orientation>(CUDA_glutton_max_stack::decode_orientation_index(l_played_info))}
                                                );
                 }
@@ -528,7 +528,7 @@ namespace edge_matching_puzzle
         inline static
         __device__
         bool
-        apply_color_constraints(uint32_t p_piece_index
+        apply_color_constraints(piece_index_t p_piece_index
                                ,uint32_t p_piece_orientation
                                ,position_index_t p_position_index
                                ,CUDA_glutton_max_stack & p_stack
@@ -546,7 +546,7 @@ namespace edge_matching_puzzle
         {
             for(unsigned int l_orientation_index = 0; l_orientation_index < 4; ++l_orientation_index)
             {
-                uint32_t l_color_id = g_pieces[p_piece_index][(l_orientation_index + p_piece_orientation) % 4];
+                uint32_t l_color_id = g_pieces[static_cast<uint32_t>(p_piece_index)][(l_orientation_index + p_piece_orientation) % 4];
 #if VERBOSITY_LEVEL >= 6
                 my_cuda::print_single(5, "Color Id %i", l_color_id);
 #endif // VERBOSITY_LEVEL >= 6
@@ -786,7 +786,7 @@ namespace edge_matching_puzzle
                                        )
                     {
                         // Compute piece index
-                        uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(static_cast<u32_word_index_t>(p_elected_thread), static_cast<u32_bit_index_t>(p_bit_index));
+                        piece_index_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(static_cast<u32_word_index_t>(p_elected_thread), static_cast<u32_bit_index_t>(p_bit_index));
 
 #if VERBOSITY_LEVEL >= 5
                         my_cuda::print_single(4, "Piece index : %i", l_piece_index);
@@ -1059,10 +1059,10 @@ namespace edge_matching_puzzle
                                    )
                 {
                     // Compute piece index
-                    uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(static_cast<u32_word_index_t>(p_elected_thread), static_cast<u32_bit_index_t>(p_bit_index));
+                    piece_index_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(static_cast<u32_word_index_t>(p_elected_thread), static_cast<u32_bit_index_t>(p_bit_index));
 
 #if VERBOSITY_LEVEL >= 5
-                    my_cuda::print_single(4, "Piece index : %i", l_piece_index);
+                    my_cuda::print_single(4, "Piece index : %i", static_cast<uint32_t>(l_piece_index));
 #endif // VERBOSITY_LEVEL >= 4
 
                     // Piece orientation
@@ -1212,9 +1212,9 @@ namespace edge_matching_puzzle
                         if(__all_sync(0xFFFFFFFFu, l_piece_info))
                         {
 #ifdef ENABLE_CUDA_CODE
-                            unsigned int l_info_piece_index = 8 * threadIdx.x + l_piece_info_index;
+                            piece_index_t l_info_piece_index = static_cast<piece_index_t>(8 * threadIdx.x + l_piece_info_index);
 #else // ENABLE_CUDA_CODE
-                            pseudo_CUDA_thread_variable<unsigned int> l_info_piece_index{[=](dim3 threadIdx){return 8 * threadIdx.x + l_piece_info_index;}};
+                            pseudo_CUDA_thread_variable<piece_index_t> l_info_piece_index{[=](dim3 threadIdx){return static_cast<piece_index_t>(8 * threadIdx.x + l_piece_info_index);}};
 #endif // ENABLE_CUDA_CODE
 #ifdef ENABLE_CUDA_CODE
                             if(p_stack.is_piece_available(l_info_piece_index))
@@ -1336,10 +1336,10 @@ namespace edge_matching_puzzle
 #endif // VERBOSITY_LEVEL >= 6
 
             // Compute piece index
-            uint32_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(static_cast<u32_word_index_t>(l_elected_thread), static_cast<u32_bit_index_t>(l_bit_index));
+            piece_index_t l_piece_index = CUDA_piece_position_info2::compute_piece_index(static_cast<u32_word_index_t>(l_elected_thread), static_cast<u32_bit_index_t>(l_bit_index));
 
 #if VERBOSITY_LEVEL >= 5
-            my_cuda::print_single(4, "Piece index : %i", l_piece_index);
+            my_cuda::print_single(4, "Piece index : %i", static_cast<uint32_t>(l_piece_index));
 #endif // VERBOSITY_LEVEL >= 5
 
             // Piece orientation

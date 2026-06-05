@@ -105,7 +105,7 @@ namespace edge_matching_puzzle
                  ,const CUDA_glutton_situations & p_source
                  ,uint32_t p_source_situation_index
                  ,info_index_t p_info_index
-                 ,uint32_t p_piece_index
+                 ,piece_index_t p_piece_index
                  ,emp_types::t_orientation p_orientation
                  ,const CUDA_color_constraints & p_color_constraints
                  );
@@ -207,7 +207,7 @@ namespace edge_matching_puzzle
                                    ,const CUDA_glutton_situations & p_source
                                    ,uint32_t p_source_situation_index
                                    ,info_index_t p_info_index
-                                   ,uint32_t p_piece_index
+                                   ,piece_index_t p_piece_index
                                    ,emp_types::t_orientation p_orientation
                                    ,const CUDA_color_constraints & p_color_constraints
                                    );
@@ -307,7 +307,7 @@ namespace edge_matching_puzzle
         [[nodiscard]]
         inline
         bool is_piece_available(uint32_t p_situation_index
-                               ,uint32_t p_piece_index
+                               ,piece_index_t p_piece_index
                                )const;
 
         /**
@@ -317,7 +317,7 @@ namespace edge_matching_puzzle
          */
         inline
         void set_piece_available(uint32_t p_situation_index
-                                ,uint32_t p_piece_index
+                                ,piece_index_t p_piece_index
                                 );
 
         /**
@@ -327,7 +327,7 @@ namespace edge_matching_puzzle
          */
         inline
         void set_piece_unavailable(uint32_t p_situation_index
-                                  ,uint32_t p_piece_index
+                                  ,piece_index_t p_piece_index
                                   );
 
         /**
@@ -395,7 +395,7 @@ namespace edge_matching_puzzle
         inline
         uint32_t
         compute_available_piece_index(uint32_t p_situation_index
-                                     ,uint32_t p_piece_index
+                                     ,piece_index_t p_piece_index
                                      ) const;
 
         /**
@@ -490,7 +490,7 @@ namespace edge_matching_puzzle
             this->set_theoric_position_info(0, static_cast<info_index_t>(l_index), p_initial_capability[l_index]);
             this->set_position_info(0, static_cast<info_index_t>(l_index), p_initial_capability[l_index]);
             set_position_info_relation(0, static_cast<info_index_t>(l_index), static_cast<position_index_t >(l_index));
-            set_piece_available(0, l_index);
+            set_piece_available(0, static_cast<piece_index_t>(l_index));
         }
     }
 
@@ -558,7 +558,7 @@ namespace edge_matching_puzzle
     [[nodiscard]]
     bool
     CUDA_glutton_situations::is_piece_available(uint32_t p_situation_index
-                                               ,uint32_t p_piece_index
+                                               ,piece_index_t p_piece_index
                                                ) const
     {
         // Do not check with m_puzzle_size as array is designed to support up
@@ -568,13 +568,13 @@ namespace edge_matching_puzzle
         // greater than puzzle size will be unavailable
         assert(p_piece_index < 256);
         assert(p_situation_index < m_nb_situation);
-        return m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] & (1u << CUDA_common_struct_glutton::compute_bit_index(p_piece_index));
+        return m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] & (1u << CUDA_common_struct_glutton::compute_bit_index(static_cast<uint32_t>(p_piece_index)));
     }
 
     //-------------------------------------------------------------------------
     void
     CUDA_glutton_situations::set_piece_available(uint32_t p_situation_index
-                                                ,uint32_t p_piece_index
+                                                ,piece_index_t p_piece_index
                                                 )
     {
         assert(p_piece_index < 256);
@@ -583,13 +583,13 @@ namespace edge_matching_puzzle
 #ifdef STRICT_CHECKING
         assert(p_piece_index < m_puzzle_size);
 #endif // STRICT_CHECKING
-        m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] |= (1u << CUDA_common_struct_glutton::compute_bit_index(p_piece_index));
+        m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] |= (1u << CUDA_common_struct_glutton::compute_bit_index(static_cast<uint32_t>(p_piece_index)));
     }
 
     //-------------------------------------------------------------------------
     void
     CUDA_glutton_situations::set_piece_unavailable(uint32_t p_situation_index
-                                                  ,uint32_t p_piece_index
+                                                  ,piece_index_t p_piece_index
                                                   )
     {
         assert(p_piece_index < 256);
@@ -598,7 +598,7 @@ namespace edge_matching_puzzle
 #ifdef STRICT_CHECKING
         assert(p_piece_index < m_puzzle_size);
 #endif // STRICT_CHECKING
-        m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] &= ~(1u << CUDA_common_struct_glutton::compute_bit_index(p_piece_index));
+        m_available_pieces[compute_available_piece_index(p_situation_index, p_piece_index)] &= ~(1u << CUDA_common_struct_glutton::compute_bit_index(static_cast<uint32_t>(p_piece_index)));
     }
 
     //-------------------------------------------------------------------------
@@ -717,7 +717,7 @@ namespace edge_matching_puzzle
                                       ,const CUDA_glutton_situations & p_source
                                       ,uint32_t p_source_situation_index
                                       ,info_index_t p_info_index
-                                      ,uint32_t p_piece_index
+                                      ,piece_index_t p_piece_index
                                       ,emp_types::t_orientation p_orientation
                                       ,const CUDA_color_constraints & p_color_constraints
                                       )
@@ -763,7 +763,7 @@ namespace edge_matching_puzzle
                                                         ,const CUDA_glutton_situations & p_source
                                                         ,uint32_t p_source_situation_index
                                                         ,info_index_t p_info_index
-                                                        ,uint32_t p_piece_index
+                                                        ,piece_index_t p_piece_index
                                                         ,emp_types::t_orientation p_orientation
                                                         ,const CUDA_color_constraints & p_color_constraints
                                                         )
@@ -778,10 +778,10 @@ namespace edge_matching_puzzle
         assert(p_source.is_position_free(p_source_situation_index, l_position_index));
 
 #ifdef ENABLE_CUDA_CODE
-        uint32_t l_mask_to_apply = threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(CUDA_piece_position_info2::compute_piece_bit_index(p_piece_index, p_orientation))): 0xFFFFFFFFu;;
+        uint32_t l_mask_to_apply = threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(CUDA_piece_position_info2::compute_piece_bit_index(static_cast<piece_index_t>(p_piece_index), p_orientation))): 0xFFFFFFFFu;;
         info_index_t l_related_positions = p_info_index;
 #else // ENABLE_CUDA_CODE
-        pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return CUDA_piece_position_info2::compute_piece_word_index(p_piece_index) == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(CUDA_piece_position_info2::compute_piece_bit_index(p_piece_index, p_orientation))): 0xFFFFFFFFu;}};
+        pseudo_CUDA_thread_variable<uint32_t> l_mask_to_apply{[=](dim3 threadIdx){return CUDA_piece_position_info2::compute_piece_word_index(static_cast<piece_index_t>(p_piece_index)) == threadIdx.x ? (~CUDA_piece_position_info2::compute_piece_mask(CUDA_piece_position_info2::compute_piece_bit_index(static_cast<piece_index_t>(p_piece_index), p_orientation))): 0xFFFFFFFFu;}};
         pseudo_CUDA_thread_variable<info_index_t> l_related_positions{p_info_index};
 #endif
         //---------------------------------------------------------------------
@@ -791,7 +791,7 @@ namespace edge_matching_puzzle
         // Appply the four colours constraints
         for(emp_types::t_orientation l_orientation : emp_types::get_orientations())
         {
-            uint32_t l_color_id = g_pieces[p_piece_index][(static_cast<uint32_t>(l_orientation) + static_cast<uint32_t>(p_orientation)) % 4];
+            uint32_t l_color_id = g_pieces[static_cast<uint32_t>(p_piece_index)][(static_cast<uint32_t>(l_orientation) + static_cast<uint32_t>(p_orientation)) % 4];
 
             if (!l_color_id)
             {
@@ -1051,12 +1051,12 @@ namespace edge_matching_puzzle
     [[nodiscard]]
     uint32_t
     CUDA_glutton_situations::compute_available_piece_index(uint32_t p_situation_index
-                                                          ,uint32_t p_piece_index
+                                                          ,piece_index_t p_piece_index
                                                           ) const
     {
         assert(p_situation_index < m_nb_situation);
         assert(p_piece_index < m_puzzle_size);
-        return 8 * p_situation_index + CUDA_common_struct_glutton::compute_word_index(p_piece_index);
+        return 8 * p_situation_index + CUDA_common_struct_glutton::compute_word_index(static_cast<uint32_t>(p_piece_index));
     }
                                  
     //-------------------------------------------------------------------------

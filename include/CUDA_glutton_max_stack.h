@@ -99,7 +99,7 @@ namespace edge_matching_puzzle
         __device__
         void push(info_index_t p_info_index
                  ,position_index_t p_position_index
-                 ,unsigned int p_piece_index
+                 ,piece_index_t p_piece_index
                  ,unsigned int p_orientation_index
                  );
 
@@ -436,7 +436,7 @@ namespace edge_matching_puzzle
     void
     CUDA_glutton_max_stack::push(info_index_t p_info_index
                                 ,position_index_t p_position_index
-                                ,unsigned int p_piece_index
+                                ,piece_index_t p_piece_index
                                 ,unsigned int p_orientation_index
                                 )
     {
@@ -601,14 +601,14 @@ namespace edge_matching_puzzle
         assert(threadIdx.x < 32);
         for(unsigned int l_index = 0; l_index < 8; ++l_index)
         {
-            m_thread_piece_infos[threadIdx.x][l_index] = is_piece_available(8 * threadIdx.x + l_index) ? 0 : 0xFFFF;
+            m_thread_piece_infos[threadIdx.x][l_index] = is_piece_available(static_cast<piece_index_t>(8 * threadIdx.x + l_index)) ? 0 : 0xFFFF;
         }
 #else // ENABLE_CUDA_CODE
         for(unsigned int threadIdx_x = 0; threadIdx_x < 32; ++threadIdx_x)
         {
             for(unsigned int l_index = 0; l_index < 8; ++l_index)
             {
-                m_thread_piece_infos[threadIdx_x][l_index] = is_piece_available(8 * threadIdx_x + l_index) ? 0 : 0xFFFF;
+                m_thread_piece_infos[threadIdx_x][l_index] = is_piece_available(static_cast<piece_index_t>(8 * threadIdx_x + l_index)) ? 0 : 0xFFFF;
             }
         }
 #endif // ENABLE_CUDA_CODE
