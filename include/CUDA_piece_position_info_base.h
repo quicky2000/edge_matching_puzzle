@@ -139,10 +139,10 @@ namespace edge_matching_puzzle
        private:
 
          inline
-         void clear_bit(unsigned int p_bit_index);
+         void clear_bit(raw_bit_index_t p_bit_index);
 
          inline
-         void set_bit(unsigned int p_bit_index);
+         void set_bit(raw_bit_index_t p_bit_index);
 
          inline
          void clear();
@@ -182,18 +182,22 @@ namespace edge_matching_puzzle
 
     //-------------------------------------------------------------------------
     void
-    CUDA_piece_position_info_base::clear_bit(unsigned int p_bit_index)
+    CUDA_piece_position_info_base::clear_bit(raw_bit_index_t p_bit_index)
     {
         assert(p_bit_index < 1024);
-        clear_bit(static_cast<u32_word_index_t>(p_bit_index / 32), static_cast<u32_bit_index_t>(p_bit_index % 32));
+        clear_bit(static_cast<u32_word_index_t>(static_cast<uint32_t>(p_bit_index) / 32)
+                 ,static_cast<u32_bit_index_t>(static_cast<uint32_t>(p_bit_index) % 32)
+                 );
     }
 
     //-------------------------------------------------------------------------
     void
-    CUDA_piece_position_info_base::set_bit(unsigned int p_bit_index)
+    CUDA_piece_position_info_base::set_bit(raw_bit_index_t p_bit_index)
     {
         assert(p_bit_index < 1024);
-        set_bit(static_cast<u32_word_index_t>(static_cast<u32_word_index_t>(p_bit_index) / 32), static_cast<u32_bit_index_t>(p_bit_index % 32));
+        set_bit(static_cast<u32_word_index_t>(static_cast<uint32_t>(p_bit_index) / 32)
+               ,static_cast<u32_bit_index_t>(static_cast<uint32_t>(p_bit_index) % 32)
+               );
     }
 
     //-------------------------------------------------------------------------
