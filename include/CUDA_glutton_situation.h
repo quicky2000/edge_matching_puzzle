@@ -45,7 +45,7 @@ namespace edge_matching_puzzle
          */
         inline explicit
         CUDA_glutton_situation(CUDA_glutton_situations & p_situations
-                              ,uint32_t p_situation_index
+                              ,situation_index_t p_situation_index
                               );
 
         inline
@@ -88,13 +88,13 @@ namespace edge_matching_puzzle
 
         CUDA_glutton_situations & m_situations;
 
-        uint32_t m_situation_index;
+        situation_index_t m_situation_index;
 
     };
 
     //-------------------------------------------------------------------------
     CUDA_glutton_situation::CUDA_glutton_situation(CUDA_glutton_situations & p_situations
-                                                  ,uint32_t p_situation_index
+                                                  ,situation_index_t p_situation_index
                                                   )
     :m_situations{p_situations}
     ,m_situation_index{p_situation_index}

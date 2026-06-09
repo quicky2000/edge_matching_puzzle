@@ -32,12 +32,12 @@ namespace edge_matching_puzzle
         std::unique_ptr<CUDA_color_constraints> l_color_constraints = prepare_color_constraints();
         emp_situation l_start_situation;
         auto l_situations = prepare_situation(this->get_piece_db(), this->get_info(), l_start_situation);
-        CUDA_glutton_situation l_glutton_situation{*l_situations, 0};
+        CUDA_glutton_situation l_glutton_situation{*l_situations, static_cast<situation_index_t>(0)};
         std::cout << l_glutton_situation << std::endl;
 
         unsigned int l_corner_index = this->get_info().get_position_index(0, 0);
-        auto l_corner_info_index = l_situations->get_info_index(0, position_index_t{l_corner_index});
-        auto l_corner_info = l_situations->get_position_info(0, l_corner_info_index);
+        auto l_corner_info_index = l_situations->get_info_index(static_cast<situation_index_t>(0), position_index_t{l_corner_index});
+        auto l_corner_info = l_situations->get_position_info(static_cast<situation_index_t>(0), l_corner_info_index);
         std::cout << "Corner info : " << std::endl;
         std::cout << l_corner_info << std::endl;
 
@@ -48,7 +48,7 @@ namespace edge_matching_puzzle
 #endif // __cplusplus
 
         uint32_t l_ffs = 0;
-        uint32_t l_situation_index = 0;
+        situation_index_t l_situation_index{0};
         while((l_ffs = ffs(l_corner_info, l_ffs)))
         {
             std::cout << l_ffs << std::endl;
