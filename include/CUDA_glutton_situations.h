@@ -893,10 +893,10 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     void
     CUDA_glutton_situations::copy_position_info_relation_from(uint32_t p_dest_situation_index
-                                                            ,const CUDA_glutton_situations & p_source
-                                                            ,uint32_t p_source_situation_index
-                                                            ,position_index_t p_position_index
-                                                            )
+                                                             ,const CUDA_glutton_situations & p_source
+                                                             ,uint32_t p_source_situation_index
+                                                             ,position_index_t p_position_index
+                                                             )
     {
         assert(this->m_level == (p_source.m_level + 1));
         assert(p_position_index < m_puzzle_size);
@@ -948,9 +948,9 @@ namespace edge_matching_puzzle
     //-------------------------------------------------------------------------
     void
     CUDA_glutton_situations::copy_available_pieces_from(uint32_t p_dest_situation_index
-                                                      ,const CUDA_glutton_situations & p_source
-                                                      ,uint32_t p_source_situation_index
-                                                      )
+                                                       ,const CUDA_glutton_situations & p_source
+                                                       ,uint32_t p_source_situation_index
+                                                       )
     {
         assert(this->m_level == (p_source.m_level + 1));
         assert(p_dest_situation_index < m_nb_situation);
