@@ -915,7 +915,7 @@ namespace edge_matching_puzzle
         {
             for(position_index_t l_position_index{std::get<0>(l_range)}; l_position_index < std::get<1>(l_range); ++l_position_index)
             {
-                if(get_info_index(p_source_situation_index, l_position_index) == std::numeric_limits<info_index_t>::max())
+                if(p_source.get_info_index(p_source_situation_index, l_position_index) == std::numeric_limits<info_index_t>::max())
                 {
                     auto l_pos2info_index = compute_pos2info_index(p_dest_situation_index, l_position_index);
                     m_position_index_to_info_index[static_cast<uint32_t>(l_pos2info_index)] = std::numeric_limits<info_index_t>::max();
