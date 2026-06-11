@@ -913,17 +913,17 @@ namespace edge_matching_puzzle
         // We need to update the relation for all position info with index greater than info index as they are shifted by one position in new situation compared to source situation
         for(const auto & l_range: l_ranges)
         {
-            for(position_index_t l_index{std::get<0>(l_range)}; l_index < std::get<1>(l_range); ++l_index)
+            for(position_index_t l_position_index{std::get<0>(l_range)}; l_position_index < std::get<1>(l_range); ++l_position_index)
             {
-                if(get_info_index(p_source_situation_index, l_index) == std::numeric_limits<info_index_t>::max())
+                if(get_info_index(p_source_situation_index, l_position_index) == std::numeric_limits<info_index_t>::max())
                 {
-                    auto l_pos2info_index = compute_pos2info_index(p_dest_situation_index, l_index);
+                    auto l_pos2info_index = compute_pos2info_index(p_dest_situation_index, l_position_index);
                     m_position_index_to_info_index[static_cast<uint32_t>(l_pos2info_index)] = std::numeric_limits<info_index_t>::max();
                 }
                 else
                 {
-                    info_index_t l_info_index = p_source.get_info_index(p_source_situation_index, l_index);
-                    set_position_info_relation(p_dest_situation_index, l_info_index - std::get<2>(l_range), l_index);
+                    info_index_t l_info_index = p_source.get_info_index(p_source_situation_index, l_position_index);
+                    set_position_info_relation(p_dest_situation_index, l_info_index - std::get<2>(l_range), l_position_index);
                 }
             }
         }
