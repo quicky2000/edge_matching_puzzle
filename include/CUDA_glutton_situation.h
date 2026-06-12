@@ -129,6 +129,7 @@ namespace edge_matching_puzzle
                                  ) const
     {
         p_stream << std::string(p_indent_level, ' ') << "Situation Level " << m_situations.get_level() << ": " << std::endl;
+        p_stream << std::string(p_indent_level, ' ') << "Situation Index " << m_situation_index << ": " << std::endl;
         p_stream << std::string(p_indent_level, ' ')  << "===== Position index <-> Info index =====" << std::endl;
         for(position_index_t l_index{0u}; l_index < m_situations.get_puzzle_size(); ++l_index)
         {
