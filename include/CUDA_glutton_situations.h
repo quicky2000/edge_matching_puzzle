@@ -906,7 +906,7 @@ namespace edge_matching_puzzle
         invalidate_pos2info_index(p_dest_situation_index, p_position_index);
 
         std::array<std::tuple<position_index_t, position_index_t, info_index_t>, 2> l_ranges
-        {{{position_index_t{0}, (static_cast<uint32_t>(p_position_index) - 1 > m_puzzle_size) ? position_index_t{0} : p_position_index - 1, info_index_t(0)},
+        {{{position_index_t{0}, p_position_index, info_index_t(0)},
           {p_position_index + 1, position_index_t{m_puzzle_size}, info_index_t(1)}
          }
         };
