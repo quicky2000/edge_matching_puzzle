@@ -54,14 +54,15 @@ namespace edge_matching_puzzle
             std::cout << l_ffs << std::endl;
             l_next_situations->play_from(l_situation_index
                                         ,*l_situations
-                                        ,l_situation_index
+                                        ,static_cast<situation_index_t>(0)
                                         ,l_corner_info_index
                                         ,CUDA_piece_position_info2::compute_piece_index(static_cast<raw_bit_index_t>(l_ffs - 1))
                                         ,CUDA_piece_position_info2::compute_piece_orientation(static_cast<raw_bit_index_t>(l_ffs - 1))
                                         ,*l_color_constraints
                                         );
-        CUDA_glutton_situation l_result_situation{*l_next_situations, l_situation_index};
-        std::cout << l_result_situation << std::endl;
+            CUDA_glutton_situation l_result_situation{*l_next_situations, l_situation_index};
+            std::cout << l_result_situation << std::endl;
+            ++l_situation_index;
         }
 
     }
